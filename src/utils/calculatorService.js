@@ -42,17 +42,27 @@ export const calculateSystem = (inputs) => {
   const areaPerElement = Number(activeMembrane.area) || 400;
 
   let totalElements = 0;
+  let totalAreaSqFt = 0;
   if (activeStages.length > 0) {
     totalElements = activeStages.reduce((sum, stage) => {
       const stageVessels = Number(stage?.vessels) || 0;
       const stageElements = Number(stage?.elementsPerVessel) || 0;
       return sum + stageVessels * stageElements;
     }, 0);
+    totalAreaSqFt = activeStages.reduce((sum, stage) => {
+      const stageVessels = Number(stage?.vessels) || 0;
+      const stageElements = Number(stage?.elementsPerVessel) || 0;
+      const stageMembrane = membranes.find(m => m.id === stage?.membraneModel) || activeMembrane;
+      const stageArea = Number(stageMembrane?.area) || areaPerElement;
+      return sum + stageVessels * stageElements * stageArea;
+    }, 0);
   } else {
     totalElements = (Number(vessels) || 0) * (Number(elementsPerVessel) || 0);
+    totalAreaSqFt = totalElements * areaPerElement;
   }
 
-  const avgFlux = totalElements > 0 ? (Number(totalFlow) * 264.172 * 24) / (totalElements * areaPerElement) : 0;
+  const effectiveAreaSqFt = totalAreaSqFt > 0 ? totalAreaSqFt : (totalElements * areaPerElement);
+  const avgFlux = effectiveAreaSqFt > 0 ? (Number(totalFlow) * 264.172 * 24) / effectiveAreaSqFt : 0;
   const highestFlux = avgFlux * (1 + (recFrac * 0.32));
   const beta = Math.exp(0.7 * recFrac);
   const cf = recFrac > 0 && recFrac < 1 ? Math.log(1 / (1 - recFrac)) / recFrac : 1;
@@ -163,6 +173,13 @@ export const calculateSystem = (inputs) => {
   const unitFactor = FLOW_TO_M3H[flowUnit] ?? 1;
 
   const totalStageVessels = activeStages.reduce((sum, stage) => sum + (Number(stage?.vessels) || 0), 0);
+  const totalStageAreaSqFt = activeStages.reduce((sum, stage) => {
+    const stageVessels = Number(stage?.vessels) || 0;
+    const stageElements = Number(stage?.elementsPerVessel) || 0;
+    const stageMembrane = membranes.find(m => m.id === stage?.membraneModel) || activeMembrane;
+    const stageArea = Number(stageMembrane?.area) || areaPerElement;
+    return sum + stageVessels * stageElements * stageArea;
+  }, 0);
   let currentFeedFlowM3h = feedFlowTotal;
   let currentFeedPressureBar = feedPressureBar;
   const stageResults = [];
@@ -174,15 +191,15 @@ export const calculateSystem = (inputs) => {
 
     if (stageVessels === 0 || stageElements === 0) return;
 
-    const stagePermeateFlowM3h = totalStageVessels > 0
-      ? Number(totalFlow) * (stageVessels / totalStageVessels)
-      : 0;
+    const stageAreaSqFt = stageVessels * stageElements * (Number(stageMembrane?.area) || 400);
+    const stagePermeateFlowM3h = totalStageAreaSqFt > 0
+      ? Number(totalFlow) * (stageAreaSqFt / totalStageAreaSqFt)
+      : (totalStageVessels > 0 ? Number(totalFlow) * (stageVessels / totalStageVessels) : 0);
     const stageConcentrateFlowM3h = currentFeedFlowM3h - stagePermeateFlowM3h;
     const perVesselFeedFlowM3h = stageVessels > 0 ? currentFeedFlowM3h / stageVessels : 0;
     const perVesselConcFlowM3h = stageVessels > 0 ? stageConcentrateFlowM3h / stageVessels : 0;
     const perVesselAvgFlowM3h = (perVesselFeedFlowM3h + perVesselConcFlowM3h) / 2;
 
-    const stageAreaSqFt = stageVessels * stageElements * (Number(stageMembrane?.area) || 400);
     const stageAvgFlux = stageAreaSqFt > 0 ? (stagePermeateFlowM3h * 264.172 * 24) / stageAreaSqFt : 0;
     const stageRecovery = currentFeedFlowM3h > 0 ? stagePermeateFlowM3h / currentFeedFlowM3h : 0;
     const stageHighestFlux = stageAvgFlux * (1 + (stageRecovery * 0.32));

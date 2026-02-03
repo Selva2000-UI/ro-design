@@ -159,9 +159,10 @@ const App = () => {
     const perTrainFeed_m3h = perTrainProduct_m3h / recovery;
     const perTrainConc_m3h = perTrainFeed_m3h - perTrainProduct_m3h;
 
-    // Calculate total elements across all active stages
+    // Calculate total elements and area across all active stages
     // Use stages array if available, otherwise fall back to legacy stage1Vessels/stage2Vessels
     let totalElements = 0;
+    let totalArea_ft2 = 0;
     if (systemConfig.stages && systemConfig.stages.length > 0) {
       // Sum elements from all active stages (up to pass1Stages)
       const pass1Stages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);
@@ -171,6 +172,9 @@ const App = () => {
           const stageVessels = Number(stage.vessels) || 0;
           const stageElementsPerVessel = Number(stage.elementsPerVessel) || 0;
           totalElements += stageVessels * stageElementsPerVessel;
+          const stageMembrane = membranes.find(m => m.id === stage.membraneModel) || membranes[0];
+          const stageArea = Number(stageMembrane?.area) || 400;
+          totalArea_ft2 += stageVessels * stageElementsPerVessel * stageArea;
         }
       }
     } else {
@@ -188,7 +192,9 @@ const App = () => {
     
     // Ensure we have a valid membrane with area
     const membraneArea = Number(activeMem?.area) || 400; // Default to 400 ft² if not found
-    const totalArea_ft2 = totalElements * membraneArea;
+    if (totalArea_ft2 === 0) {
+      totalArea_ft2 = totalElements * membraneArea;
+    }
     const totalArea_m2 = totalArea_ft2 * 0.09290304;
 
     const perTrainProduct_gpd = perTrainProduct_m3h * M3H_TO_GPD;
@@ -203,7 +209,7 @@ const App = () => {
       recovery: recoveryPct,
       vessels: totalStageVessels || Number(systemConfig.stage1Vessels) || 0,
       elementsPerVessel: Number(systemConfig.elementsPerVessel) || 0,
-      feedPH: Number(waterData.ph) || 7.0,
+      feedPH: Number(systemConfig.feedPh) || Number(waterData.ph) || 7.0,
       tempF: (Number(waterData.temp) * 9 / 5) + 32,
       feedIons: {
         ca: Number(waterData.ca) || 0,
@@ -439,12 +445,13 @@ const App = () => {
       return Number(value).toFixed(1); // 1 decimal when calculated
     };
 
+    const feedPhForCalc = Number(systemConfig.feedPh) || Number(waterData.ph) || 7.0;
     const permeatePh = calcResults?.permeateParameters?.ph != null
       ? Number(calcResults.permeateParameters.ph)
-      : Math.min(Math.max(getNumeric(waterData.ph) - 1.1, 0), 14);
+      : Math.min(Math.max(feedPhForCalc - 1.1, 0), 14);
     const concentratePh = calcResults?.concentrateParameters?.ph != null
       ? Number(calcResults.concentrateParameters.ph)
-      : Math.min(Math.max(getNumeric(waterData.ph) + Math.log10(CF) * 0.3, 0), 14);
+      : Math.min(Math.max(feedPhForCalc + Math.log10(CF) * 0.3, 0), 14);
 
     // Langelier Saturation Index (simplified, consistent with PreTreatment)
     const pCa = 5.0 - Math.log10(Math.max(getNumeric(concentrateConcentration.ca) * 2.5, 0.0001));
