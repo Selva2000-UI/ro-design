@@ -417,7 +417,10 @@ const App = () => {
     const membraneAge = Math.max(Number(systemConfig.membraneAge) || 0, 0);
     const fluxDeclinePct = Math.min(Math.max(Number(systemConfig.fluxDeclinePerYear) || 0, 0), 99);
     const spIncreasePct = Math.min(Math.max(Number(systemConfig.spIncreasePerYear) || 0, 0), 200);
-    const foulingFactor = Math.max(Number(systemConfig.foulingFactor) || 1, 1);
+    const foulingFactorRaw = Number(systemConfig.foulingFactor);
+    const foulingFactor = Number.isFinite(foulingFactorRaw)
+      ? Math.min(Math.max(foulingFactorRaw, 0.35), 1)
+      : 1;
 
     const aBase = Number(activeMem.aValue) || 0.12;
     const aEffective = aBase * Math.pow(1 - fluxDeclinePct / 100, membraneAge);

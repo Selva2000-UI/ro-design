@@ -28,7 +28,8 @@ export const calculateSystem = (inputs) => {
     foulingFactor = 1
   } = inputs;
 
-  const recFrac = (Number(recovery) || 0) / 100;
+  const recoveryPct = Math.min(Math.max(Number(recovery) || 0, 1), 99);
+  const recFrac = recoveryPct / 100;
   const tempC = (Number(tempF) - 32) * (5 / 9);
   const feedFlowTotal = recFrac > 0 ? Number(totalFlow) / recFrac : 0;
   const concentrateFlowTotal = feedFlowTotal - Number(totalFlow || 0);
@@ -153,7 +154,10 @@ export const calculateSystem = (inputs) => {
   const membraneAgeYears = Math.max(Number(membraneAge) || 0, 0);
   const fluxDeclinePct = Math.min(Math.max(Number(fluxDeclinePerYear) || 0, 0), 99);
   const spIncreasePct = Math.min(Math.max(Number(spIncreasePerYear) || 0, 0), 200);
-  const foulingFactorValue = Math.max(Number(foulingFactor) || 1, 1);
+  const foulingFactorRaw = Number(foulingFactor);
+  const foulingFactorValue = Number.isFinite(foulingFactorRaw)
+    ? Math.min(Math.max(foulingFactorRaw, 0.35), 1)
+    : 1;
   const aBase = Number(activeMembrane.aValue) || 0.12;
   const aEffective = aBase * Math.pow(1 - fluxDeclinePct / 100, membraneAgeYears);
   const spFactor = Math.pow(1 + spIncreasePct / 100, membraneAgeYears);
@@ -183,6 +187,10 @@ export const calculateSystem = (inputs) => {
   let currentFeedFlowM3h = feedFlowTotal;
   let currentFeedPressureBar = feedPressureBar;
   const stageResults = [];
+  let maxStageFeedFlowM3h = feedFlowPerVessel;
+  let maxStageHighestFlux = highestFlux;
+  let maxStageBeta = beta;
+  let minStageConcPressureBar = concPressureBar;
 
   activeStages.forEach((stage, index) => {
     const stageVessels = Number(stage?.vessels) || 0;
@@ -232,25 +240,36 @@ export const calculateSystem = (inputs) => {
       highestBeta: stageBeta.toFixed(2)
     });
 
+    maxStageFeedFlowM3h = Math.max(maxStageFeedFlowM3h, perVesselFeedFlowM3h);
+    maxStageHighestFlux = Math.max(maxStageHighestFlux, stageHighestFlux);
+    maxStageBeta = Math.max(maxStageBeta, stageBeta);
+    minStageConcPressureBar = Math.min(minStageConcPressureBar, stageConcPressureBar);
+
     currentFeedFlowM3h = Math.max(stageConcentrateFlowM3h, 0);
     currentFeedPressureBar = stageConcPressureBar;
   });
 
   const designWarnings = [];
-  if (highestFlux > 20) designWarnings.push('Design limits exceeded: Flux too high');
-  if (feedFlowPerVessel > 4.5) designWarnings.push('Design limits exceeded: Feed flow per vessel too high');
-  if (concPressureBar < 0) designWarnings.push('Design limits exceeded: Concentrate pressure is negative');
+  const warningHighestFlux = stageResults.length > 0 ? maxStageHighestFlux : highestFlux;
+  const warningFeedFlowM3h = stageResults.length > 0 ? maxStageFeedFlowM3h : feedFlowPerVessel;
+  const warningMinConcPressureBar = stageResults.length > 0 ? minStageConcPressureBar : concPressureBar;
+  if (warningHighestFlux > 20) designWarnings.push('Design limits exceeded: Flux too high');
+  if (warningFeedFlowM3h > 4.5) designWarnings.push('Design limits exceeded: Feed flow per vessel too high');
+  if (warningMinConcPressureBar < 0) designWarnings.push('Design limits exceeded: Concentrate pressure is negative');
   if (!Number.isFinite(osmoticPressure) || osmoticPressure < 0) designWarnings.push('Design limits exceeded: Osmotic pressure invalid');
+
+  const systemHighestFlux = stageResults.length > 0 ? maxStageHighestFlux : highestFlux;
+  const systemHighestBeta = stageResults.length > 0 ? maxStageBeta : beta;
 
   return {
     results: {
       avgFlux: avgFlux.toFixed(1),
-      highestFlux: highestFlux.toFixed(1),
+      highestFlux: systemHighestFlux.toFixed(1),
       feedFlowVessel: feedFlowPerVessel.toFixed(2),
       concFlowVessel: concFlowPerVessel.toFixed(2),
       feedPressure: feedPressureBar.toFixed(1),
       concPressure: concPressureBar.toFixed(1),
-      highestBeta: beta.toFixed(2),
+      highestBeta: systemHighestBeta.toFixed(2),
       lsi: lsi.toFixed(2),
       permTDS: permeateTDS.toFixed(2),
       concTDS: concentrateTDS.toFixed(2),
@@ -268,7 +287,8 @@ export const calculateSystem = (inputs) => {
 
 export const calculateIonPassage = (feedIons, systemData) => {
   const { recovery, tempC, vessels } = systemData;
-  const recFrac = (Number(recovery) || 0) / 100;
+  const recoveryPct = Math.min(Math.max(Number(recovery) || 0, 1), 99);
+  const recFrac = recoveryPct / 100;
 
   // 1. Beta Factor (Concentration Polarization)
   const beta = Math.exp(0.7 * recFrac);
