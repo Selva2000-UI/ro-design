@@ -7,7 +7,7 @@ import Report from './components/Report';
 import MembraneEditor from './components/MembraneEditor';
 import DesignGuidelines from './components/DesignGuidelines';
 import ValidationBanner from './components/ValidationBanner';
-import { calculateSystem } from './utils/calculatorService';
+import { calculateSystem, runHydraulicBalance } from './utils/calculatorService';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -16,20 +16,16 @@ const App = () => {
   const fileInputRef = useRef(null);
 
   const FLOW_TO_M3H = {
-    gpm: 0.2271,
-    gpd: 0.0001577,
-    mgd: 157.725,
-    migd: 189.27,
+    gpm: 0.2271247,
     'm3/h': 1,
     'm3/d': 1 / 24,
-    mld: 41.667
   };
 
   const DEFAULT_SYSTEM_CONFIG = {
     // Inputs (follow IMSDesign layout: System-level total + trains; Train values are calculated)
     feedPh: 7.0,
     recovery: 0,
-    flowUnit: 'gpm', // gpm/gpd/mgd/migd/m3/h/m3/d/mld
+    flowUnit: 'gpm', // gpm | m3/h | m3/d
     permeateFlow: 0, // train permeate flow in selected unit
     numTrains: 1,
 
@@ -37,15 +33,15 @@ const App = () => {
     stage1Vessels: 4,
     stage2Vessels: 0,
     elementsPerVessel: 6,
-    membraneModel: 'espa2ld',
+    membraneModel: 'cpa3',
     pass1Stages: 1, // Initially only 1 stage is active
     stages: [
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 3 },
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 0 },
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 0 },
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 0 },
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 0 },
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 0 }
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 4 },
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 }
     ],
 
     // Flux display
@@ -73,8 +69,78 @@ const App = () => {
   // --- 1. STATE MANAGEMENT ---
   const [snapshots, setSnapshots] = useState([]); 
   const [membranes, setMembranes] = useState([
-    { id: 'espa2ld', name: 'ESPA2-LD', area: 400, aValue: 0.18, rejection: 99.7, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'cpa3', name: 'CPA3', area: 400, aValue: 0.12, rejection: 99.7, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
+    // { id: 'espa2ld', name: 'ESPA2-LD', area: 400, aValue: 0.18, rejection: 99.7, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
+    // { id: 'cpa3', name: 'CPA3', area: 400, aValue: 0.12, rejection: 99.7, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
+    {
+  id: 'espa2ld',
+  name: 'ESPA2-LD',
+  type: 'Brackish',
+
+  // Physical properties
+  area: 400,                 // ft² (37.2 m²)
+  feedSpacerMil: 34,
+
+  // Performance (normalized to 77°F, 1500 ppm NaCl, 150 psi)
+  aValue: 0.18,               // Higher permeability than CPA3
+  rejection: 99.6,
+
+  monoRejection: 96.0,
+  divalentRejection: 99.7,
+  silicaRejection: 98.0,
+  boronRejection: 90.0,
+  alkalinityRejection: 99.5,
+  co2Rejection: 0.0,
+
+  // Hydraulics
+  kFb: 0.315,                 // Lower pressure drop than CPA series
+  dpExponent: 1.75,
+
+  // Optional fine-tuning (leave empty unless lab-grade accuracy needed)
+  ionRejectionOverrides: {
+    // ESPA series usually modeled with group rejections
+  },
+
+  // Operating limits
+  maxPressurePsi: 600,
+  maxTemperatureC: 45,
+  maxFeedFlowGpm: 85,
+  minBrineFlowGpm: 12,
+  maxDeltaPsiPerElement: 15,
+  maxChlorinePpm: 0.1,
+  maxTurbidityNtu: 1.0,
+  maxSdi15: 5.0,
+
+  pHRangeContinuous: [2, 10.6],
+  pHRangeCleaning: [1, 12],
+
+  description: 'Low fouling, high-flux brackish water RO membrane'
+},
+
+  { 
+    id: "cpa3", 
+    name: "CPA3", 
+    type: "Brackish", 
+    area: 400,        
+    rejection: 99.7, 
+    description: "Standard high rejection."
+  },
+  {
+    id: "cpa3", 
+    name: "CPA3", 
+    area: 400,         
+    aValue: 0.12,
+    rejection: 99.7,
+    monoRejection: 96.0,
+    divalentRejection: 99.7,
+    silicaRejection: 98.0,
+    boronRejection: 90.0,
+    alkalinityRejection: 99.5,
+    co2Rejection: 0.0,
+    kFb: 0.38,
+    dpExponent: 1.75,
+    type: "Brackish"
+  },
+
     { id: 'swc5ld', name: 'SWC5-LD', area: 400, aValue: 0.06, rejection: 99.8, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
     // Legacy 4" element example (4040) used in IMSDesign screenshots
     { 
@@ -250,35 +316,26 @@ const App = () => {
     const stageResults = calcResults?.stageResults || [];
     
     // Calculate flux - always calculate, but only display if designCalculated is true
-    // Formula: Average Flux (gfd) = Permeate flow / (No. of Vessels × Membranes/Vessel × 0.0556)
-    let rawFluxGFD = calcResults?.results?.avgFlux ?? 0;
-    let rawFluxLMH = rawFluxGFD * 1.699; // 1 GFD = 1.699 LMH
+    // Use the updated flux calculation from runHydraulicBalance which handles units correctly
+    const hydraulicBalance = runHydraulicBalance(systemConfig, activeMem);
+    let rawFlux = hydraulicBalance?.calcFlux ?? 0;
+    const fluxUnit = systemConfig.flowUnit === 'gpm' ? 'GFD' : 'LMH';
     
-    if (!calcResults?.results) {
-        if (totalElements > 0 && perTrainProduct_m3h > 0) {
-            rawFluxGFD = (perTrainProduct_m3h * 4.402867) / (totalElements * 0.0556);
-        }
-        if (totalArea_m2 > 0 && perTrainProduct_m3h > 0) {
-            rawFluxLMH = (perTrainProduct_m3h * 1000) / totalArea_m2;
-        }
-    }
-    
-    // Always show flux value if possible
-    const fluxGFD = rawFluxGFD;
-    const fluxLMH = rawFluxLMH;
+    // Ensure projection results have consistent units
+    const currentResults = calcResults?.results || {};
+
     
     // Debug logging to understand why flux is 0 (only log when calculated but still 0)
-    if (systemConfig.designCalculated && rawFluxGFD === 0 && rawFluxLMH === 0) {
+    if (systemConfig.designCalculated && rawFlux === 0) {
       console.warn('Flux is 0 after calculation! Debug info:');
       console.log('  - designCalculated:', systemConfig.designCalculated);
       console.log('  - totalElements:', totalElements);
       console.log('  - membraneArea:', membraneArea);
       console.log('  - totalArea_ft2:', totalArea_ft2);
       console.log('  - totalArea_m2:', totalArea_m2);
-      console.log('  - perTrainProduct_gpd:', perTrainProduct_gpd);
       console.log('  - perTrainProduct_m3h:', perTrainProduct_m3h);
-      console.log('  - rawFluxGFD:', rawFluxGFD);
-      console.log('  - rawFluxLMH:', rawFluxLMH);
+      console.log('  - rawFlux:', rawFlux);
+      console.log('  - fluxUnit:', fluxUnit);
       console.log('  - pass1Stages:', systemConfig.pass1Stages);
       console.log('  - stages:', systemConfig.stages?.map((s, i) => ({ 
         stage: i + 1, 
@@ -473,6 +530,10 @@ const App = () => {
     const concentratePh = calcResults?.concentrateParameters?.ph != null
       ? Number(calcResults.concentrateParameters.ph)
       : Math.min(Math.max(feedPhForCalc + Math.log10(CF), 0), 14);
+
+    // Update projection with the calculated flux value
+    const fluxGFD = systemConfig.flowUnit === 'gpm' ? rawFlux : 0;
+    const fluxLMH = systemConfig.flowUnit !== 'gpm' ? rawFlux : 0;
 
     // Langelier Saturation Index (simplified, consistent with PreTreatment)
     const pCa = 5.0 - Math.log10(Math.max(getNumeric(concentrateConcentration.ca) * 2.5, 0.0001));

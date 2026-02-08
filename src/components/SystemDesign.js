@@ -187,13 +187,8 @@
       };
 
       const handleFlowUnitChange = (nextUnit) => {
-        // Get decimal precision for the new unit (matching Hydranautics)
-        const getFlowDecimals = (flowUnit) => {
-          if (['gpm'].includes(flowUnit)) return 2;
-          if (['gpd'].includes(flowUnit)) return 1;
-          if (['mgd', 'migd', 'mld'].includes(flowUnit)) return 3;
-          return 2; // default
-        };
+        // Flux units mapping: gpm -> gfd, m3/h or m3/d -> lmh
+        const nextFluxUnit = nextUnit === 'gpm' ? 'gfd' : 'lmh';
         
         // DO NOT convert the permeate flow value - keep it the same, only change unit and precision
         const prevVal = Number(systemConfig.permeateFlow) || 0;
@@ -202,6 +197,7 @@
         setSystemConfig({
           ...systemConfig,
           flowUnit: nextUnit,
+          fluxUnit: nextFluxUnit,
           // Keep the same numeric value, only format with new precision
           permeateFlow: prevVal.toFixed(nextDecimals),
           designCalculated: false
@@ -211,8 +207,7 @@
       // Get decimal precision for flow unit (matching Hydranautics)
       const getFlowDecimals = (flowUnit) => {
         if (['gpm', 'm3/h'].includes(flowUnit)) return 2;
-        if (['gpd', 'm3/d'].includes(flowUnit)) return 1;
-        if (['mgd', 'migd', 'mld'].includes(flowUnit)) return 3;
+        if (['m3/d'].includes(flowUnit)) return 1;
         return 2; // default
       };
 
@@ -318,12 +313,8 @@
                 <div style={{display:'flex', gap:'2px'}}>
                   <select style={{fontSize:'0.7rem'}} value={systemConfig.flowUnit} onChange={e => handleFlowUnitChange(e.target.value)}>
                     <option value="gpm">gpm</option>
-                    <option value="gpd">gpd</option>
-                    <option value="mgd">mgd</option>
-                    <option value="migd">migd</option>
-                    <option value="m3/h">m3/h</option>
-                    <option value="m3/d">m3/d</option>
-                    <option value="mld">mld</option>
+                    <option value="m3/h">m³/h</option>
+                    <option value="m3/d">m³/d</option>
                   </select>
                   <input style={inputStyle} value={systemConfig.permeateFlow} onChange={e => handleInputChange('permeateFlow', e.target.value)} />
                 </div>
@@ -331,8 +322,43 @@
               <div style={rowStyle}>
                 <span>Average flux</span>
                 <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
-                  <div style={{...inputStyle, background: '#eee'}}>{projection?.calcFluxGfd || '0.0'}</div>
-                  <span style={{ fontSize: '0.7rem', color: '#333' }}>gfd</span>
+                  <div style={{...inputStyle, background: '#eee'}}>
+                    {(() => {
+                      // Calculate flux in real-time based on current inputs
+                      const permeateFlow = Number(systemConfig.permeateFlow) || 0;
+                      const vessels = Number(systemConfig.stage1Vessels) || 0;
+                      const elementsPerVessel = Number(systemConfig.elementsPerVessel) || 0;
+                      const flowUnit = systemConfig.flowUnit || 'gpm';
+                      
+                      // Get membrane area from the first stage
+                      const activeStages = systemConfig.stages || [];
+                      const firstStage = activeStages[0] || {};
+                      const membraneId = firstStage.membraneModel || systemConfig.membraneModel || 'espa2ld';
+                      const membranesList = membranes || [];
+                      const activeMembrane = membranesList.find(m => m.id === membraneId) || membranesList[0] || {};
+                      const membraneArea = Number(activeMembrane.area) || 400;
+                      
+                      const totalElements = vessels * elementsPerVessel;
+                      const totalArea_ft2 = totalElements * membraneArea;
+                      const totalArea_m2 = totalElements * membraneArea * 0.09290304;
+                      const permeate_gpm = permeateFlow * 4.402867;
+                      
+                      let calcFlux = 0;
+                      if (totalElements > 0) {
+                        if (flowUnit === 'gpm') {
+                          calcFlux = permeateFlow / (vessels * elementsPerVessel * 0.0556);
+                        } else {
+                          const permeate_m3h = permeateFlow * (flowUnit === 'm3/d' ? 1/24 : 1);
+                          calcFlux = (permeate_m3h * 1000) / totalArea_m2;
+                        }
+                      }
+                      
+                      return calcFlux > 0 ? calcFlux.toFixed(1) : '0.0';
+                    })()}
+                  </div>
+                  <span style={{ fontSize: '0.7rem', color: '#333' }}>
+                    {systemConfig.flowUnit === 'gpm' ? 'gfd' : 'lmh'}
+                  </span>
                 </div>
               </div>
               <div style={rowStyle}>
@@ -832,8 +858,8 @@
                     <th style={{ border: '1px solid #ccc' }}>Flux (gfd)</th>
                     <th style={{ border: '1px solid #ccc' }}>Highest flux (gfd)</th>
                     <th style={{ border: '1px solid #ccc' }}>
-                      Highest beta = <br/>
-                      Highest flux / Average flux
+                      Highest beta <br/>
+                  
                     </th>
                   </tr>
                 </thead>
