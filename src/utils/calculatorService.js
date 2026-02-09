@@ -67,8 +67,11 @@ export const M3H_TO_GPM = 4.402867;
     membraneAge = 0,
     fluxDeclinePerYear = 0,
     spIncreasePerYear = 0,
-    foulingFactor = 1
+    foulingFactor = 1,
+    fluxUnit: inputFluxUnit
   } = inputs;
+
+  const fluxUnit = (inputFluxUnit || (flowUnit === 'gpm' ? 'gfd' : 'lmh')).toLowerCase();
 
   const recoveryPct = Math.min(Math.max(Number(recovery) || 0, 1), 99);
   const recFrac = recoveryPct / 100;
@@ -137,15 +140,15 @@ export const M3H_TO_GPM = 4.402867;
   const effectiveAreaSqFt = totalAreaSqFt > 0 ? totalAreaSqFt : (totalElements * areaPerElement);
   
   // Flux Calculation Rule:
-  // gpm -> GFD = (gpm * 1440) / areaSqFt
-  // m3/h or m3/d -> LMH = (m3/h * 1000) / areaM2
   let avgFlux = 0;
   const totalAreaM2 = effectiveAreaSqFt * 0.09290304;
   const totalFlowGpm = totalFlowM3h * M3H_TO_GPM;
 
-  if (flowUnit === 'gpm') {
+  if (fluxUnit === 'gfd') {
+    // GFD = (gpm * 1440) / areaSqFt
     avgFlux = effectiveAreaSqFt > 0 ? (totalFlowGpm * 1440) / effectiveAreaSqFt : 0;
   } else {
+    // LMH = (m3/h * 1000) / areaM2
     avgFlux = totalAreaM2 > 0 ? (totalFlowM3h * 1000) / totalAreaM2 : 0;
   }
 
@@ -310,7 +313,7 @@ export const M3H_TO_GPM = 4.402867;
     const stageAreaSqFt = stageVessels * stageElements * stageMembrane.area;
     const stageAreaM2 = stageAreaSqFt * 0.09290304;
 
-    if (flowUnit === 'gpm') {
+    if (fluxUnit === 'gfd') {
       stageAvgFlux = stageAreaSqFt > 0 ? (stagePermeateFlowGpm * 1440) / stageAreaSqFt : 0;
     } else {
       stageAvgFlux = stageAreaM2 > 0 ? (stagePermeateFlowM3h * 1000) / stageAreaM2 : 0;
@@ -343,7 +346,7 @@ export const M3H_TO_GPM = 4.402867;
       highestFlux: stageHighestFlux.toFixed(1),
       highestBeta: stageHighestBetaValue.toFixed(2),
       unit: flowUnit,
-      fluxUnit: flowUnit === 'gpm' ? 'GFD' : 'LMH'
+      fluxUnit: fluxUnit.toUpperCase()
     });
 
     currentFeedFlowM3h = currentFeedFlowM3h - stagePermeateFlowM3h;
@@ -358,21 +361,23 @@ export const M3H_TO_GPM = 4.402867;
 
   const designWarnings = [];
   
-  if (systemHighestFlux > 20 && flowUnit === 'gpm') designWarnings.push('Design limits exceeded: Flux too high');
-  if (systemHighestFlux > 34 && flowUnit !== 'gpm') designWarnings.push('Design limits exceeded: Flux too high');
+  if (fluxUnit === 'gfd') {
+    if (systemHighestFlux > 20) designWarnings.push('Design limits exceeded: Flux too high');
+  } else {
+    if (systemHighestFlux > 34) designWarnings.push('Design limits exceeded: Flux too high');
+  }
+
   if (feedFlowPerVesselM3h > 4.5) designWarnings.push('Design limits exceeded: Feed flow per vessel too high');
   if (systemConcPressurePsi < 0) designWarnings.push('Design limits exceeded: Concentrate pressure is negative');
   if (!Number.isFinite(osmoticPressureFeed) || osmoticPressureFeed < 0) designWarnings.push('Design limits exceeded: Osmotic pressure invalid');
 
  
 
-  const fluxUnit = flowUnit === 'gpm' ? 'GFD' : 'LMH';
-
   return {
     results: {
       avgFlux: Number(avgFlux.toFixed(2)),
       calcFlux: avgFlux.toFixed(1),
-      fluxUnit,
+      fluxUnit: fluxUnit.toUpperCase(),
       highestFlux: Number(systemHighestFlux.toFixed(2)),
       feedFlowVessel: Number((feedFlowPerVesselM3h / unitFactor).toFixed(2)),
       concFlowVessel: Number((concFlowPerVesselM3h / unitFactor).toFixed(2)),
@@ -479,13 +484,35 @@ export const calculateIonPassage = (feedIons, systemData) => {
   const recoveryPercent = Math.min(Math.max(Number(config.recovery) || 15, 1), 99);
   const recovery = recoveryPercent / 100;
   const CF = 1 / (1 - recovery);
-
-  const vessels = Number(config.stage1Vessels) || 1; // default 1 vessel
-  const elementsPerVessel = Number(config.elementsPerVessel) || 7; // default 7 membranes/vessel
-
+  
   // Membrane area calculations
   const elementArea_ft2 = Number(membrane?.area) || 400;
   const elementArea_m2 = elementArea_ft2 * 0.09290304;
+
+  const stages = config.stages || [];
+  const pass1Stages = Number(config.pass1Stages) || 1;
+
+  let totalElements = 0;
+  let totalArea_ft2 = 0;
+
+  // Calculate total elements and area across all active stages
+  if (stages.length > 0) {
+    for (let i = 0; i < pass1Stages; i++) {
+      const stage = stages[i];
+      if (stage) {
+        const v = Number(stage.vessels) || 0;
+        const e = Number(stage.elementsPerVessel) || 0;
+        totalElements += v * e;
+        totalArea_ft2 += v * e * elementArea_ft2;
+      }
+    }
+  } else {
+    // Fallback to legacy
+    totalElements = (Number(config.stage1Vessels) || 1) * (Number(config.elementsPerVessel) || 7);
+    totalArea_ft2 = totalElements * elementArea_ft2;
+  }
+
+  const totalArea_m2 = totalArea_ft2 * 0.09290304;
 
   /* ---------- 2. HYDRAULIC BALANCE ---------- */
   // Convert permeate flow to m3/h for internal calculations
@@ -495,24 +522,20 @@ export const calculateIonPassage = (feedIons, systemData) => {
 
   /* ---------- 3. AVERAGE FLUX CALCULATION (UNIT & MEMBRANE AWARE) ---------- */
   let calcFlux = 0;
-  const totalElements = vessels * elementsPerVessel;
-  const totalArea_ft2 = totalElements * elementArea_ft2;
-  const totalArea_m2 = totalElements * elementArea_m2;
   
-  // Convert permeate flow to GPM for internal calculations
-  const permeate_gpm = permeate_m3h * M3H_TO_GPM;
+  // Get flux unit from config or default based on flow unit
+  const fluxUnit = (config.fluxUnit || (unit === 'gpm' ? 'gfd' : 'lmh')).toLowerCase();
 
-  if (totalElements > 0) {
-    if (unit === 'gpm') {
-      // Case 1: Permeate Flow Unit = gpm -> Flux unit: GFD
-      // Formula: Average Flux (gfd) = Permeate Flow (gpm) ÷ (No. of Vessels × Membranes per Vessel × 0.0556)
-      calcFlux = permeateInput / (vessels * elementsPerVessel * 0.0556);
+  if (totalArea_ft2 > 0) {
+    if (fluxUnit === 'gfd') {
+      // Case 1: Flux unit: GFD
+      // Formula: Average Flux (gfd) = (Permeate Flow (gpm) * 1440) ÷ Total Active Area (ft2)
+      const permeate_gpm = permeate_m3h * M3H_TO_GPM;
+      calcFlux = (permeate_gpm * 1440) / totalArea_ft2;
     } else {
-      // Case 2 & 3: Permeate Flow Unit = m³/h or m³/d -> Flux unit: LMH
-      // Convert m³/d to m³/h if needed
-      const permeate_m3h_for_flux = unit === 'm3/d' ? permeate_m3h : permeate_m3h;
+      // Case 2: Flux unit: LMH
       // Formula: Average Flux (LMH) = Permeate Flow (m³/h) × 1000 ÷ Total Active Area (m²)
-      calcFlux = (permeate_m3h_for_flux * 1000) / totalArea_m2;
+      calcFlux = (permeate_m3h * 1000) / totalArea_m2;
     }
   }
 
@@ -531,7 +554,7 @@ export const calculateIonPassage = (feedIons, systemData) => {
     elementArea_m2: elementArea_m2.toFixed(2),
     calcFlux: calcFlux.toFixed(1), 
     unit: unit,
-    fluxUnit: unit === 'gpm' ? 'GFD' : 'LMH'
+    fluxUnit: fluxUnit.toUpperCase()
   };
 };
 
