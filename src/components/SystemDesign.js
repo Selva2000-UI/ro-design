@@ -388,9 +388,8 @@ const SystemDesign = ({
         <div style={panelStyle}>
           <div style={headerStyle}>Train Information</div>
           <div style={rowStyle}><span>Feed pH</span> <input style={inputStyle} value={systemConfig.feedPh} onChange={e => handleInputChange('feedPh', e.target.value)} /></div>
-          <div style={rowStyle}><span>Permeate recovery %</span> <input style={inputStyle} value={systemConfig.recovery} onChange={e => handleInputChange('recovery', e.target.value)} /></div>
           <div style={rowStyle}>
-            <span>Permeate flow</span>
+            <span>Feed flow</span>
             <div style={{display:'flex', gap:'2px'}}>
               <select style={{fontSize:'0.7rem'}} value={systemConfig.flowUnit} onChange={e => handleFlowUnitChange(e.target.value)}>
                 <option value="gpm">gpm</option>
@@ -401,21 +400,22 @@ const SystemDesign = ({
                 <option value="m3/d">m3/d</option>
                 <option value="mld">mld</option>
               </select>
-              <input style={inputStyle} value={systemConfig.permeateFlow} onChange={e => handleInputChange('permeateFlow', e.target.value)} />
+              <input style={inputStyle} value={systemConfig.feedFlow} onChange={e => handleInputChange('feedFlow', e.target.value)} />
+            </div>
+          </div>
+          <div style={rowStyle}><span>Permeate recovery %</span> <input style={inputStyle} value={systemConfig.recovery} onChange={e => handleInputChange('recovery', e.target.value)} /></div>
+          <div style={rowStyle}>
+            <span title="Permeate flow = Feed flow * Recovery / 100">Permeate flow</span>
+            <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
+              <div style={{...inputStyle, background: '#eee'}}>{projection?.permeateFlow ?? '0.00'}</div>
+              <span style={{ fontSize: '0.7rem', color: '#333' }}>{systemConfig.flowUnit || 'gpm'}</span>
             </div>
           </div>
           <div style={rowStyle}>
             <span title={`Flux Calculation Logic:\n\n🔹 CASE 1: PERMEATE FLOW IN GPM → FLUX IN GFD\nFormula: Average Flux (GFD) = Permeate Flow (gpm) / (No. of Vessels × Nm × 0.0556)\n(Where 0.0556 = 400 ft² / 1440 min/day)\n\n🔹 CASE 2: PERMEATE FLOW IN m³/h → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/h) / (No. of Vessels × Nm × 0.0372)\n(Where 0.0372 = 400 ft² × 0.092903 / 1000)\n\n🔹 CASE 3: PERMEATE FLOW IN m³/d → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/d) / (No. of Vessels × Nm × 0.893)\n(Where 0.893 = 0.0372 × 24)\n\n⚠️ IMPORTANT RULES:\n• Use only one formula based on permeate flow unit\n• Do not mix GFD and LMH\n• Constants are valid only for 400 ft² membranes\n• If membrane area changes, constant must be recalculated`}>Average flux (?)</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
-              <div style={{...inputStyle, background: '#eee'}}>{projection?.calcFluxDisplay || '0.0'}</div>
+              <div style={{...inputStyle, background: '#eee'}}>{projection?.fluxGFD || projection?.fluxLMH || projection?.calcFluxDisplay || '0.0'}</div>
               <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.displayFluxUnit || fluxUnit}</span>
-            </div>
-          </div>
-          <div style={rowStyle}>
-            <span>Feed flow</span>
-            <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
-              <div style={{...inputStyle, background: '#eee'}}>{projection?.feedFlow ?? '0.00'}</div>
-              <span style={{ fontSize: '0.7rem', color: '#333' }}>{systemConfig.flowUnit || 'gpm'}</span>
             </div>
           </div>
           <div style={rowStyle}>

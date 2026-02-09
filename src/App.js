@@ -175,16 +175,19 @@ const App = () => {
     const unitFactor = FLOW_TO_M3H[unit] ?? 1;
 
     const trains = Math.max(Number(systemConfig.numTrains) || 1, 1);
-    const trainPermeateInput = Number(systemConfig.permeateFlow) || 0;
-    const perTrainProduct_m3h = trainPermeateInput * unitFactor;
-    const totalProduct_m3h = perTrainProduct_m3h * trains;
-
-    // Clamp recovery to avoid Infinity
+    
+    // User gives Feed Flow and Recovery %
+    const trainFeedInput = Number(systemConfig.feedFlow) || 0;
+    const perTrainFeed_m3h = trainFeedInput * unitFactor;
+    
     const recoveryPct = Math.min(Math.max(Number(systemConfig.recovery) || 15, 1), 99);
     const recovery = recoveryPct / 100;
 
-    // Legacy train mass balance (as in screenshot 2)
-    const perTrainFeed_m3h = perTrainProduct_m3h / recovery;
+    // Calculate Permeate Flow: Qp = Qf * R/100
+    const perTrainProduct_m3h = perTrainFeed_m3h * recovery;
+    const trainPermeateInput = perTrainProduct_m3h / unitFactor;
+    const totalProduct_m3h = perTrainProduct_m3h * trains;
+
     const perTrainConc_m3h = perTrainFeed_m3h - perTrainProduct_m3h;
 
     // Calculate total elements and area across all active stages
