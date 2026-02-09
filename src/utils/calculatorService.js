@@ -127,18 +127,26 @@ export const calculateSystem = (inputs) => {
   const effectiveAreaSqFt = Math.max(totalAreaSqFt, 1);
   const totalAreaM2 = effectiveAreaSqFt * 0.092903;
   
-  // Flux Calculation (Internal LMH and GFD)
-  const avgFluxLMH = (totalFlowM3h * 1000) / totalAreaM2;
-  const avgFluxGFD = avgFluxLMH / 1.699;
-
-  // Determine display flux based on unit
+  // Flux Calculation (Internal LMH)
+  const avgFluxLMH_calc = (totalFlowM3h * 1000) / totalAreaM2;
+  const avgFluxGFD_calc = avgFluxLMH_calc * 0.5886; // 1 LMH = 0.5886 GFD
   const isGpm = flowUnit === 'gpm';
-  const displayFlux = isGpm ? avgFluxGFD : avgFluxLMH;
-  const fluxUnit = isGpm ? 'GFD' : 'LMH';
+
+  let displayFlux = 0;
+  let fluxUnit = 'GFD';
+
+  if (flowUnit === 'gpm') {
+    displayFlux = avgFluxGFD_calc;
+    fluxUnit = 'GFD';
+  } else {
+    displayFlux = avgFluxLMH_calc;
+    fluxUnit = 'LMH';
+  }
 
   // Beta Factor (Concentration Polarization)
   const beta = Math.exp(0.7 * recFrac);
   const highestFlux = displayFlux * beta;
+  const highestBeta = beta; // As per user: Highest Flux / Average Flux = Beta
 
   const membraneRejection = Math.min(Math.max(Number(activeMembrane?.rejection) || 99.7, 80), 99.9);
   const defaultMono = Math.max(Math.min((Number(activeMembrane?.monoRejection) || (membraneRejection - 6)), 99.9), 80);
@@ -199,7 +207,7 @@ export const calculateSystem = (inputs) => {
   const awGfdPsi = Number(activeMembrane.aValue) || 0.15;
   const awLmhBar = awGfdPsi * 24.64;
   
-  const systemTMPBar = (avgFluxLMH / awLmhBar) + piAvgBar;
+  const systemTMPBar = (avgFluxLMH_calc / awLmhBar) + piAvgBar;
   const systemDeltaPBar = 1.0; // Clean pressure drop ~15 psi
   
   const feedPressureBar = systemTMPBar + (systemDeltaPBar / 2);
@@ -263,15 +271,34 @@ export const calculateSystem = (inputs) => {
 
     if (stageVessels === 0 || stageElements === 0) return;
 
-    const perVesselFeedFlow = (currentFeedFlowM3h / stageVessels) / unitFactor;
-    const perVesselConcFlow = (concentrateFlowTotalM3h / lastStageVessels) / unitFactor;
     const stagePermeateFlowM3h = totalFlowM3h / activeStages.length;
+    const stageConcFlowTotalM3h = currentFeedFlowM3h - stagePermeateFlowM3h;
     
-    const stageAreaSqFt = stageVessels * stageElements * stageMembrane.area;
+    const perVesselFeedFlow = (currentFeedFlowM3h / stageVessels) / unitFactor;
+    const perVesselConcFlow = (stageConcFlowTotalM3h / stageVessels) / unitFactor;
+    
+    const stageAreaSqFt = stageVessels * stageElements * (Number(stageMembrane.area) || 400);
     const stageAreaM2 = stageAreaSqFt * 0.092903;
+    const stageAreaFactor = Number(stageMembrane.area) / 400;
 
-    const stageAvgFluxLMH = (stagePermeateFlowM3h * 1000) / stageAreaM2;
-    const stageAvgFluxValue = isGpm ? stageAvgFluxLMH / 1.699 : stageAvgFluxLMH;
+    const stageGpmConst = 0.0556 * stageAreaFactor;
+    const stageM3hConst = 0.0372 * stageAreaFactor;
+    const stageM3dConst = 0.893 * stageAreaFactor;
+
+    let stageAvgFluxValue = 0;
+    const stagePermeateFlow = totalFlow / activeStages.length;
+
+    if (flowUnit === 'gpm') {
+      stageAvgFluxValue = (stagePermeateFlow) / (stageVessels * stageElements * stageGpmConst);
+    } else if (flowUnit === 'm3/h' || flowUnit === 'm3h') {
+      stageAvgFluxValue = (stagePermeateFlow) / (stageVessels * stageElements * stageM3hConst);
+    } else if (flowUnit === 'm3/d' || flowUnit === 'm3d') {
+      stageAvgFluxValue = (stagePermeateFlow) / (stageVessels * stageElements * stageM3dConst);
+    } else {
+      const stageAvgFluxLMH = (stagePermeateFlowM3h * 1000) / stageAreaM2;
+      stageAvgFluxValue = isGpm ? stageAvgFluxLMH / 1.699 : stageAvgFluxLMH;
+    }
+
     const stageHighestFlux = stageAvgFluxValue * beta;
 
     const numStages = activeStages.length;
@@ -307,18 +334,18 @@ export const calculateSystem = (inputs) => {
   return {
     results: {
       avgFlux: Number(displayFlux.toFixed(1)),
-      avgFluxGFD: Number(avgFluxGFD.toFixed(1)),
-      avgFluxLMH: Number(avgFluxLMH.toFixed(1)),
+      avgFluxGFD: Number(avgFluxGFD_calc.toFixed(1)),
+      avgFluxLMH: Number(avgFluxLMH_calc.toFixed(1)),
       calcFlux: displayFlux.toFixed(1),
       fluxUnit,
-      highestFlux: Number(systemHighestFlux.toFixed(1)),
+      highestFlux: Number(highestFlux.toFixed(1)),
+      highestBeta: Number(highestBeta.toFixed(3)),
       feedFlowVessel: Number((feedFlowPerVesselM3h / unitFactor).toFixed(2)),
       concFlowVessel: Number((concentrateFlowTotalM3h / lastStageVessels / unitFactor).toFixed(2)),
       feedPressure: displayFeedP.toFixed(1),
       concPressure: displayConcP.toFixed(1),
       osmoticPressure: displayOsmotic.toFixed(1),
       pressureUnit,
-      highestBeta: beta.toFixed(3),
       lsi: Number(lsi.toFixed(2)),
       permTDS: Number(permeateTDS.toFixed(2)),
       concTDS: Number(concentrateTDS.toFixed(2)),

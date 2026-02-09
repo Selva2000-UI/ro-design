@@ -265,9 +265,9 @@ const SystemDesign = ({
   };
 
   const flowUnitLabel = systemConfig.flowUnit || 'gpm';
-  const isGpm = !['m3/h', 'm3/d', 'mld'].includes(flowUnitLabel);
+  const isGpm = flowUnitLabel === 'gpm';
   const pUnit = isGpm ? 'psi' : 'bar';
-  const fUnit = isGpm ? 'gpm' : 'm3/h';
+  const fUnit = flowUnitLabel === 'm3/d' ? 'm³/d' : (isGpm ? 'gpm' : 'm³/h');
   const fluxUnit = isGpm ? 'gfd' : 'lmh';
   const BAR_TO_PSI = 14.5038;
 
@@ -405,7 +405,7 @@ const SystemDesign = ({
             </div>
           </div>
           <div style={rowStyle}>
-            <span title={`Flux formula uses constant: ${isGpm ? '0.0556' : (flowUnitLabel === 'm3/h' ? '0.0372' : '0.893')}`}>Average flux (?)</span>
+            <span title={`Flux Calculation Logic:\n\n🔹 CASE 1: PERMEATE FLOW IN GPM → FLUX IN GFD\nFormula: Average Flux (GFD) = Permeate Flow (gpm) / (No. of Vessels × Nm × 0.0556)\n(Where 0.0556 = 400 ft² / 1440 min/day)\n\n🔹 CASE 2: PERMEATE FLOW IN m³/h → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/h) / (No. of Vessels × Nm × 0.0372)\n(Where 0.0372 = 400 ft² × 0.092903 / 1000)\n\n🔹 CASE 3: PERMEATE FLOW IN m³/d → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/d) / (No. of Vessels × Nm × 0.893)\n(Where 0.893 = 0.0372 × 24)\n\n⚠️ IMPORTANT RULES:\n• Use only one formula based on permeate flow unit\n• Do not mix GFD and LMH\n• Constants are valid only for 400 ft² membranes\n• If membrane area changes, constant must be recalculated`}>Average flux (?)</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
               <div style={{...inputStyle, background: '#eee'}}>{projection?.calcFluxDisplay || '0.0'}</div>
               <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.displayFluxUnit || fluxUnit}</span>
@@ -940,8 +940,8 @@ const SystemDesign = ({
                   <th style={{ border: '1px solid #ccc' }}>Vessels</th>
                   <th style={{ border: '1px solid #ccc' }}>Feed ({pUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Conc ({pUnit})</th>
-                  <th style={{ border: '1px solid #ccc' }}>Feed ({fUnit})</th>
-                  <th style={{ border: '1px solid #ccc' }}>Conc ({fUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Feed per vessel <br/> ({fUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Conc per vessel <br/> ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Flux ({fluxUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Highest flux ({fluxUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>

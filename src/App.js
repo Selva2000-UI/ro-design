@@ -232,7 +232,7 @@ const App = () => {
     const activeStages = systemConfig.stages?.slice(0, pass1Stages) || [];
     const totalStageVessels = activeStages.reduce((sum, stage) => sum + (Number(stage?.vessels) || 0), 0);
     const calcResults = calculateSystem({
-      totalFlow: perTrainProduct_m3h,
+      totalFlow: trainPermeateInput,
       recovery: recoveryPct,
       vessels: totalStageVessels || Number(systemConfig.stage1Vessels) || 0,
       elementsPerVessel: Number(systemConfig.elementsPerVessel) || 0,
@@ -269,16 +269,25 @@ const App = () => {
     const stageResults = calcResults?.stageResults || [];
     
     // Calculate flux - always calculate, but only display if designCalculated is true
-    // Formula: Average Flux (gfd) = Permeate flow / (No. of Vessels × Membranes/Vessel × 0.0556)
-    let rawFluxGFD = calcResults?.results?.avgFlux ?? 0;
-    let rawFluxLMH = rawFluxGFD * 1.699; // 1 GFD = 1.699 LMH
+    // Formula: Average Flux (gfd) = Permeate flow / (No. of Vessels × Membranes/Vessel × Constant)
+    
+    const activeMemArea = Number(activeMem?.area) || 400;
+    const currentGpmConst = 0.0556 * (activeMemArea / 400);
+    const currentM3hConst = 0.0372 * (activeMemArea / 400);
+    const currentM3dConst = 0.893 * (activeMemArea / 400);
+
+    let rawFluxGFD = calcResults?.results?.avgFluxGFD ?? 0;
+    let rawFluxLMH = calcResults?.results?.avgFluxLMH ?? 0;
     
     if (!calcResults?.results) {
-        if (totalElements > 0 && perTrainProduct_m3h > 0) {
-            rawFluxGFD = (perTrainProduct_m3h * 4.402867) / (totalElements * 0.0556);
-        }
-        if (totalArea_m2 > 0 && perTrainProduct_m3h > 0) {
-            rawFluxLMH = (perTrainProduct_m3h * 1000) / totalArea_m2;
+        const permeateFlowGpm = perTrainProduct_m3h * 4.402867;
+        if (totalElements > 0) {
+            rawFluxGFD = permeateFlowGpm / (totalElements * currentGpmConst);
+            if (unit === 'm3/d') {
+                rawFluxLMH = (perTrainProduct_m3h * 24) / (totalElements * currentM3dConst);
+            } else {
+                rawFluxLMH = perTrainProduct_m3h / (totalElements * currentM3hConst);
+            }
         }
     }
     
@@ -465,7 +474,7 @@ const App = () => {
     const permeateFlowGpm = perTrainProduct_m3h * 4.402867;
     const avgFlux =
     totalElements > 0
-      ? permeateFlowGpm / (totalElements * 0.0556)
+      ? permeateFlowGpm / (totalElements * currentGpmConst)
       : 0;
 
     // Pump model expects a flux-like term; use GFD computed above.
@@ -546,6 +555,9 @@ const App = () => {
       // Core KPIs - flux formatting matches Hydranautics (0 with unit-based decimals when not calculated)
       fluxGFD: formatFlux(fluxGFD, systemConfig.designCalculated, unit),
       fluxLMH: formatFlux(fluxLMH, systemConfig.designCalculated, unit),
+      calcFluxDisplay: calcResults?.results?.calcFlux ?? '0.0',
+      displayFluxUnit: calcResults?.results?.fluxUnit ?? (unit === 'gpm' ? 'gfd' : 'lmh'),
+      highestBeta: calcResults?.results?.highestBeta ?? '0.000',
       pumpPressure: pumpPressure.toFixed(1),
       monthlyEnergyCost: monthlyEnergy.toFixed(2),
 
@@ -560,9 +572,9 @@ const App = () => {
       calcFeedPressurePsi: calcResults?.results ? Number(calcResults.results.feedPressure).toFixed(1) : '0.0',
       calcConcPressurePsi: calcResults?.results ? Number(calcResults.results.concPressure).toFixed(1) : '0.0',
 
-      calcFeedFlowGpm: calcResults?.results ? (Number(calcResults.results.feedFlowVessel) * M3H_TO_GPM).toFixed(2) : '0.00',
-      calcConcFlowGpm: calcResults?.results ? (Number(calcResults.results.concFlowVessel) * M3H_TO_GPM).toFixed(2) : '0.00',
-      calcFluxGfd: calcResults?.results?.calcFluxGfd ?? '0.0',
+      calcFeedFlowGpm: calcResults?.results?.feedFlowVessel ?? '0.00',
+      calcConcFlowGpm: calcResults?.results?.concFlowVessel ?? '0.00',
+      calcFluxGfd: calcResults?.results?.avgFluxGFD ?? '0.0',
       calcHighestFluxGfd: calcResults?.results?.highestFlux ?? '0.0',
       calcHighestBeta: calcResults?.results?.highestBeta ?? '0.00',
       customFluxWorkflow: calcResults?.customFluxWorkflow,
@@ -637,6 +649,7 @@ const App = () => {
       } catch (e) { console.error("Recent projects restore failed", e); }
     }
     setIsLoaded(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

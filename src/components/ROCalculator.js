@@ -22,8 +22,8 @@ const ROCalculator = () => {
     const osmoticPressure = feedTDS * 0.0115; // psi
     
     // Flux calculation
-    const totalMembraneArea = membraneArea * numElements;
-    const fluxGFD = permeateFlow / (totalMembraneArea * 0.0556);
+    const currentGpmConst = 0.0556 * (membraneArea / 400);
+    const fluxGFD = permeateFlow / (numElements * currentGpmConst);
     
     // Concentrate pressure (assume pressure drop)
     const pressureDrop = 15; // psi (typical for RO systems)
@@ -289,7 +289,8 @@ const ROCalculator = () => {
           <li>Feed Flow = Permeate Flow ÷ (Recovery ÷ 100)</li>
           <li>Concentrate Flow = Feed Flow - Permeate Flow</li>
           <li>Osmotic Pressure = Feed TDS × 0.0115 psi</li>
-          <li>Flux = Permeate Flow ÷ (Total Membrane Area × 0.0556)</li>
+          <li>Flux = Permeate Flow ÷ (Number of Elements × Constant)</li>
+          <li>Constant (for 400 ft² element) = 0.0556</li>
           <li>Concentrate Pressure = Feed Pressure - Pressure Drop (15 psi assumed)</li>
           <li>Permeate Pressure = 0 psi (atmospheric)</li>
           <li>Highest Flux = Average Flux × 1.1 (10% higher)</li>
