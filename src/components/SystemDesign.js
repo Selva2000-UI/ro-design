@@ -222,21 +222,14 @@ const SystemDesign = ({
   };
 
   // Get decimal precision for flow unit (matching Hydranautics)
-  const getFlowDecimals = (flowUnit) => {
-    if (['gpm', 'm3/h'].includes(flowUnit)) return 2;
-    if (['gpd', 'm3/d'].includes(flowUnit)) return 1;
-    if (['mgd', 'migd', 'mld'].includes(flowUnit)) return 3;
-    return 2; // default
-  };
+    // const getFlowDecimals = (flowUnit) => {
+    //   if (['gpm', 'm3/h'].includes(flowUnit)) return 2;
+    //   if (['gpd', 'm3/d'].includes(flowUnit)) return 1;
+    //   if (['mgd', 'migd', 'mld'].includes(flowUnit)) return 3;
+    //   return 2; // default
+    // };
 
   // Format flux to match flow unit decimal precision when value is 0
-  const formatFluxDisplay = (fluxValue, flowUnit) => {
-    if (!fluxValue || fluxValue === '0' || fluxValue === '0.0' || fluxValue === '0.00' || fluxValue === '0.000') {
-      const decimals = getFlowDecimals(flowUnit);
-      return '0.' + '0'.repeat(decimals); // e.g., '0.00', '0.0', '0.000'
-    }
-    return fluxValue; // Use the value as-is when calculated
-  };
 
   const panelStyle = { background: '#c2d1df', border: '1px solid #8ba4bb', padding: '10px', borderRadius: '2px' };
   const headerStyle = { background: '#004a80', color: 'white', padding: '4px 8px', fontWeight: 'bold', fontSize: '0.8rem', marginBottom: '10px' };
@@ -272,6 +265,12 @@ const SystemDesign = ({
   };
 
   const flowUnitLabel = systemConfig.flowUnit || 'gpm';
+  const isGpm = !['m3/h', 'm3/d', 'mld'].includes(flowUnitLabel);
+  const pUnit = isGpm ? 'psi' : 'bar';
+  const fUnit = isGpm ? 'gpm' : 'm3/h';
+  const fluxUnit = isGpm ? 'gfd' : 'lmh';
+  const BAR_TO_PSI = 14.5038;
+
   const feedTds = getFeedTds();
   const rawFeedPh = Number(waterData?.ph) || 7.0;
   const treatedFeedPh = Number(systemConfig.feedPh) || rawFeedPh;
@@ -332,7 +331,6 @@ const SystemDesign = ({
 
 
 
-  const inputGroupStyle = { width: '10%', display: 'flex', flexDirection: 'column', gap: '5px' };
   const labelStyle = { fontSize: '0.75rem', fontWeight: 'bold', color: '#555' };
   const miniActionBtn = {
     background: 'linear-gradient(#f4f7f9, #dfe6ed)',
@@ -407,10 +405,10 @@ const SystemDesign = ({
             </div>
           </div>
           <div style={rowStyle}>
-            <span>Average flux</span>
+            <span title={`Flux formula uses constant: ${isGpm ? '0.0556' : (flowUnitLabel === 'm3/h' ? '0.0372' : '0.893')}`}>Average flux (?)</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
-              <div style={{...inputStyle, background: '#eee'}}>{projection?.calcFluxGfd || '0.0'}</div>
-              <span style={{ fontSize: '0.7rem', color: '#333' }}>gfd</span>
+              <div style={{...inputStyle, background: '#eee'}}>{projection?.calcFluxDisplay || '0.0'}</div>
+              <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.displayFluxUnit || fluxUnit}</span>
             </div>
           </div>
           <div style={rowStyle}>
@@ -940,51 +938,52 @@ const SystemDesign = ({
                 <tr>
                   <th style={{ border: '1px solid #ccc' }}>Array</th>
                   <th style={{ border: '1px solid #ccc' }}>Vessels</th>
-                  <th style={{ border: '1px solid #ccc' }}>Feed (psi)</th>
-                  <th style={{ border: '1px solid #ccc' }}>Conc (psi)</th>
-                  <th style={{ border: '1px solid #ccc' }}>Feed (gpm)</th>
-                  <th style={{ border: '1px solid #ccc' }}>Conc (gpm)</th>
-                  <th style={{ border: '1px solid #ccc' }}>Flux (gfd)</th>
-                  <th style={{ border: '1px solid #ccc' }}>Highest flux (gfd)</th>
+                  <th style={{ border: '1px solid #ccc' }}>Feed ({pUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Conc ({pUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Feed ({fUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Conc ({fUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Flux ({fluxUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Highest flux ({fluxUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>
-                    Highest beta = <br/>
-                    Highest flux / Average flux
+                    Highest beta <br/>
+                    
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {(projection.stageResults && projection.stageResults.length > 0 ? projection.stageResults : [{
-                  index: 1,
-                  vessels: systemConfig.stage1Vessels,
-                  feedPressurePsi: projection.calcFeedPressurePsi ?? '0.0',
-                  concPressurePsi: projection.calcConcPressurePsi ?? '0.0',
-                  feedFlowGpm: projection.calcFeedFlowGpm ?? '0.00',
-                  concFlowGpm: projection.calcConcFlowGpm ?? '0.00',
-                  fluxGfd: projection.calcFluxGfd ?? '0.0',
-                  highestFluxGfd: projection.calcHighestFluxGfd ?? '0.0',
-                  highestBeta: projection.calcHighestBeta ?? '0.00'
-                }]).map((row) => (
+                {(projection.stageResults && projection.stageResults.length > 0 ? projection.stageResults : []).map((row) => (
                   <tr key={`stage-${row.index}`}>
                     <td style={{ border: '1px solid #ccc' }}>1 - {row.index}</td>
                     <td style={{ border: '1px solid #ccc' }}>{row.vessels}</td>
-                    <td style={{ border: '1px solid #ccc', background: Number(row.feedPressurePsi) < 0 ? '#f8d7da' : 'transparent' }}>{row.feedPressurePsi}</td>
-                    <td style={{ border: '1px solid #ccc', background: Number(row.concPressurePsi) < 0 ? '#f8d7da' : 'transparent' }}>{row.concPressurePsi}</td>
-                    <td style={{ border: '1px solid #ccc', background: Number(row.feedFlowM3h ?? row.feedFlowDisplay) > 4.5 ? '#f8d7da' : 'transparent' }}>{row.feedFlowGpm}</td>
-                    <td style={{ border: '1px solid #ccc' }}>{row.concFlowGpm}</td>
-                    <td style={{ border: '1px solid #ccc' }}>{row.fluxGfd}</td>
-                    <td style={{ border: '1px solid #ccc', background: Number(row.highestFluxGfd) > 20 ? '#f8d7da' : 'transparent' }}>{row.highestFluxGfd}</td>
+                    <td style={{ border: '1px solid #ccc', background: Number(row.feedPressure) < 0 ? '#f8d7da' : 'transparent' }}>
+                      {row.feedPressure}
+                    </td>
+                    <td style={{ border: '1px solid #ccc', background: Number(row.concPressure) < 0 ? '#f8d7da' : 'transparent' }}>
+                      {row.concPressure}
+                    </td>
+                    <td style={{ border: '1px solid #ccc' }}>
+                      {row.feedFlow}
+                    </td>
+                    <td style={{ border: '1px solid #ccc' }}>{row.concFlow}</td>
+                    <td style={{ border: '1px solid #ccc' }}>{row.flux}</td>
+                    <td style={{ border: '1px solid #ccc', background: Number(row.highestFlux) > (isGpm ? 20 : 34) ? '#f8d7da' : 'transparent' }}>
+                      {row.highestFlux}
+                    </td>
                     <td style={{ border: '1px solid #ccc' }}>{row.highestBeta}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div style={{ marginTop: '8px', fontSize: '0.65rem', color: '#555', fontStyle: 'italic', padding: '0 4px' }}>
-              Conc (gpm) = Concentrate flow per vessel, calculated as Total concentrate flow ÷ number of vessels in the selected stage (number of vessels depends on membrane type or user selection)
+            <div style={{ marginTop: '10px', padding: '8px', background: 'white', borderTop: '1px solid #ccc', fontSize: '0.8rem', fontWeight: 'bold', color: '#004a80', display: 'flex', gap: '20px' }}>
+              <div>Feed Pressure is {projection.results?.feedPressure ?? '0.0'} ({pUnit})</div>
+              <div>Permeate Pressure is 0.0 ({pUnit})</div>
+              <div>Osmotic {projection.results?.osmoticPressure ?? '0.0'} ({pUnit})</div>
             </div>
           </div>
 
           <div style={{ marginTop: '12px', background: 'white', padding: '8px', border: '1px solid #c2d1df' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Permeate Concentration (mg/L)</div>
+            <div style={{ fontSize: '0.65rem', color: '#666', marginBottom: '8px' }}>Formula: Cp = Cf × (1 - Rejection)</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
               <div>Ca: {projection.permeateConcentration?.ca ?? '0.000'}</div>
               <div>Mg: {projection.permeateConcentration?.mg ?? '0.000'}</div>
@@ -1009,6 +1008,9 @@ const SystemDesign = ({
 
           <div style={{ marginTop: '10px', background: 'white', padding: '8px', border: '1px solid #c2d1df' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Concentrate Saturations and Parameters</div>
+            <div style={{ fontSize: '0.65rem', color: '#666', marginBottom: '8px' }}>
+              Formula: Cc = Cf × [1 - R × (1 - Rej)] / (1 - R) | π(bar) = 0.00076 × TDS(mg/L) | π(psi) = 0.011 × TDS(mg/L)
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
               <div>CaSO4: {projection.concentrateSaturation?.caSo4 ?? '0.0'}%</div>
               <div>BaSO4: {projection.concentrateSaturation?.baSo4 ?? '0.0'}%</div>
@@ -1016,15 +1018,12 @@ const SystemDesign = ({
               <div>SiO2: {projection.concentrateSaturation?.sio2 ?? '0.0'}%</div>
               <div>Ca3(PO4)2: {projection.concentrateSaturation?.ca3po42 ?? '0.00'}%</div>
               <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.0'}%</div>
-              <div>Osmotic: {projection.concentrateParameters?.osmoticPressure ?? '0.0'} bar</div>
               <div>CCPP: {projection.concentrateParameters?.ccpp ?? '0.0'} mg/L</div>
               <div>Langelier: {projection.concentrateParameters?.langelier ?? '0.00'}</div>
               <div>pH: {projection.concentrateParameters?.ph ?? '0.0'}</div>
               <div>TDS: {projection.concentrateParameters?.tds ?? '0.0'} mg/L</div>
+              <div>Osmotic: {projection.results?.osmoticPressure ?? '0.0'} ({pUnit})</div>
             </div>
-            {/* <div style={{ marginTop: '6px', fontSize: '0.65rem', color: '#555', fontStyle: 'italic' }}>
-                  concTds = TDSf / (1 - R), where R = Recovery (%) / 100
-                </div> */}
           </div>
 
           {projection.designWarnings?.length > 0 && (

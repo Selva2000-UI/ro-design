@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import WaterAnalysis from './components/WaterAnalysis';
 import PreTreatment from './components/PreTreatment';
 import SystemDesign from './components/SystemDesign';
@@ -15,7 +15,7 @@ const App = () => {
   const [isGuidelineOpen, setIsGuidelineOpen] = useState(false);
   const fileInputRef = useRef(null);
 
-  const FLOW_TO_M3H = {
+  const FLOW_TO_M3H = useMemo(() => ({
     gpm: 0.2271,
     gpd: 0.0001577,
     mgd: 157.725,
@@ -23,9 +23,9 @@ const App = () => {
     'm3/h': 1,
     'm3/d': 1 / 24,
     mld: 41.667
-  };
+  }), []);
 
-  const DEFAULT_SYSTEM_CONFIG = {
+  const DEFAULT_SYSTEM_CONFIG = useMemo(() => ({
     // Inputs (follow IMSDesign layout: System-level total + trains; Train values are calculated)
     feedPh: 7.0,
     recovery: 0,
@@ -68,7 +68,7 @@ const App = () => {
 
     // Economics
     energyCostPerKwh: 0.12
-  };
+  }), []);
 
   // --- 1. STATE MANAGEMENT ---
   const [snapshots, setSnapshots] = useState([]); 
@@ -227,7 +227,6 @@ const App = () => {
 
     const perTrainProduct_gpd = perTrainProduct_m3h * M3H_TO_GPD;
     const M3H_TO_GPM = 4.402867;
-    const BAR_TO_PSI = 14.5038;
 
     const pass1Stages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);
     const activeStages = systemConfig.stages?.slice(0, pass1Stages) || [];
@@ -578,10 +577,10 @@ const App = () => {
       concentrateParameters,
       permeateParameters
     });
-  }, [waterData, systemConfig, membranes]);
+  }, [waterData, systemConfig, membranes, FLOW_TO_M3H]);
 
   // --- 3. PERSISTENCE ---
-  const updateRecentProjects = (dataToSave) => {
+  const updateRecentProjects = useCallback((dataToSave) => {
     const entry = {
       id: dataToSave?.waterData?.projectId || createProjectId(),
       name: dataToSave?.waterData?.projectName || 'Untitled',
@@ -603,7 +602,7 @@ const App = () => {
     const next = [entry, ...filtered].slice(0, 10);
     setRecentProjects(next);
     localStorage.setItem('ro_pro_recent_projects', JSON.stringify(next));
-  };
+  }, []);
 
   useEffect(() => {
     const saved = localStorage.getItem('ro_pro_v3_master_final');
@@ -646,7 +645,7 @@ const App = () => {
       localStorage.setItem('ro_pro_v3_master_final', JSON.stringify(dataToSave));
       updateRecentProjects(dataToSave);
     }
-  }, [waterData, systemConfig, membranes, snapshots, projectNotes, pretreatment, postTreatment, isLoaded]);
+  }, [waterData, systemConfig, membranes, snapshots, projectNotes, pretreatment, postTreatment, isLoaded, updateRecentProjects, DEFAULT_SYSTEM_CONFIG]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -657,7 +656,7 @@ const App = () => {
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [waterData, systemConfig, membranes, snapshots, projectNotes, pretreatment, postTreatment, isLoaded]);
+  }, [waterData, systemConfig, membranes, snapshots, projectNotes, pretreatment, postTreatment, isLoaded, updateRecentProjects, DEFAULT_SYSTEM_CONFIG]);
 
   // --- 4. ACTION HANDLERS ---
   const takeSnapshot = () => {
@@ -1255,7 +1254,7 @@ const App = () => {
         designCalculated: false
       }));
     }
-  }, [activeTab]);
+  }, [activeTab, DEFAULT_SYSTEM_CONFIG.stages]);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f4f7f9', display: 'flex', flexDirection: 'column' }}>
