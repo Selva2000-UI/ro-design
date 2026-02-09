@@ -851,12 +851,25 @@
                   <tr>
                     <th style={{ border: '1px solid #ccc' }}>Array</th>
                     <th style={{ border: '1px solid #ccc' }}>Vessels</th>
-                    <th style={{ border: '1px solid #ccc' }}>Feed (psi)</th>
-                    <th style={{ border: '1px solid #ccc' }}>Conc (psi)</th>
-                    <th style={{ border: '1px solid #ccc' }}>Feed (gpm)</th>
-                    <th style={{ border: '1px solid #ccc' }}>Conc (gpm)</th>
-                    <th style={{ border: '1px solid #ccc' }}>Flux (gfd)</th>
-                    <th style={{ border: '1px solid #ccc' }}>Highest flux (gfd)</th>
+                    {systemConfig.flowUnit === 'gpm' ? (
+                      <>
+                        <th style={{ border: '1px solid #ccc' }}>Feed (psi)</th>
+                        <th style={{ border: '1px solid #ccc' }}>Conc (psi)</th>
+                        <th style={{ border: '1px solid #ccc' }}>Feed (gpm)</th>
+                        <th style={{ border: '1px solid #ccc' }}>Conc (gpm)</th>
+                        <th style={{ border: '1px solid #ccc' }}>Flux (gfd)</th>
+                        <th style={{ border: '1px solid #ccc' }}>Highest flux (gfd)</th>
+                      </>
+                    ) : (
+                      <>
+                        <th style={{ border: '1px solid #ccc' }}>Feed (bar)</th>
+                        <th style={{ border: '1px solid #ccc' }}>Conc (bar)</th>
+                        <th style={{ border: '1px solid #ccc' }}>Feed (m³/h)</th>
+                        <th style={{ border: '1px solid #ccc' }}>Conc (m³/h)</th>
+                        <th style={{ border: '1px solid #ccc' }}>Flux (lmh)</th>
+                        <th style={{ border: '1px solid #ccc' }}>Highest flux (lmh)</th>
+                      </>
+                    )}
                     <th style={{ border: '1px solid #ccc' }}>
                       Highest beta <br/>
                   
@@ -878,19 +891,55 @@
                     <tr key={`stage-${row.index}`}>
                       <td style={{ border: '1px solid #ccc' }}>1 - {row.index}</td>
                       <td style={{ border: '1px solid #ccc' }}>{row.vessels}</td>
-                      <td style={{ border: '1px solid #ccc', background: Number(row.feedPressurePsi) < 0 ? '#f8d7da' : 'transparent' }}>{row.feedPressurePsi}</td>
-                      <td style={{ border: '1px solid #ccc', background: Number(row.concPressurePsi) < 0 ? '#f8d7da' : 'transparent' }}>{row.concPressurePsi}</td>
-                      <td style={{ border: '1px solid #ccc', background: Number(row.feedFlowM3h ?? row.feedFlowDisplay) > 4.5 ? '#f8d7da' : 'transparent' }}>{row.feedFlowGpm}</td>
-                      <td style={{ border: '1px solid #ccc' }}>{row.concFlowGpm}</td>
-                      <td style={{ border: '1px solid #ccc' }}>{row.fluxGfd}</td>
-                      <td style={{ border: '1px solid #ccc', background: Number(row.highestFluxGfd) > 20 ? '#f8d7da' : 'transparent' }}>{row.highestFluxGfd}</td>
+                      {systemConfig.flowUnit === 'gpm' ? (
+                        <>
+                          <td style={{ border: '1px solid #ccc', background: Number(row.feedPressurePsi) < 0 ? '#f8d7da' : 'transparent' }}>{row.feedPressurePsi}</td>
+                          <td style={{ border: '1px solid #ccc', background: Number(row.concPressurePsi) < 0 ? '#f8d7da' : 'transparent' }}>{row.concPressurePsi}</td>
+                          <td style={{ border: '1px solid #ccc', background: Number(row.feedFlowM3h ?? row.feedFlowDisplay) > 4.5 ? '#f8d7da' : 'transparent' }}>{row.feedFlowGpm}</td>
+                          <td style={{ border: '1px solid #ccc' }}>{row.concFlowGpm}</td>
+                          <td style={{ border: '1px solid #ccc' }}>{row.fluxGfd}</td>
+                          <td style={{ border: '1px solid #ccc', background: Number(row.highestFluxGfd) > 20 ? '#f8d7da' : 'transparent' }}>{row.highestFluxGfd}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td style={{ border: '1px solid #ccc', background: Number(row.feedPressurePsi) < 0 ? '#f8d7da' : 'transparent' }}>
+                            {(Number(row.feedPressurePsi) / 14.5038).toFixed(1)}
+                          </td>
+                          <td style={{ border: '1px solid #ccc', background: Number(row.concPressurePsi) < 0 ? '#f8d7da' : 'transparent' }}>
+                            {(Number(row.concPressurePsi) / 14.5038).toFixed(1)}
+                          </td>
+                          <td style={{ border: '1px solid #ccc', background: Number(row.feedFlowM3h ?? row.feedFlowDisplay) > 4.5 ? '#f8d7da' : 'transparent' }}>
+                            {(Number(row.feedFlowGpm) / 4.402867).toFixed(2)}
+                          </td>
+                          <td style={{ border: '1px solid #ccc' }}>
+                            {(Number(row.concFlowGpm) / 4.402867).toFixed(2)}
+                          </td>
+                          <td style={{ border: '1px solid #ccc' }}>
+                            {(() => {
+                              // Convert GFD to LMH: GFD × 1.69897 ≈ LMH
+                              const gfd = Number(row.fluxGfd) || 0;
+                              return (gfd * 1.69897).toFixed(1);
+                            })()}
+                          </td>
+                          <td style={{ border: '1px solid #ccc', background: Number(row.highestFluxGfd) > 20 ? '#f8d7da' : 'transparent' }}>
+                            {(() => {
+                              // Convert GFD to LMH: GFD × 1.69897 ≈ LMH
+                              const gfd = Number(row.highestFluxGfd) || 0;
+                              return (gfd * 1.69897).toFixed(1);
+                            })()}
+                          </td>
+                        </>
+                      )}
                       <td style={{ border: '1px solid #ccc' }}>{row.highestBeta}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               <div style={{ marginTop: '8px', fontSize: '0.65rem', color: '#555', fontStyle: 'italic', padding: '0 4px' }}>
-                Conc (gpm) = Concentrate flow per vessel, calculated as Total concentrate flow ÷ number of vessels in the selected stage (number of vessels depends on membrane type or user selection)
+                {systemConfig.flowUnit === 'gpm' 
+                  ? 'Conc (gpm) = Concentrate flow per vessel, calculated as Total concentrate flow ÷ number of vessels in the selected stage (number of vessels depends on membrane type or user selection)'
+                  : 'Conc (m³/h) = Concentrate flow per vessel, calculated as Total concentrate flow ÷ number of vessels in the selected stage (number of vessels depends on membrane type or user selection)'
+                }
               </div>
               </div>
 
