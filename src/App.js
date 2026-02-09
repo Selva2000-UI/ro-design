@@ -264,7 +264,8 @@ const App = () => {
       fluxDeclinePerYear: systemConfig.fluxDeclinePerYear,
       spIncreasePerYear: systemConfig.spIncreasePerYear,
       foulingFactor: systemConfig.foulingFactor,
-      membraneModel: systemConfig.membraneModel
+      membraneModel: systemConfig.membraneModel,
+      permeatePressure: systemConfig.permeatePressure
     });
     const stageResults = calcResults?.stageResults || [];
     
@@ -272,9 +273,9 @@ const App = () => {
     // Formula: Average Flux (gfd) = Permeate flow / (No. of Vessels × Membranes/Vessel × Constant)
     
     const activeMemArea = Number(activeMem?.area) || 400;
-    const currentGpmConst = 0.0556 * (activeMemArea / 400);
-    const currentM3hConst = 0.0372 * (activeMemArea / 400);
-    const currentM3dConst = 0.893 * (activeMemArea / 400);
+    const currentGpmConst = 0.0556 * activeMemArea  ;
+    const currentM3hConst = 0.0372 * activeMemArea ;
+    const currentM3dConst = 0.893 * activeMemArea  ;
 
     let rawFluxGFD = calcResults?.results?.avgFluxGFD ?? 0;
     let rawFluxLMH = calcResults?.results?.avgFluxLMH ?? 0;
