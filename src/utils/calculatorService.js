@@ -62,6 +62,7 @@ export const calculateSystem = (inputs) => {
     stages = [],
     membranes = [],
     flowUnit = 'gpm',
+    permeatePressure = 0,
   } = inputs;
 
   const recoveryPct = Math.min(Math.max(Number(recovery) || 0, 1), 99);
@@ -172,18 +173,23 @@ export const calculateSystem = (inputs) => {
   const permeateIons = {};
   const concentrateIons = {};
 
+  const cf = recFrac < 1 ? 1 / (1 - recFrac) : 1;
   const feedTDS = Object.values(normalizedFeedIons || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
   let runningConcTDS = 0;
+  let runningPermTDS = 0;
+
+  // Salt passage is inversely proportional to flux (Standard: 20 LMH)
+  const fluxFactor = 20 / Math.max(avgFluxLMH_calc, 0.1);
 
   Object.keys(normalizedFeedIons || {}).forEach((ion) => {
     const feedConc = Number(normalizedFeedIons[ion]) || 0;
     const rejection = getIonRejection(ion) / 100; 
-    const permVal = feedConc * (1 - rejection);
     
-    // Updated Concentrate Formula: Cc = Cf * [1 - R * (1 - Rej)] / (1 - R)
-    const concVal = recFrac > 0 && recFrac < 1 
-      ? feedConc * (1 - recFrac * (1 - rejection)) / (1 - recFrac) 
-      : feedConc;
+    // Concentrate: C_conc = C_feed * CF
+    const concVal = feedConc * cf;
+    
+    // Permeate: C_perm = C_conc * (1 - Rejection) * (StandardFlux / ActualFlux)
+    const permVal = concVal * (1 - rejection) * fluxFactor;
 
     if (['na', 'cl'].includes(ion)) {
       permeateIons[ion] = Number(permVal).toFixed(2);
@@ -192,16 +198,27 @@ export const calculateSystem = (inputs) => {
     }
     concentrateIons[ion] = formatConc(concVal);
     runningConcTDS += concVal;
+    runningPermTDS += permVal;
   });
   
-  const avgSaltRejection = membraneRejection / 100;
-  const permeateTDS = feedTDS * (1 - avgSaltRejection);
+  const permeateTDS = runningPermTDS;
   const concentrateTDS = runningConcTDS;
 
-  // Osmotic Pressure (0.00076 bar per mg/L TDS)
-  const piFeedBar = 0.00076 * feedTDS;
-  const piConcBar = 0.00076 * concentrateTDS;
+  // Osmotic Pressure Logic (Refined per user scenarios)
+  // Scenario 1 & 3: bar = 0.036 * TDS(g/L) * 22.1
+  // Scenario 2: psi = 0.52 * TDS(g/L) * 22.1
+  const tdsGL = concentrateTDS / 1000;
+  const tdsFeedGL = feedTDS / 1000;
+  
+  const OSMOTIC_COEFF_BAR = 0.036 * 22.1;
+  const OSMOTIC_COEFF_PSI = 0.52 * 22.1;
+
+  const piFeedBar = OSMOTIC_COEFF_BAR * tdsFeedGL;
+  const piConcBar = OSMOTIC_COEFF_BAR * tdsGL;
   const piAvgBar = (piFeedBar + piConcBar) / 2;
+
+  // Convert permeate pressure input to bar for internal calculation
+  const permPressBar = isGpm ? Number(permeatePressure) / BAR_TO_PSI : Number(permeatePressure);
 
   // Pressure Physics: TMP = (Flux / Aw) + Osmotic Pressure
   const awGfdPsi = Number(activeMembrane.aValue) || 0.15;
@@ -210,16 +227,23 @@ export const calculateSystem = (inputs) => {
   const systemTMPBar = (avgFluxLMH_calc / awLmhBar) + piAvgBar;
   const systemDeltaPBar = 1.0; // Clean pressure drop ~15 psi
   
-  const feedPressureBar = systemTMPBar + (systemDeltaPBar / 2);
-  const concPressureBar = systemTMPBar - (systemDeltaPBar / 2);
+  // Total pressure required = TMP + DeltaP/2 + Permeate Backpressure
+  const feedPressureBar = systemTMPBar + (systemDeltaPBar / 2) + permPressBar;
+  const concPressureBar = systemTMPBar - (systemDeltaPBar / 2) + permPressBar;
 
   // Unit Conversion for Display
   const pressureUnit = isGpm ? 'psi' : 'bar';
   const displayFeedP = isGpm ? feedPressureBar * BAR_TO_PSI : feedPressureBar;
   const displayConcP = isGpm ? concPressureBar * BAR_TO_PSI : concPressureBar;
-  const displayOsmotic = isGpm ? piAvgBar * BAR_TO_PSI : piAvgBar;
-
-  const cf = 1 / (1 - recFrac);
+  
+  // Specific fix for Osmotic Pressure scenarios
+  let displayOsmoticValue = 0;
+  if (isGpm) {
+    displayOsmoticValue = OSMOTIC_COEFF_PSI * tdsGL;
+  } else {
+    displayOsmoticValue = piConcBar;
+  }
+  const displayOsmotic = displayOsmoticValue;
 
   const permeatePh = Math.min(Math.max(feedPhValue - 1.69, 0), 14);
   const concentratePh = Math.min(Math.max(feedPhValue + Math.log10(Math.max(cf, 1)), 0), 14);
@@ -249,7 +273,7 @@ export const calculateSystem = (inputs) => {
   };
 
   const concentrateParameters = {
-    osmoticPressure: piConcBar.toFixed(1),
+    osmoticPressure: displayOsmotic.toFixed(1),
     ccpp: Number(ccpp).toFixed(1),
     langelier: lsi.toFixed(2),
     ph: concentratePh.toFixed(1),

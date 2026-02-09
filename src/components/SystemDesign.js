@@ -269,7 +269,7 @@ const SystemDesign = ({
   const pUnit = isGpm ? 'psi' : 'bar';
   const fUnit = flowUnitLabel === 'm3/d' ? 'm³/d' : (isGpm ? 'gpm' : 'm³/h');
   const fluxUnit = isGpm ? 'gfd' : 'lmh';
-  const BAR_TO_PSI = 14.5038;
+//   const BAR_TO_PSI = 14.5038;
 
   const feedTds = getFeedTds();
   const rawFeedPh = Number(waterData?.ph) || 7.0;
@@ -1009,7 +1009,7 @@ const SystemDesign = ({
           <div style={{ marginTop: '10px', background: 'white', padding: '8px', border: '1px solid #c2d1df' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Concentrate Saturations and Parameters</div>
             <div style={{ fontSize: '0.65rem', color: '#666', marginBottom: '8px' }}>
-              Formula: Cc = Cf × [1 - R × (1 - Rej)] / (1 - R) | π(bar) = 0.00076 × TDS(mg/L) | π(psi) = 0.011 × TDS(mg/L)
+              
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
               <div>CaSO4: {projection.concentrateSaturation?.caSo4 ?? '0.0'}%</div>
@@ -1022,7 +1022,7 @@ const SystemDesign = ({
               <div>Langelier: {projection.concentrateParameters?.langelier ?? '0.00'}</div>
               <div>pH: {projection.concentrateParameters?.ph ?? '0.0'}</div>
               <div>TDS: {projection.concentrateParameters?.tds ?? '0.0'} mg/L</div>
-              <div>Osmotic: {projection.results?.osmoticPressure ?? '0.0'} ({pUnit})</div>
+              <div>Osmotic: {projection.concentrateParameters?.osmoticPressure ?? '0.0'} ({pUnit})</div>
             </div>
           </div>
 
