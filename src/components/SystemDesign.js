@@ -18,6 +18,7 @@ const SystemDesign = ({
   const [localPass1Stages, setLocalPass1Stages] = useState(null); // Local state for input while typing
   const [showFeedPressure, setShowFeedPressure] = useState(false);
   const [showPermeatePressure, setShowPermeatePressure] = useState(false);
+  const [osmoticUnit, setOsmoticUnit] = useState('bar');
 
 
   // Get stages from systemConfig, always ensure 6 stages exist
@@ -411,14 +412,15 @@ const SystemDesign = ({
           <div style={rowStyle}>
             <span>Average flux</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
-               <select 
-                    style={{fontSize:'0.7rem', border:'none', background:'transparent', cursor:'pointer'}} 
-                    value={systemConfig.fluxUnit || (systemConfig.flowUnit === 'gpm' ? 'gfd' : 'lmh')} 
-                    onChange={e => handleFluxUnitChange(e.target.value)}
+               <span 
+                    style={{fontSize:'0.7rem', color:'#007bff', cursor:'pointer', textDecoration:'underline'}} 
+                    onClick={() => {
+                      const currentFluxUnit = systemConfig.fluxUnit || (systemConfig.flowUnit === 'gpm' ? 'gfd' : 'lmh');
+                      handleFluxUnitChange(currentFluxUnit === 'gfd' ? 'lmh' : 'gfd');
+                    }}
                   >
-                    <option value="gfd">gfd</option>
-                    <option value="lmh">lmh</option>
-                  </select>
+                    {systemConfig.fluxUnit || (systemConfig.flowUnit === 'gpm' ? 'gfd' : 'lmh')}
+                  </span>
                <div style={{...inputStyle, background: '#eee'}}>
                     {(() => {
                       // Calculate flux in real-time based on current inputs
@@ -1067,7 +1069,19 @@ const SystemDesign = ({
               <div>SiO2: {projection.concentrateSaturation?.sio2 ?? '0.0'}%</div>
               <div>Ca3(PO4)2: {projection.concentrateSaturation?.ca3po42 ?? '0.00'}%</div>
               <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.0'}%</div>
-              <div>Osmotic: {projection.concentrateParameters?.osmoticPressure ?? '0.0'} bar</div>
+              <div>
+                Osmotic: {
+                  osmoticUnit === 'psi' 
+                  ? (projection.concentrateParameters?.osmoticPressure ?? '0.0')
+                  : (Number(projection.concentrateParameters?.osmoticPressure || 0) / 14.5038).toFixed(1)
+                } 
+                <span 
+                  onClick={() => setOsmoticUnit(osmoticUnit === 'bar' ? 'psi' : 'bar')} 
+                  style={{ cursor: 'pointer', color: '#007bff', marginLeft: '4px', textDecoration: 'underline' }}
+                >
+                  {osmoticUnit}
+                </span>
+              </div>
               <div>CCPP: {projection.concentrateParameters?.ccpp ?? '0.0'} mg/L</div>
               <div>Langelier: {projection.concentrateParameters?.langelier ?? '0.00'}</div>
               <div>pH: {projection.concentrateParameters?.ph ?? '0.0'}</div>
