@@ -7,7 +7,7 @@ import Report from './components/Report';
 import MembraneEditor from './components/MembraneEditor';
 import DesignGuidelines from './components/DesignGuidelines';
 import ValidationBanner from './components/ValidationBanner';
-import { calculateSystem } from './utils/calculatorService';
+import { calculateSystem, BAR_TO_PSI } from './utils/calculatorService';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -30,6 +30,8 @@ const App = () => {
     feedPh: 7.0,
     recovery: 0,
     flowUnit: 'gpm', // gpm/gpd/mgd/migd/m3/h/m3/d/mld
+    feedFlow: 100,
+    averageFlux: 15.0,
     permeateFlow: 0, // train permeate flow in selected unit
     numTrains: 1,
 
@@ -173,30 +175,25 @@ const App = () => {
 
     const unit = FLOW_TO_M3H[systemConfig.flowUnit] ? systemConfig.flowUnit : 'gpm';
     const unitFactor = FLOW_TO_M3H[unit] ?? 1;
+    const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(unit);
 
     const trains = Math.max(Number(systemConfig.numTrains) || 1, 1);
     
-    // User gives Feed Flow and Recovery %
+    // User gives Feed Flow and Recovery as primary inputs now
     const trainFeedInput = Number(systemConfig.feedFlow) || 0;
     const perTrainFeed_m3h = trainFeedInput * unitFactor;
     
-    const recoveryPct = Math.min(Math.max(Number(systemConfig.recovery) || 15, 1), 99);
-    const recovery = recoveryPct / 100;
-
-    // Calculate Permeate Flow: Qp = Qf * R/100
-    const perTrainProduct_m3h = perTrainFeed_m3h * recovery;
-    const trainPermeateInput = perTrainProduct_m3h / unitFactor;
-    const totalProduct_m3h = perTrainProduct_m3h * trains;
-
-    const perTrainConc_m3h = perTrainFeed_m3h - perTrainProduct_m3h;
-
+    // Recovery input from user
+    let recoveryPct = Math.min(Math.max(Number(systemConfig.recovery) || 0, 0), 99);
+    
     // Calculate total elements and area across all active stages
     // Use stages array if available, otherwise fall back to legacy stage1Vessels/stage2Vessels
     let totalElements = 0;
     let totalArea_ft2 = 0;
+    const pass1Stages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);
+    
     if (systemConfig.stages && systemConfig.stages.length > 0) {
       // Sum elements from all active stages (up to pass1Stages)
-      const pass1Stages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);
       for (let i = 0; i < pass1Stages; i++) {
         const stage = systemConfig.stages[i];
         if (stage) {
@@ -228,10 +225,60 @@ const App = () => {
     }
     const totalArea_m2 = totalArea_ft2 * 0.09290304;
 
-    const perTrainProduct_gpd = perTrainProduct_m3h * M3H_TO_GPD;
-    const M3H_TO_GPM = 4.402867;
+    const currentGpmConst = 0.0556 * (membraneArea / 400);
 
-    const pass1Stages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);
+    let perTrainProduct_m3h = 0;
+    const feedPressureInput = Number(systemConfig.feedPressure);
+
+    if (feedPressureInput > 0) {
+        // SOLVE FOR RECOVERY based on Feed Pressure
+        // Qp = Area * A * (P_feed - 0.5*dP - P_perm - Pi_avg)
+        // Pi_avg depends on R. We iterate.
+        const P_feed_bar = isGpm ? feedPressureInput / BAR_TO_PSI : feedPressureInput;
+        const P_perm_bar = isGpm ? (Number(systemConfig.permeatePressure) || 0) / BAR_TO_PSI : (Number(systemConfig.permeatePressure) || 0);
+        const A_lmh_bar = (Number(activeMem?.aValue) || 0.12) * 24.64; // Approx conversion
+        const deltaP_bar = 1.0; // Assume 1 bar drop
+
+        // Calculate Pi_feed (Osmotic Pressure of feed)
+        const ions = {
+            ca: Number(waterData.ca) || 0,
+            mg: Number(waterData.mg) || 0,
+            na: Number(waterData.na) || 0,
+            k: Number(waterData.k) || 0,
+            hco3: Number(waterData.hco3) || 0,
+            so4: Number(waterData.so4) || 0,
+            cl: Number(waterData.cl) || 0,
+            no3: Number(waterData.no3) || 0,
+            sio2: Number(waterData.sio2) || 0,
+            nh4: Number(waterData.nh4) || 0
+        };
+        const feedTDS = Object.values(ions).reduce((sum, v) => sum + v, 0);
+        const piFeed_bar = 0.0025 * feedTDS;
+
+        let currentR = 0.5; // Start with 50%
+        for (let iter = 0; iter < 5; iter++) {
+            const piAvg_bar = piFeed_bar * (1 / (1 - currentR / 2));
+            const netDrivingPressure = P_feed_bar - (deltaP_bar / 2) - P_perm_bar - piAvg_bar;
+            const Qp_lmh = A_lmh_bar * Math.max(netDrivingPressure, 0);
+            const Qp_m3h = (Qp_lmh * totalArea_m2) / 1000;
+            perTrainProduct_m3h = Qp_m3h;
+            currentR = perTrainFeed_m3h > 0 ? perTrainProduct_m3h / perTrainFeed_m3h : 0.5;
+            currentR = Math.min(Math.max(currentR, 0.01), 0.95);
+        }
+        recoveryPct = currentR * 100;
+    } else {
+        // NORMAL MODE: Calculate Permeate Flow from Recovery and Feed Flow
+        perTrainProduct_m3h = perTrainFeed_m3h * (recoveryPct / 100);
+    }
+
+    const recovery = recoveryPct / 100;
+    const trainPermeateInput = perTrainProduct_m3h / unitFactor;
+    const totalProduct_m3h = perTrainProduct_m3h * trains;
+
+    const perTrainConc_m3h = perTrainFeed_m3h - perTrainProduct_m3h;
+
+    const perTrainProduct_gpd = perTrainProduct_m3h * M3H_TO_GPD;
+
     const activeStages = systemConfig.stages?.slice(0, pass1Stages) || [];
     const totalStageVessels = activeStages.reduce((sum, stage) => sum + (Number(stage?.vessels) || 0), 0);
     const calcResults = calculateSystem({
@@ -268,36 +315,22 @@ const App = () => {
       spIncreasePerYear: systemConfig.spIncreasePerYear,
       foulingFactor: systemConfig.foulingFactor,
       membraneModel: systemConfig.membraneModel,
-      permeatePressure: systemConfig.permeatePressure
+      permeatePressure: systemConfig.permeatePressure,
+      feedPressure: systemConfig.feedPressure
     });
     const stageResults = calcResults?.stageResults || [];
     
     // Calculate flux - always calculate, but only display if designCalculated is true
-    // Formula: Average Flux (gfd) = Permeate flow / (No. of Vessels × Membranes/Vessel × Constant)
+    // Flux (lmh) = Qp(m3/h) * 1000 / Am(m2)
+    // Flux (gfd) = Flux (lmh) * 0.0245
     
-    const activeMemArea = Number(activeMem?.area) || 400;
-    const currentGpmConst = 0.0556 * activeMemArea  ;
-    const currentM3hConst = 0.0372 * activeMemArea ;
-    const currentM3dConst = 0.893 * activeMemArea  ;
-
-    let rawFluxGFD = calcResults?.results?.avgFluxGFD ?? 0;
-    let rawFluxLMH = calcResults?.results?.avgFluxLMH ?? 0;
+    let rawFluxLMH = totalArea_m2 > 0 ? (perTrainProduct_m3h * 1000) / totalArea_m2 : 0;
+    let rawFluxGFD = rawFluxLMH * 0.0245;
     
-    if (!calcResults?.results) {
-        const permeateFlowGpm = perTrainProduct_m3h * 4.402867;
-        if (totalElements > 0) {
-            rawFluxGFD = permeateFlowGpm / (totalElements * currentGpmConst);
-            if (unit === 'm3/d') {
-                rawFluxLMH = (perTrainProduct_m3h * 24) / (totalElements * currentM3dConst);
-            } else {
-                rawFluxLMH = perTrainProduct_m3h / (totalElements * currentM3hConst);
-            }
-        }
+    if (calcResults?.results) {
+        rawFluxGFD = calcResults.results.avgFluxGFD;
+        rawFluxLMH = calcResults.results.avgFluxLMH;
     }
-    
-    // Always show flux value if possible
-    const fluxGFD = rawFluxGFD;
-    const fluxLMH = rawFluxLMH;
     
     // Debug logging to understand why flux is 0 (only log when calculated but still 0)
     if (systemConfig.designCalculated && rawFluxGFD === 0 && rawFluxLMH === 0) {
@@ -476,14 +509,13 @@ const App = () => {
     const spFactor = Math.pow(1 + spIncreasePct / 100, membraneAge);
 
     const permeateFlowGpm = perTrainProduct_m3h * 4.402867;
-    const avgFlux =
-    totalElements > 0
-      ? permeateFlowGpm / (totalElements * currentGpmConst)
-      : 0;
+    const avgFluxVal = calcResults?.results?.avgFlux != null 
+        ? Number(calcResults.results.avgFlux) 
+        : (totalElements > 0 ? permeateFlowGpm / (totalElements * currentGpmConst) : 0);
 
     // Pump model expects a flux-like term; use GFD computed above.
     // const pressureTerm = (fluxGFD / (TCF * (aEffective || aBase))) * foulingFactor;
-    const pressureTerm = (avgFlux / aEffective) * foulingFactorValue;
+    const pressureTerm = (avgFluxVal / aEffective) * foulingFactorValue;
     const pumpPressure = calcResults?.results?.feedPressure != null
       ? Number(calcResults.results.feedPressure)
       : (pressureTerm + osmoticP + 1.2) * spFactor;
@@ -548,6 +580,7 @@ const App = () => {
       permeateFlow: formatFlow(perTrainProduct_display, flowDecimals),
       feedFlow: formatFlow(perTrainFeed_display, flowDecimals),
       concentrateFlow: formatFlow(perTrainConc_display, flowDecimals),
+      recovery: recoveryPct.toFixed(1),
 
       // System-level flows (used by other tabs/models)
       totalPlantProductFlowM3h: totalProduct_m3h.toFixed(3),
@@ -557,8 +590,8 @@ const App = () => {
       totalFeedFlowM3h: totalFeed_m3h.toFixed(3),
 
       // Core KPIs - flux formatting matches Hydranautics (0 with unit-based decimals when not calculated)
-      fluxGFD: formatFlux(fluxGFD, systemConfig.designCalculated, unit),
-      fluxLMH: formatFlux(fluxLMH, systemConfig.designCalculated, unit),
+      fluxGFD: formatFlux(avgFluxVal, systemConfig.designCalculated, unit),
+      fluxLMH: formatFlux(avgFluxVal, systemConfig.designCalculated, unit),
       calcFluxDisplay: calcResults?.results?.calcFlux ?? '0.0',
       displayFluxUnit: calcResults?.results?.fluxUnit ?? (unit === 'gpm' ? 'gfd' : 'lmh'),
       highestBeta: calcResults?.results?.highestBeta ?? '0.000',
@@ -584,8 +617,7 @@ const App = () => {
       customFluxWorkflow: calcResults?.customFluxWorkflow,
       stageResults,
       designWarnings: calcResults?.designWarnings || [],
-
-  
+      results: calcResults?.results,
 
       permeateConcentration,
       concentrateConcentration,

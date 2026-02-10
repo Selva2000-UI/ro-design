@@ -68,15 +68,26 @@ const SystemDesign = ({
 
   const handleInputChange = (key, value) => {
     const resetsDesign = [
+      'feedFlow',
+      'averageFlux',
       'permeateFlow',
       'recovery',
       'numTrains',
       'elementsPerVessel',
       'stage1Vessels',
       'stage2Vessels',
-      'membraneModel'
+      'membraneModel',
+      'feedPressure'
     ].includes(key);
-    setSystemConfig({ ...systemConfig, [key]: value, ...(resetsDesign ? { designCalculated: false } : {}) });
+
+    const updates = { ...systemConfig, [key]: value, ...(resetsDesign ? { designCalculated: false } : {}) };
+
+    // If user manually edits recovery, clear feedPressure to allow the manual input to take effect
+    if (key === 'recovery' && Number(value) > 0) {
+      updates.feedPressure = '';
+    }
+
+    setSystemConfig(updates);
   };
 
   const handleStageChange = (stageIndex, field, value) => {
@@ -265,7 +276,7 @@ const SystemDesign = ({
   };
 
   const flowUnitLabel = systemConfig.flowUnit || 'gpm';
-  const isGpm = flowUnitLabel === 'gpm';
+  const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(flowUnitLabel);
   const pUnit = isGpm ? 'psi' : 'bar';
   const fUnit = flowUnitLabel === 'm3/d' ? 'm³/d' : (isGpm ? 'gpm' : 'm³/h');
   const fluxUnit = isGpm ? 'gfd' : 'lmh';
@@ -403,19 +414,31 @@ const SystemDesign = ({
               <input style={inputStyle} value={systemConfig.feedFlow} onChange={e => handleInputChange('feedFlow', e.target.value)} />
             </div>
           </div>
-          <div style={rowStyle}><span>Permeate recovery %</span> <input style={inputStyle} value={systemConfig.recovery} onChange={e => handleInputChange('recovery', e.target.value)} /></div>
+
+          
+
           <div style={rowStyle}>
-            <span title="Permeate flow = Feed flow * Recovery / 100">Permeate flow</span>
+            <span>Permeate recovery %</span>
+            <input 
+              style={inputStyle} 
+              value={Number(systemConfig.feedPressure) > 0 ? projection?.recovery : systemConfig.recovery} 
+              onChange={e => handleInputChange('recovery', e.target.value)}
+            />
+          </div>
+
+          <div style={rowStyle}>
+            <span title={`Flux Calculation Logic (Standard: 400 ft² element):\n\n🔹 CASE 1: PERMEATE FLOW IN GPM → FLUX IN GFD\nFormula: Average Flux (GFD) = Permeate Flow (gpm) / (No. of Vessels × Nm × 0.0556)\n\n🔹 CASE 2: PERMEATE FLOW IN m³/h → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/h) / (No. of Vessels × Nm × 0.0372)\n\n🔹 CASE 3: PERMEATE FLOW IN m³/d → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/d) / (No. of Vessels × Nm × 0.893)\n\n⚠️ Note: Constants are valid for 400 ft² membranes. If membrane area changes, the constant is automatically recalculated.`}>Average flux</span>
+            <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
+              <div style={{...inputStyle, background: '#eee'}}>{projection?.results?.avgFlux ?? systemConfig.averageFlux ?? '0.0'}</div>
+              <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.results?.fluxUnit || (isGpm ? 'GFD' : 'LMH')}</span>
+            </div>
+          </div>
+
+          <div style={rowStyle}>
+            <span title="Permeate flow = Flux * Area">Permeate flow</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
               <div style={{...inputStyle, background: '#eee'}}>{projection?.permeateFlow ?? '0.00'}</div>
               <span style={{ fontSize: '0.7rem', color: '#333' }}>{systemConfig.flowUnit || 'gpm'}</span>
-            </div>
-          </div>
-          <div style={rowStyle}>
-            <span title={`Flux Calculation Logic:\n\n🔹 CASE 1: PERMEATE FLOW IN GPM → FLUX IN GFD\nFormula: Average Flux (GFD) = Permeate Flow (gpm) / (No. of Vessels × Nm × 0.0556)\n(Where 0.0556 = 400 ft² / 1440 min/day)\n\n🔹 CASE 2: PERMEATE FLOW IN m³/h → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/h) / (No. of Vessels × Nm × 0.0372)\n(Where 0.0372 = 400 ft² × 0.092903 / 1000)\n\n🔹 CASE 3: PERMEATE FLOW IN m³/d → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/d) / (No. of Vessels × Nm × 0.893)\n(Where 0.893 = 0.0372 × 24)\n\n⚠️ IMPORTANT RULES:\n• Use only one formula based on permeate flow unit\n• Do not mix GFD and LMH\n• Constants are valid only for 400 ft² membranes\n• If membrane area changes, constant must be recalculated`}>Average flux (?)</span>
-            <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
-              <div style={{...inputStyle, background: '#eee'}}>{projection?.fluxGFD || projection?.fluxLMH || projection?.calcFluxDisplay || '0.0'}</div>
-              <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.displayFluxUnit || fluxUnit}</span>
             </div>
           </div>
           <div style={rowStyle}>
@@ -483,7 +506,7 @@ const SystemDesign = ({
                   value={systemConfig.feedPressure ?? ''}
                   onChange={e => handleInputChange('feedPressure', e.target.value)}
                 />
-                <span style={{ fontSize: '0.7rem' }}>psi</span>
+                <span style={{ fontSize: '0.7rem' }}>{pUnit}</span>
               </div>
             </div>
           )}
@@ -976,8 +999,9 @@ const SystemDesign = ({
             </table>
             <div style={{ marginTop: '10px', padding: '8px', background: 'white', borderTop: '1px solid #ccc', fontSize: '0.8rem', fontWeight: 'bold', color: '#004a80', display: 'flex', gap: '20px' }}>
               <div>Feed Pressure is {projection.results?.feedPressure ?? '0.0'} ({pUnit})</div>
-              <div>Permeate Pressure is 0.0 ({pUnit})</div>
+              <div>Permeate Pressure is {systemConfig.permeatePressure || '0.0'} ({pUnit})</div>
               <div>Osmotic {projection.results?.osmoticPressure ?? '0.0'} ({pUnit})</div>
+              <div>Average flux / Flux {projection.results?.avgFlux ?? '0.0'} ({fluxUnit})</div>
             </div>
           </div>
 

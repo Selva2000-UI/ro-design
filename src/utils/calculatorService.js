@@ -1,9 +1,22 @@
 /* ================= IMSDesign Hydraulic Engine (REFINED) ================= */
 
 export const FLOW_TO_M3H = {
-  gpm: 0.2271,
+  gpm: 0.22712,
   m3h: 1,
+  'm3/h': 1,
   m3d: 1 / 24,
+  'm3/d': 1 / 24,
+  gpd: 0.00378541 / 24,
+  mgd: 157.725,
+  migd: 189.42,
+  mld: 41.6667,
+};
+
+// Flux Constants for 400 ft2 membranes
+export const FLUX_CONSTANTS = {
+  gpm: 0.0556, // For GFD (Note: User formula uses 0.0556 for GPM to GFD)
+  m3h: 0.0372, // For LMH
+  m3d: 0.893,  // For LMH
 };
 
 export const MEMBRANES = [
@@ -49,7 +62,8 @@ export const MEMBRANES = [
 ];
 
 export const BAR_TO_PSI = 14.5038;
-export const M3H_TO_GPM = 4.4029;
+export const M3H_TO_GPM = 1 / 0.2271;
+export const LMH_TO_GFD = 1 / 1.699; 
 
 export const calculateSystem = (inputs) => {  
   const {
@@ -63,8 +77,10 @@ export const calculateSystem = (inputs) => {
     membranes = [],
     flowUnit = 'gpm',
     permeatePressure = 0,
+    feedPressure = null,
   } = inputs;
 
+  const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(flowUnit);
   const recoveryPct = Math.min(Math.max(Number(recovery) || 0, 1), 99);
   const recFrac = recoveryPct / 100;
   const feedPhValue = Number(feedPH) || 7.0;
@@ -77,13 +93,13 @@ export const calculateSystem = (inputs) => {
     const pKa1 = 6.35;
     const ratio = Math.pow(10, pKa1 - feedPhValue);
     const co2Value = hco3Val * ratio;
-    normalizedFeedIons.co2 = Number(co2Value < 0.001 ? '<0.001' : co2Value.toFixed(3));
+    normalizedFeedIons.co2 = co2Value;
   }
   if (co3Val === 0 && hco3Val > 0 && feedPhValue >= 8.2) {
     const pKa2 = 10.33;
     const ratio = Math.pow(10, feedPhValue - pKa2);
     const co3Value = hco3Val * ratio;
-    normalizedFeedIons.co3 = Number(co3Value < 0.001 ? '<0.001' : co3Value.toFixed(3));
+    normalizedFeedIons.co3 = co3Value;
   }
   
   // Master Unit Rule: All flows must match the permeate flow unit
@@ -92,7 +108,7 @@ export const calculateSystem = (inputs) => {
   
   // Basic Flow Balance (Internal m3/h)
   const feedFlowTotalM3h = recFrac > 0 ? totalFlowM3h / recFrac : 0;
-  const concentrateFlowTotalM3h = feedFlowTotalM3h - totalFlowM3h;
+  const concentrateFlowTotalM3h = Math.max(feedFlowTotalM3h - totalFlowM3h, 0);
 
   const activeStages = Array.isArray(stages) ? stages.filter(stage => Number(stage?.vessels) > 0) : [];
 
@@ -107,6 +123,7 @@ export const calculateSystem = (inputs) => {
 
   let totalElements = 0;
   let totalAreaSqFt = 0;
+  let totalAreaM2 = 0;
   if (activeStages.length > 0) {
     totalElements = activeStages.reduce((sum, stage) => {
       const stageVessels = Number(stage?.vessels) || 0;
@@ -120,34 +137,51 @@ export const calculateSystem = (inputs) => {
       const stageArea = Number(stageMembrane?.area) || areaPerElement;
       return sum + stageVessels * stageElements * stageArea;
     }, 0);
+    totalAreaM2 = activeStages.reduce((sum, stage) => {
+      const stageVessels = Number(stage?.vessels) || 0;
+      const stageElements = Number(stage?.elementsPerVessel) || 0;
+      const stageMembrane = membranes.find(m => m.id === stage?.membraneModel) || activeMembrane;
+      const stageAreaM2 = Number(stageMembrane?.areaM2) || (Number(stageMembrane?.area || 400) * (37 / 400));
+      return sum + stageVessels * stageElements * stageAreaM2;
+    }, 0);
   } else {
     totalElements = (Number(vessels) || 0) * (Number(elementsPerVessel) || 0);
     totalAreaSqFt = totalElements * areaPerElement;
+    totalAreaM2 = totalElements * (Number(activeMembrane?.areaM2) || (areaPerElement * (37 / 400)));
   }
 
   const effectiveAreaSqFt = Math.max(totalAreaSqFt, 1);
-  const totalAreaM2 = effectiveAreaSqFt * 0.092903;
+  const effectiveAreaM2 = Math.max(totalAreaM2, 1);
   
-  // Flux Calculation (Internal LMH)
-  const avgFluxLMH_calc = (totalFlowM3h * 1000) / totalAreaM2;
-  const avgFluxGFD_calc = avgFluxLMH_calc * 0.5886; // 1 LMH = 0.5886 GFD
-  const isGpm = flowUnit === 'gpm';
-
-  let displayFlux = 0;
-  let fluxUnit = 'GFD';
+  // Flux Calculation (Refined per User Specs)
+  const totalElements_num = Math.max(totalElements, 1);
+  const areaFactor = areaPerElement / 400;
+  
+  let fluxValue = 0;
+  let fluxUnit = isGpm ? 'GFD' : 'LMH';
 
   if (flowUnit === 'gpm') {
-    displayFlux = avgFluxGFD_calc;
-    fluxUnit = 'GFD';
+    fluxValue = Number(totalFlow) / (totalElements_num * FLUX_CONSTANTS.gpm * areaFactor);
+  } else if (flowUnit === 'm3/h' || flowUnit === 'm3h') {
+    fluxValue = Number(totalFlow) / (totalElements_num * FLUX_CONSTANTS.m3h * areaFactor);
+  } else if (flowUnit === 'm3/d' || flowUnit === 'm3d') {
+    fluxValue = Number(totalFlow) / (totalElements_num * FLUX_CONSTANTS.m3d * areaFactor);
   } else {
-    displayFlux = avgFluxLMH_calc;
-    fluxUnit = 'LMH';
+    // Default fallback - Use master unit m3/h
+    fluxValue = (totalFlowM3h * 1000) / effectiveAreaM2;
+    if (isGpm) fluxValue = fluxValue * LMH_TO_GFD;
   }
 
+  const displayFlux = fluxValue;
+  
+  // For internal calculations (Salt Passage, Pressure), we still need internal LMH/GFD
+  const avgFluxLMH_calc = isGpm ? displayFlux * 1.699 : displayFlux;
+  const avgFluxGFD_calc = isGpm ? displayFlux : displayFlux / 1.699; 
+  
   // Beta Factor (Concentration Polarization)
   const beta = Math.exp(0.7 * recFrac);
   const highestFlux = displayFlux * beta;
-  const highestBeta = beta; // As per user: Highest Flux / Average Flux = Beta
+  const highestBeta = highestFlux > 0 ? (displayFlux / highestFlux) : 0; 
 
   const membraneRejection = Math.min(Math.max(Number(activeMembrane?.rejection) || 99.7, 80), 99.9);
   const defaultMono = Math.max(Math.min((Number(activeMembrane?.monoRejection) || (membraneRejection - 6)), 99.9), 80);
@@ -161,7 +195,8 @@ export const calculateSystem = (inputs) => {
     const overrides = activeMembrane?.ionRejectionOverrides || {};
     if (overrides[ionKey] != null) return Number(overrides[ionKey]);
     if (['ca', 'mg', 'sr', 'ba', 'so4', 'po4'].includes(ionKey)) return defaultDivalent;
-    if (['na', 'k', 'cl', 'no3', 'f', 'nh4'].includes(ionKey)) return defaultMono;
+    if (['na', 'cl'].includes(ionKey)) return membraneRejection; // Use full rejection for Na/Cl
+    if (['k', 'no3', 'f', 'nh4'].includes(ionKey)) return defaultMono;
     if (['hco3', 'co3'].includes(ionKey)) return alkalinityRejection;
     if (ionKey === 'sio2') return silicaRejection;
     if (ionKey === 'b') return boronRejection;
@@ -174,22 +209,22 @@ export const calculateSystem = (inputs) => {
   const concentrateIons = {};
 
   const cf = recFrac < 1 ? 1 / (1 - recFrac) : 1;
-  const feedTDS = Object.values(normalizedFeedIons || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
   let runningConcTDS = 0;
   let runningPermTDS = 0;
-
-  // Salt passage is inversely proportional to flux (Standard: 20 LMH)
-  const fluxFactor = 20 / Math.max(avgFluxLMH_calc, 0.1);
 
   Object.keys(normalizedFeedIons || {}).forEach((ion) => {
     const feedConc = Number(normalizedFeedIons[ion]) || 0;
     const rejection = getIonRejection(ion) / 100; 
     
-    // Concentrate: C_conc = C_feed * CF
-    const concVal = feedConc * cf;
+    // Permeate concentration based on Step 4
+    const permVal = feedConc * (1 - rejection);
     
-    // Permeate: C_perm = C_conc * (1 - Rejection) * (StandardFlux / ActualFlux)
-    const permVal = concVal * (1 - rejection) * fluxFactor;
+    // Concentrate concentration based on Step 5 mass balance
+    // Cc = (Qf*Cf - Qp*Cp) / Qc
+    const Qf = feedFlowTotalM3h;
+    const Qp = totalFlowM3h;
+    const Qc = concentrateFlowTotalM3h;
+    const concVal = Qc > 0 ? (Qf * feedConc - Qp * permVal) / Qc : feedConc * cf;
 
     if (['na', 'cl'].includes(ion)) {
       permeateIons[ion] = Number(permVal).toFixed(2);
@@ -203,13 +238,14 @@ export const calculateSystem = (inputs) => {
   
   const permeateTDS = runningPermTDS;
   const concentrateTDS = runningConcTDS;
+  const feedTDS = Object.values(normalizedFeedIons || {}).reduce((sum, val) => sum + (Number(val) || 0), 0);
 
-  // Osmotic Pressure Logic (Refined per user scenarios)
-  // Scenario 1 & 3: bar = 0.036 * TDS(g/L) * 22.1
-  // Scenario 2: psi = 0.52 * TDS(g/L) * 22.1
+  // Osmotic Pressure Logic (Refined per Scenarios 1, 2, 3)
+  // bar = 0.036 * TDS(g/L) * 22.1
+  // psi = 0.52 * TDS(g/L) * 22.1
   const tdsGL = concentrateTDS / 1000;
   const tdsFeedGL = feedTDS / 1000;
-  
+
   const OSMOTIC_COEFF_BAR = 0.036 * 22.1;
   const OSMOTIC_COEFF_PSI = 0.52 * 22.1;
 
@@ -218,25 +254,34 @@ export const calculateSystem = (inputs) => {
   const piAvgBar = (piFeedBar + piConcBar) / 2;
 
   // Convert permeate pressure input to bar for internal calculation
-  const permPressBar = isGpm ? Number(permeatePressure) / BAR_TO_PSI : Number(permeatePressure);
+  const permPressInput = Number(permeatePressure) || 0;
+  const permPressBar = isGpm ? permPressInput / BAR_TO_PSI : permPressInput;
 
-  // Pressure Physics: TMP = (Flux / Aw) + Osmotic Pressure
+  // Total pressure required = TMP + DeltaP/2 + Permeate Backpressure
   const awGfdPsi = Number(activeMembrane.aValue) || 0.15;
   const awLmhBar = awGfdPsi * 24.64;
   
   const systemTMPBar = (avgFluxLMH_calc / awLmhBar) + piAvgBar;
   const systemDeltaPBar = 1.0; // Clean pressure drop ~15 psi
   
-  // Total pressure required = TMP + DeltaP/2 + Permeate Backpressure
-  const feedPressureBar = systemTMPBar + (systemDeltaPBar / 2) + permPressBar;
-  const concPressureBar = systemTMPBar - (systemDeltaPBar / 2) + permPressBar;
+  let feedPressureBar = systemTMPBar + (systemDeltaPBar / 2) + permPressBar;
+  
+  // Manual Feed Pressure Override
+  if (feedPressure != null && Number(feedPressure) > 0) {
+    const manualFeedInput = Number(feedPressure);
+    // User wants to add Permeate Pressure to the Feed Pressure input
+    const totalFeedP = manualFeedInput + permPressInput;
+    feedPressureBar = isGpm ? totalFeedP / BAR_TO_PSI : totalFeedP;
+  }
+  
+  const concPressureBar = Math.max(feedPressureBar - systemDeltaPBar, 0);
 
   // Unit Conversion for Display
   const pressureUnit = isGpm ? 'psi' : 'bar';
   const displayFeedP = isGpm ? feedPressureBar * BAR_TO_PSI : feedPressureBar;
   const displayConcP = isGpm ? concPressureBar * BAR_TO_PSI : concPressureBar;
   
-  // Specific fix for Osmotic Pressure scenarios
+  // Specific fix for Osmotic Pressure display
   let displayOsmoticValue = 0;
   if (isGpm) {
     displayOsmoticValue = OSMOTIC_COEFF_PSI * tdsGL;
@@ -277,12 +322,12 @@ export const calculateSystem = (inputs) => {
     ccpp: Number(ccpp).toFixed(1),
     langelier: lsi.toFixed(2),
     ph: concentratePh.toFixed(1),
-    tds: concentrateTDS.toFixed(1)
+    tds: (feedTDS / (1 - recFrac)).toFixed(1) // Updated per user formula: TDSc = TDSf / (1 - Recovery)
   };
 
   const permeateParameters = {
     ph: permeatePh.toFixed(1),
-    tds: permeateTDS.toFixed(1)
+    tds: (feedTDS * (1 - membraneRejection / 100)).toFixed(1) // Method 1: From salt rejection
   };
 
   let currentFeedFlowM3h = feedFlowTotalM3h;
@@ -324,6 +369,7 @@ export const calculateSystem = (inputs) => {
     }
 
     const stageHighestFlux = stageAvgFluxValue * beta;
+    const stageHighestBeta = stageHighestFlux > 0 ? (stageAvgFluxValue / stageHighestFlux) : 0;
 
     const numStages = activeStages.length;
     const stageDeltaP = systemDeltaPBar / numStages;
@@ -339,7 +385,7 @@ export const calculateSystem = (inputs) => {
       concFlow: perVesselConcFlow.toFixed(2),
       flux: stageAvgFluxValue.toFixed(1),
       highestFlux: stageHighestFlux.toFixed(1),
-      highestBeta: beta.toFixed(2),
+      highestBeta: stageHighestBeta.toFixed(2),
       unit: flowUnit,
       fluxUnit: fluxUnit
     });
@@ -357,10 +403,10 @@ export const calculateSystem = (inputs) => {
 
   return {
     results: {
-      avgFlux: Number(displayFlux.toFixed(1)),
-      avgFluxGFD: Number(avgFluxGFD_calc.toFixed(1)),
+      avgFlux: Number(displayFlux.toFixed(isGpm ? 3 : 1)),
+      avgFluxGFD: Number(avgFluxGFD_calc.toFixed(3)),
       avgFluxLMH: Number(avgFluxLMH_calc.toFixed(1)),
-      calcFlux: displayFlux.toFixed(1),
+      calcFlux: displayFlux.toFixed(isGpm ? 3 : 1),
       fluxUnit,
       highestFlux: Number(highestFlux.toFixed(1)),
       highestBeta: Number(highestBeta.toFixed(3)),
