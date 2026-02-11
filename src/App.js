@@ -75,13 +75,14 @@ const App = () => {
   // --- 1. STATE MANAGEMENT ---
   const [snapshots, setSnapshots] = useState([]); 
   const [membranes, setMembranes] = useState([
-    { id: 'espa2ld', name: 'ESPA2-LD', area: 400, aValue: 4.43, rejection: 99.3, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'cpa3', name: 'CPA3', area: 400, aValue: 3.1, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'swc5ld', name: 'SWC5-LD', area: 400, aValue: 1.48, rejection: 99.3, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
+    { id: 'espa2ld', name: 'ESPA2-LD-4040', area: 80, areaM2: 7.43, aValue: 4.43, rejection: 99.6, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
+    { id: 'cpa3', name: 'CPA3', area: 400, areaM2: 37.16, aValue: 3.1, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
+    { id: 'swc5ld', name: 'SWC5-LD', area: 400, areaM2: 37.16, aValue: 1.48, rejection: 99.3, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
     { 
       id: 'lfc3ld4040',
       name: 'LFC3-LD4040',
       area: 80,
+      areaM2: 7.43,
       aValue: 3.1,
       rejection: 99.3,
       monoRejection: 92.0,
@@ -182,7 +183,7 @@ const App = () => {
           const stageElementsPerVessel = Number(stage.elementsPerVessel) || 0;
           totalElements += stageVessels * stageElementsPerVessel;
           const stageMembrane = membranes.find(m => m.id === stage.membraneModel) || membranes[0];
-          const stageArea = Number(stageMembrane?.area) || 400;
+          const stageArea = stage.membraneModel === 'espa2ld' ? 80 : (Number(stageMembrane?.area) || 400);
           totalArea_ft2 += stageVessels * stageElementsPerVessel * stageArea;
         }
       }
@@ -200,7 +201,8 @@ const App = () => {
     }
     
     // Ensure we have a valid membrane with area
-    const membraneArea = Number(activeMem?.area) || 400; // Default to 400 ft² if not found
+    const activeMemId = systemConfig.stages?.[0]?.membraneModel || systemConfig.membraneModel;
+    const membraneArea = activeMemId === 'espa2ld' ? 80 : (Number(activeMem?.area) || 400);
     if (totalArea_ft2 === 0) {
       totalArea_ft2 = totalElements * membraneArea;
     }
@@ -221,8 +223,6 @@ const App = () => {
         // Qp = Area * A * (P_feed - 0.5*dP - P_perm - Pi_avg)
         // Pi_avg depends on R. We iterate.
         const P_feed_bar = isGpm ? feedPressureInput / 14.5038 : feedPressureInput;
-        const P_perm_bar = isGpm ? (Number(systemConfig.permeatePressure) || 0) / 14.5038 : (Number(systemConfig.permeatePressure) || 0);
-
         // Calculate Pi_feed (Osmotic Pressure of feed)
         const ions = {
             ca: Number(waterData.ca) || 0,
@@ -250,7 +250,8 @@ const App = () => {
         const nominalFlow = 12; 
         const perVesselFeed = perTrainFeed_m3h / (totalStageVessels || 1);
         const flowFactor = Math.pow(Math.max(perVesselFeed, 0.01) / nominalFlow, 1.5);
-        const vesselDeltaP_bar = (Number(systemConfig.elementsPerVessel) || 7) * 0.23 * flowFactor;
+        const is4040 = membraneArea < 150; // ft2
+        const vesselDeltaP_bar = (Number(systemConfig.elementsPerVessel) || 7) * (is4040 ? 1.33 : 0.23) * flowFactor;
 
         // Use the recovery from systemConfig as the starting point (defaults to 0.525 as requested)
         let currentR = (Number(systemConfig.recovery) || 52.5) / 100;

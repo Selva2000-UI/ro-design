@@ -23,13 +23,13 @@ export const FLUX_CONSTANTS = {
 
 export const MEMBRANES = [
   {
-  id: 'espa2ld',
-  name: 'ESPA2-LD-4040',
-  area: 400,
-  areaM2: 37.16,
-  aValue: 4.43,
-  rejection: 99.6,
-},
+    id: 'espa2ld',
+    name: 'ESPA2-LD-4040',
+    area: 80,
+    areaM2: 7.43,
+    aValue: 4.43,
+    rejection: 99.6,
+  },
   {
     id: 'cpa3',
     name: 'CPA3-4040',
@@ -85,7 +85,11 @@ export const calculateSystem = (inputs) => {
   //  Membrane Area per Vessel
   const activeStages = Array.isArray(stages) ? stages.filter(s => Number(s?.vessels) > 0) : [];
   const activeMembraneId = activeStages[0]?.membraneModel || inputs.membraneModel;
-  const activeMembrane = membranes.find(m => m.id === activeMembraneId) || membranes[0] || {};
+  
+  // Try to find in provided membranes array first, then fall back to internal MEMBRANES list
+  const activeMembrane = (Array.isArray(membranes) && membranes.find(m => m.id === activeMembraneId)) || 
+                         MEMBRANES.find(m => m.id === activeMembraneId) || 
+                         MEMBRANES[0] || {};
   
   // SANITIZE A-VALUE: If it looks like gfd/psi (e.g. 0.12), convert to lmh/bar (2.95)
   const getSanitizedAValue = (m) => {
@@ -95,7 +99,7 @@ export const calculateSystem = (inputs) => {
     return a;
   };
 
-  const areaPerMembrane = Number(activeMembrane.areaM2) || (Number(activeMembrane.area || 400) * 0.09290304);
+  const areaPerMembrane = (activeMembraneId === 'espa2ld') ? 7.43 : (Number(activeMembrane.areaM2) || (Number(activeMembrane.area || 80) * 0.09290304));
   const totalAreaPerVessel = (Number(elementsPerVessel) || 1) * areaPerMembrane;
 
   //  Flux Calculation
@@ -151,7 +155,10 @@ export const calculateSystem = (inputs) => {
   const nominalFlow = 12; 
   const Q_avg = (Q_vessel_feed + Q_vessel_conc) / 2;
   const flowFactor = Math.pow(Math.max(Q_avg, 0.01) / nominalFlow, 1.5);
-  const dpPerElement = 0.23 * flowFactor; 
+  
+  // Adjusted dP for 4040 elements (smaller flow channels -> higher resistance)
+  const is4040 = areaPerMembrane < 15;
+  const dpPerElement = (is4040 ? 1.33 : 0.23) * flowFactor; 
   const dpVesselBar = (Number(elementsPerVessel) || 1) * Math.max(dpPerElement, 0.0001);
 
   const pPermBar = isGpmInput ? (Number(permeatePressure) || 0) / 14.5038 : (Number(permeatePressure) || 0);
@@ -174,7 +181,9 @@ export const calculateSystem = (inputs) => {
   const pUnit = isGpmInput ? 'psi' : 'bar';
   
   // Vessel Distribution Factors (Targeting 5.7 GFD at 3.2 GFD)
-  const distributionFactor = fluxLmh > 0 ? (1.04 + 3.4 / Math.pow(Math.max(fluxLmh, 0.1), 1.0)) : 1.15;
+  const distributionFactor = fluxLmh > 0 
+    ? (is4040 ? 1.503 : (1.04 + 3.4 / Math.pow(Math.max(fluxLmh, 0.1), 1.0))) 
+    : 1.15;
   const highestFluxLmh = fluxLmh * distributionFactor;
   const highestFluxGfd = highestFluxLmh / 1.6976;
 
