@@ -13,9 +13,9 @@ export const calcOsmoticPressurePsi = (tds) => {
   return 0.01 * tds;
 };
 
-// Permeate TDS ≈ 1% of feed TDS (99% rejection)
+// Permeate TDS ≈ 1.1% of feed TDS (98.9% effective rejection)
 export const calcPermeateTDS = (feedTDS) => {
-  return feedTDS * 0.01;
+  return feedTDS * 0.011;
 };
 
 
