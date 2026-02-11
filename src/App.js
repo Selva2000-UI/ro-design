@@ -7,7 +7,7 @@ import Report from './components/Report';
 import MembraneEditor from './components/MembraneEditor';
 import DesignGuidelines from './components/DesignGuidelines';
 import ValidationBanner from './components/ValidationBanner';
-import { calculateSystem } from './utils/calculatorService';
+import { calculateSystem, runHydraulicBalance } from './utils/calculatorService';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -39,15 +39,15 @@ const App = () => {
     stage1Vessels: 4,
     stage2Vessels: 0,
     elementsPerVessel: 6,
-    membraneModel: 'espa2ld',
+    membraneModel: 'cpa3',
     pass1Stages: 1, // Initially only 1 stage is active
     stages: [
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 3 },
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 0 },
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 0 },
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 0 },
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 0 },
-      { membraneModel: 'espa2ld', elementsPerVessel: 7, vessels: 0 }
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 4 },
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 }
     ],
 
     // Flux display
@@ -313,6 +313,7 @@ const App = () => {
       stages: activeStages,
       membranes,
       flowUnit: unit,
+      fluxUnit: systemConfig.fluxUnit,
       membraneAge: systemConfig.membraneAge,
       fluxDeclinePerYear: systemConfig.fluxDeclinePerYear,
       spIncreasePerYear: systemConfig.spIncreasePerYear,
@@ -336,18 +337,20 @@ const App = () => {
         rawFluxLMH = calcResults.results.avgFluxLMH;
     }
     
+    // Ensure projection results have consistent units
+    const currentResults = calcResults?.results || {};
+
     // Debug logging to understand why flux is 0 (only log when calculated but still 0)
-    if (systemConfig.designCalculated && rawFluxGFD === 0 && rawFluxLMH === 0) {
+   if (systemConfig.designCalculated && rawFlux === 0) {
       console.warn('Flux is 0 after calculation! Debug info:');
       console.log('  - designCalculated:', systemConfig.designCalculated);
       console.log('  - totalElements:', totalElements);
       console.log('  - membraneArea:', membraneArea);
       console.log('  - totalArea_ft2:', totalArea_ft2);
       console.log('  - totalArea_m2:', totalArea_m2);
-      console.log('  - perTrainProduct_gpd:', perTrainProduct_gpd);
       console.log('  - perTrainProduct_m3h:', perTrainProduct_m3h);
-      console.log('  - rawFluxGFD:', rawFluxGFD);
-      console.log('  - rawFluxLMH:', rawFluxLMH);
+       console.log('  - rawFlux:', rawFlux);
+      console.log('  - fluxUnit:', fluxUnit);
       console.log('  - pass1Stages:', systemConfig.pass1Stages);
       console.log('  - stages:', systemConfig.stages?.map((s, i) => ({ 
         stage: i + 1, 
@@ -554,7 +557,9 @@ const App = () => {
     const concentratePh = calcResults?.concentrateParameters?.ph != null
       ? Number(calcResults.concentrateParameters.ph)
       : Math.min(Math.max(feedPhForCalc + Math.log10(CF), 0), 14);
-
+     // Update projection with the calculated flux value
+    const fluxGFD = systemConfig.flowUnit === 'gpm' ? rawFlux : 0;
+    const fluxLMH = systemConfig.flowUnit !== 'gpm' ? rawFlux : 0;
     // Langelier Saturation Index (simplified, consistent with PreTreatment)
     const pCa = 5.0 - Math.log10(Math.max(getNumeric(concentrateConcentration.ca) * 2.5, 0.0001));
     const pAlk = 5.0 - Math.log10(Math.max(getNumeric(concentrateConcentration.hco3) * 0.82, 0.0001));

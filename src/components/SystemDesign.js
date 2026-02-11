@@ -244,6 +244,14 @@ const SystemDesign = ({
     });
   };
 
+  const handleFluxUnitChange = (nextUnit) => {
+    setSystemConfig({
+      ...systemConfig,
+      fluxUnit: nextUnit,
+      designCalculated: false
+    });
+  };
+
   // Get decimal precision for flow unit (matching Hydranautics)
     // const getFlowDecimals = (flowUnit) => {
     //   if (['gpm', 'm3/h'].includes(flowUnit)) return 2;
@@ -458,12 +466,8 @@ const SystemDesign = ({
             <div style={{display:'flex', gap:'2px'}}>
               <select style={{fontSize:'0.7rem'}} value={systemConfig.flowUnit} onChange={e => handleFlowUnitChange(e.target.value)}>
                 <option value="gpm">gpm</option>
-                <option value="gpd">gpd</option>
-                <option value="mgd">mgd</option>
-                <option value="migd">migd</option>
-                <option value="m3/h">m3/h</option>
-                <option value="m3/d">m3/d</option>
-                <option value="mld">mld</option>
+                 <option value="m3/h">m³/h</option>
+                 <option value="m3/d">m³/d</option>
               </select>
               <input style={inputStyle} value={systemConfig.feedFlow} onChange={e => handleInputChange('feedFlow', e.target.value)} />
             </div>
