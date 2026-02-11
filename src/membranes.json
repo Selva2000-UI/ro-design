@@ -2,7 +2,7 @@
   { "id": "espa1", "name": "ESPA1", "type": "Brackish", "area": 400, "rejection": 99.4, "description": "Energy-saving polyamide." },
   { "id": "espa2", "name": "ESPA2-LD", "type": "Brackish", "area": 400, "rejection": 99.6, "description": "High rejection, low pressure." },
   { "id": "espa4", "name": "ESPA4-LD", "type": "Brackish", "area": 400, "rejection": 99.2, "description": "Ultra low pressure." },
-  { "id": "cpaf3", "name": "CPA3", "type": "Brackish", "area": 400, "rejection": 99.7, "description": "Standard high rejection." },
+  { "id": "cpaf3", "name": "CPA3", "type": "Brackish", "area": 400, "rejection": 99.3, "description": "Standard high rejection." },
   { "id": "cpaf5", "name": "CPA5-LD", "type": "Brackish", "area": 400, "rejection": 99.7, "description": "Fouling resistant, high rejection." },
   { "id": "swc4", "name": "SWC4-LD", "type": "Seawater", "area": 400, "rejection": 99.8, "description": "High rejection seawater." },
   { "id": "swc5", "name": "SWC5-LD", "type": "Seawater", "area": 400, "rejection": 99.8, "description": "Standard seawater." },

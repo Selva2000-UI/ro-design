@@ -75,15 +75,15 @@ const App = () => {
   // --- 1. STATE MANAGEMENT ---
   const [snapshots, setSnapshots] = useState([]); 
   const [membranes, setMembranes] = useState([
-    { id: 'espa2ld', name: 'ESPA2-LD', area: 400, aValue: 4.43, rejection: 99.7, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'cpa3', name: 'CPA3', area: 400, aValue: 2.95, rejection: 99.7, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'swc5ld', name: 'SWC5-LD', area: 400, aValue: 1.48, rejection: 99.8, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
+    { id: 'espa2ld', name: 'ESPA2-LD', area: 400, aValue: 4.43, rejection: 99.3, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
+    { id: 'cpa3', name: 'CPA3', area: 400, aValue: 3.1, rejection: 99.3, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
+    { id: 'swc5ld', name: 'SWC5-LD', area: 400, aValue: 1.48, rejection: 99.3, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
     { 
       id: 'lfc3ld4040',
       name: 'LFC3-LD4040',
       area: 80,
-      aValue: 2.95,
-      rejection: 99.7,
+      aValue: 3.1,
+      rejection: 99.3,
       monoRejection: 92.0,
       divalentRejection: 99.95,
       silicaRejection: 99.95,
@@ -211,6 +211,11 @@ const App = () => {
     let perTrainProduct_m3h = 0;
     const feedPressureInput = Number(systemConfig.feedPressure);
 
+    const perTrainProduct_gpd = perTrainProduct_m3h * M3H_TO_GPD;
+
+    const activeStages = systemConfig.stages?.slice(0, pass1Stages) || [];
+    const totalStageVessels = activeStages.reduce((sum, stage) => sum + (Number(stage?.vessels) || 0), 0);
+
     if (feedPressureInput > 0) {
         // SOLVE FOR RECOVERY based on Feed Pressure
         // Qp = Area * A * (P_feed - 0.5*dP - P_perm - Pi_avg)
@@ -239,24 +244,24 @@ const App = () => {
             nh4: Number(waterData.nh4) || 0
         };
         const feedTDS = Object.values(ions).reduce((sum, v) => sum + v, 0);
-        const piFeed_bar = 0.00076 * feedTDS;
+        const piFeed_bar = 0.00078 * feedTDS;
         
         // Flow-dependent dP (Standardized to match calculatorService)
         const nominalFlow = 12; 
         const perVesselFeed = perTrainFeed_m3h / (totalStageVessels || 1);
         const flowFactor = Math.pow(Math.max(perVesselFeed, 0.01) / nominalFlow, 1.5);
-        const vesselDeltaP_bar = (Number(systemConfig.elementsPerVessel) || 7) * 0.13 * flowFactor;
+        const vesselDeltaP_bar = (Number(systemConfig.elementsPerVessel) || 7) * 0.165 * flowFactor;
 
         // Use the recovery from systemConfig as the starting point (defaults to 0.525 as requested)
         let currentR = (Number(systemConfig.recovery) || 52.5) / 100;
         for (let iter = 0; iter < 10; iter++) {
-            const logTerm = -Math.log(1 - Math.min(currentR, 0.99));
-            const piEff_bar = currentR > 0.01 ? piFeed_bar * (logTerm / currentR) : piFeed_bar;
+            const cfLogMean = currentR > 0.01 ? -Math.log(1 - Math.min(currentR, 0.99)) / currentR : 1;
+            const piEff_bar = piFeed_bar * Math.pow(cfLogMean, 0.5);
             
-            // Per user rule: P_feed_vessel = P_input + 2*P_perm
-            // NDP = P_feed_vessel - 0.5*dP - P_perm - Pi_eff
-            // NDP = (P_input + 2*P_perm) - 0.5*dP - P_perm - Pi_eff = P_input + P_perm - 0.5*dP - Pi_eff
-            const netDrivingPressure = Math.max(P_feed_bar + P_perm_bar - (0.5 * vesselDeltaP_bar) - piEff_bar, 0);
+            // Per user rule: Display P_feed = P_input + P_perm
+            // Effective P_feed for calculation is just P_input
+            // NDP = (P_input + P_perm) - 0.5*dP - P_perm - Pi_eff = P_input - 0.5*dP - Pi_eff
+            const netDrivingPressure = Math.max(P_feed_bar - (0.5 * vesselDeltaP_bar) - piEff_bar, 0);
             
             const A_lmh_bar = Number(activeMem?.aValue) || 2.95;
             const Max_flux = (activeMem?.id === 'cpa3') ? 51.8 : 48.5;
@@ -278,10 +283,6 @@ const App = () => {
 
     const perTrainConc_m3h = perTrainFeed_m3h - perTrainProduct_m3h;
 
-    const perTrainProduct_gpd = perTrainProduct_m3h * M3H_TO_GPD;
-
-    const activeStages = systemConfig.stages?.slice(0, pass1Stages) || [];
-    const totalStageVessels = activeStages.reduce((sum, stage) => sum + (Number(stage?.vessels) || 0), 0);
     const calcResults = calculateSystem({
       feedFlow: trainFeedInput,
       recovery: recoveryPct,

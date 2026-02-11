@@ -83,13 +83,13 @@ const SystemDesign = ({
 
     const updates = { ...systemConfig, [key]: value, ...(resetsDesign ? { designCalculated: false } : {}) };
 
-    // If user manually edits recovery, clear feedPressure to allow the manual input to take effect
-    if (key === 'recovery' && Number(value) > 0) {
+    // If user manually edits recovery, clear feedPressure to switch back to normal mode
+    if (key === 'recovery' && value !== systemConfig.recovery && Number(value) > 0) {
       updates.feedPressure = '';
     }
 
-    // If user enters Feed Pressure, set recovery to 52.5
-    if (key === 'feedPressure' && value !== '') {
+    // If user enters Feed Pressure, set recovery default to 52.5 as per request
+    if (key === 'feedPressure' && value !== '' && Number(value) > 0) {
       updates.recovery = 52.5;
     }
 
@@ -422,7 +422,7 @@ const SystemDesign = ({
             const nextShow = !showFeedPressure;
             setShowFeedPressure(nextShow);
             if (nextShow) {
-              handleInputChange('recovery', 52.5);
+              setSystemConfig(prev => ({ ...prev, recovery: 52.5 }));
             }
           }}
           style={{
@@ -475,7 +475,7 @@ const SystemDesign = ({
             <span>Permeate recovery %</span>
             <input 
               style={inputStyle} 
-              value={Number(systemConfig.feedPressure) > 0 ? (projection?.results?.recovery ?? projection?.recovery) : systemConfig.recovery} 
+              value={systemConfig.recovery ?? ''} 
               onChange={e => handleInputChange('recovery', e.target.value)}
             />
           </div>
