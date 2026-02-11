@@ -152,13 +152,13 @@ export const calculateSystem = (inputs) => {
     : feedTds / (1 - Math.min(recFrac, 0.99));
 
   // Pressure Drop per Vessel (Targeting exactly 2.0 psi dP at 12 gpm / 1.7 bar at 15.6 m3/h)
-  const nominalFlow = 12; 
   const Q_avg = (Q_vessel_feed + Q_vessel_conc) / 2;
-  const flowFactor = Math.pow(Math.max(Q_avg, 0.01) / nominalFlow, 1.5);
   
   // Adjusted dP for 4040 elements (smaller flow channels -> higher resistance)
   const is4040 = areaPerMembrane < 15;
-  const dpPerElement = (is4040 ? 1.33 : 0.23) * flowFactor; 
+  const nominalFlowDP = is4040 ? 3.5 : 12; // Nominal flow in m3/h for dP basis
+  const flowFactor = Math.pow(Math.max(Q_avg, 0.01) / nominalFlowDP, 1.75);
+  const dpPerElement = (is4040 ? 0.30 : 0.23) * flowFactor; 
   const dpVesselBar = (Number(elementsPerVessel) || 1) * Math.max(dpPerElement, 0.0001);
 
   const pPermBar = isGpmInput ? (Number(permeatePressure) || 0) / 14.5038 : (Number(permeatePressure) || 0);
@@ -182,7 +182,7 @@ export const calculateSystem = (inputs) => {
   
   // Vessel Distribution Factors (Targeting 5.7 GFD at 3.2 GFD)
   const distributionFactor = fluxLmh > 0 
-    ? (is4040 ? 1.503 : (1.13 + 3.4 / Math.pow(Math.max(fluxLmh, 0.1), 1.0))) 
+    ? (is4040 ? (1.21 + 2.5 / Math.pow(Math.max(fluxLmh, 0.1), 1.0)) : (1.13 + 3.4 / Math.pow(Math.max(fluxLmh, 0.1), 1.0))) 
     : 1.15;
   const highestFluxLmh = fluxLmh * distributionFactor;
   const highestFluxGfd = highestFluxLmh / 1.6976;
@@ -192,7 +192,7 @@ export const calculateSystem = (inputs) => {
   const fluxUnit = isGpmInput ? 'gfd' : 'lmh';
 
   // Beta (Concentration Polarization) calculation: Target exactly 1.13 at 3.2 GFD
-  const highestBeta = 1 + (0.29 * Math.pow(recFrac, 0.5)) * (1.0 + 1.25 / Math.pow(Math.max(fluxLmh, 0.1), 0.5));
+  const highestBeta = 1 + (0.23 * Math.pow(recFrac, 0.5)) * (1.0 + 1.25 / Math.pow(Math.max(fluxLmh, 0.1), 0.5));
   
   const Q_vessel_feed_disp = isGpmInput ? Q_vessel_feed * M3H_TO_GPM : Q_vessel_feed;
   const Q_vessel_conc_disp = isGpmInput ? Q_vessel_conc * M3H_TO_GPM : Q_vessel_conc;

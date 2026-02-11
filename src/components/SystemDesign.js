@@ -244,14 +244,6 @@ const SystemDesign = ({
     });
   };
 
-  const handleFluxUnitChange = (nextUnit) => {
-    setSystemConfig({
-      ...systemConfig,
-      fluxUnit: nextUnit,
-      designCalculated: false
-    });
-  };
-
   // Get decimal precision for flow unit (matching Hydranautics)
     // const getFlowDecimals = (flowUnit) => {
     //   if (['gpm', 'm3/h'].includes(flowUnit)) return 2;

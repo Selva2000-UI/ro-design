@@ -7,7 +7,7 @@ import Report from './components/Report';
 import MembraneEditor from './components/MembraneEditor';
 import DesignGuidelines from './components/DesignGuidelines';
 import ValidationBanner from './components/ValidationBanner';
-import { calculateSystem, runHydraulicBalance } from './utils/calculatorService';
+import { calculateSystem } from './utils/calculatorService';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -153,8 +153,6 @@ const App = () => {
 
   // --- 2. MASTER CALCULATION ENGINE ---
   useEffect(() => {
-    const M3H_TO_GPD = 24 * 264.172052; // m3/h -> gal/day
-
     const unit = FLOW_TO_M3H[systemConfig.flowUnit] ? systemConfig.flowUnit : 'gpm';
     const unitFactor = FLOW_TO_M3H[unit] ?? 1;
     const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(unit);
@@ -212,8 +210,6 @@ const App = () => {
 
     let perTrainProduct_m3h = 0;
     const feedPressureInput = Number(systemConfig.feedPressure);
-
-    const perTrainProduct_gpd = perTrainProduct_m3h * M3H_TO_GPD;
 
     const activeStages = systemConfig.stages?.slice(0, pass1Stages) || [];
     const totalStageVessels = activeStages.reduce((sum, stage) => sum + (Number(stage?.vessels) || 0), 0);
@@ -330,18 +326,13 @@ const App = () => {
     // Flux (gfd) = Flux (lmh) / 1.6976
     
     let rawFluxLMH = totalArea_m2 > 0 ? (perTrainProduct_m3h * 1000) / totalArea_m2 : 0;
-    let rawFluxGFD = rawFluxLMH / 1.6976;
     
     if (calcResults?.results) {
-        rawFluxGFD = calcResults.results.avgFluxGFD;
         rawFluxLMH = calcResults.results.avgFluxLMH;
     }
     
-    // Ensure projection results have consistent units
-    const currentResults = calcResults?.results || {};
-
     // Debug logging to understand why flux is 0 (only log when calculated but still 0)
-   if (systemConfig.designCalculated && rawFlux === 0) {
+   if (systemConfig.designCalculated && rawFluxLMH === 0) {
       console.warn('Flux is 0 after calculation! Debug info:');
       console.log('  - designCalculated:', systemConfig.designCalculated);
       console.log('  - totalElements:', totalElements);
@@ -349,8 +340,8 @@ const App = () => {
       console.log('  - totalArea_ft2:', totalArea_ft2);
       console.log('  - totalArea_m2:', totalArea_m2);
       console.log('  - perTrainProduct_m3h:', perTrainProduct_m3h);
-       console.log('  - rawFlux:', rawFlux);
-      console.log('  - fluxUnit:', fluxUnit);
+      console.log('  - rawFluxLMH:', rawFluxLMH);
+      console.log('  - fluxUnit:', calcResults?.results?.fluxUnit);
       console.log('  - pass1Stages:', systemConfig.pass1Stages);
       console.log('  - stages:', systemConfig.stages?.map((s, i) => ({ 
         stage: i + 1, 
@@ -557,9 +548,6 @@ const App = () => {
     const concentratePh = calcResults?.concentrateParameters?.ph != null
       ? Number(calcResults.concentrateParameters.ph)
       : Math.min(Math.max(feedPhForCalc + Math.log10(CF), 0), 14);
-     // Update projection with the calculated flux value
-    const fluxGFD = systemConfig.flowUnit === 'gpm' ? rawFlux : 0;
-    const fluxLMH = systemConfig.flowUnit !== 'gpm' ? rawFlux : 0;
     // Langelier Saturation Index (simplified, consistent with PreTreatment)
     const pCa = 5.0 - Math.log10(Math.max(getNumeric(concentrateConcentration.ca) * 2.5, 0.0001));
     const pAlk = 5.0 - Math.log10(Math.max(getNumeric(concentrateConcentration.hco3) * 0.82, 0.0001));
