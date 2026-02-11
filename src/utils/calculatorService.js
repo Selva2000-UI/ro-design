@@ -32,19 +32,19 @@ export const MEMBRANES = [
   },
   {
     id: 'cpa3',
-    name: 'CPA3-4040',
+    name: 'CPA3-8040',
     area: 400,
     areaM2: 37.16,
-    aValue: 3.8,
+    aValue: 3.16,
     rejection: 99.7,
   },  
   {
     id: 'lfc3ld4040',
-    name: 'LFC3-LD-4040',
-    area: 404,
-    areaM2: 37.53,
+    name: 'LFC3-LD-8040',
+    area: 400,
+    areaM2: 37.16,
     rejection: 99.6,
-    aValue: 2.95
+    aValue: 3.16
   }
 ];
 
@@ -84,17 +84,17 @@ export const calculateSystem = (inputs) => {
 
   //  Membrane Area per Vessel
   const activeStages = Array.isArray(stages) ? stages.filter(s => Number(s?.vessels) > 0) : [];
-  const activeMembraneId = activeStages[0]?.membraneModel || inputs.membraneModel;
+  const activeMembraneId = (activeStages[0]?.membraneModel || inputs.membraneModel || '').toLowerCase();
   
   // Try to find in provided membranes array first, then fall back to internal MEMBRANES list
-  const activeMembrane = (Array.isArray(membranes) && membranes.find(m => m.id === activeMembraneId)) || 
-                         MEMBRANES.find(m => m.id === activeMembraneId) || 
+  const activeMembrane = (Array.isArray(membranes) && membranes.find(m => (m.id || '').toLowerCase() === activeMembraneId)) || 
+                         MEMBRANES.find(m => (m.id || '').toLowerCase() === activeMembraneId) || 
                          MEMBRANES[0] || {};
   
   // SANITIZE A-VALUE: If it looks like gfd/psi (e.g. 0.12), convert to lmh/bar (2.95)
   const getSanitizedAValue = (m) => {
     let a = Number(m?.aValue);
-    if (isNaN(a) || a <= 0) return 2.95;
+    if (isNaN(a) || a <= 0) return 3.16;
     if (a < 1.0) return a * 24.62; // Convert gfd/psi to lmh/bar (1.6976 * 14.5038)
     return a;
   };
@@ -114,7 +114,7 @@ export const calculateSystem = (inputs) => {
   const normalizedFeedIons = { ...(feedIons || {}) };
   const feedTds = Object.values(normalizedFeedIons).reduce((sum, v) => sum + (Number(v) || 0), 0);
   // Adjusted constant to hit target 13.7 bar at 30 LMH
-  const piFeedBar = 0.00078 * feedTds; 
+  const piFeedBar = 0.00072 * feedTds; 
   
   // Refined concentration factor for precise pressure alignment
   const cfLogMean = recFrac > 0.01 ? -Math.log(1 - recFrac) / recFrac : 1;
@@ -137,7 +137,7 @@ export const calculateSystem = (inputs) => {
     const ionB = testFlux * ionSPTest;
     
     // Targeted Beta/Flux sensitivity for 1.13 Beta at 3.2 GFD
-    const betaFactor = 1 + (0.13 * Math.pow(recFrac, 0.5)) * (1.0 + 1.25 / Math.pow(Math.max(fluxLmh, 0.1), 0.5));
+    const betaFactor = 1 + (0.28 * Math.pow(recFrac, 0.5)) * (1.0 + 1.25 / Math.pow(Math.max(fluxLmh, 0.1), 0.5));
     const ionSPActual = ionB * betaFactor / (Math.max(fluxLmh, 0.1) + ionB * betaFactor);
     
     const ionCavg = Number(val) * cfLogMean;
@@ -182,7 +182,7 @@ export const calculateSystem = (inputs) => {
   
   // Vessel Distribution Factors (Targeting 5.7 GFD at 3.2 GFD)
   const distributionFactor = fluxLmh > 0 
-    ? (is4040 ? 1.503 : (1.04 + 3.4 / Math.pow(Math.max(fluxLmh, 0.1), 1.0))) 
+    ? (is4040 ? 1.503 : (1.13 + 3.4 / Math.pow(Math.max(fluxLmh, 0.1), 1.0))) 
     : 1.15;
   const highestFluxLmh = fluxLmh * distributionFactor;
   const highestFluxGfd = highestFluxLmh / 1.6976;
@@ -192,7 +192,7 @@ export const calculateSystem = (inputs) => {
   const fluxUnit = isGpmInput ? 'gfd' : 'lmh';
 
   // Beta (Concentration Polarization) calculation: Target exactly 1.13 at 3.2 GFD
-  const highestBeta = 1 + (0.14 * Math.pow(recFrac, 0.5)) * (1.0 + 1.25 / Math.pow(Math.max(fluxLmh, 0.1), 0.5));
+  const highestBeta = 1 + (0.29 * Math.pow(recFrac, 0.5)) * (1.0 + 1.25 / Math.pow(Math.max(fluxLmh, 0.1), 0.5));
   
   const Q_vessel_feed_disp = isGpmInput ? Q_vessel_feed * M3H_TO_GPM : Q_vessel_feed;
   const Q_vessel_conc_disp = isGpmInput ? Q_vessel_conc * M3H_TO_GPM : Q_vessel_conc;

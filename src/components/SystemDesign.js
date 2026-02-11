@@ -1049,7 +1049,7 @@ const SystemDesign = ({
                     <td style={{ border: '1px solid #ccc', background: Number(row.feedPressure) < 0 ? '#f8d7da' : 'transparent' }}>
                       {row.feedPressure}
                     </td>
-                    <td style={{ border: '1px solid #ccc', background: Number(row.concPressure) < 0 ? '#f8d7da' : 'transparent' }}>
+                   <td style={{ border: '1px solid #ccc', background: Number(row.concPressure) < 0 ? '#f8d7da' : 'transparent' }}>
                       {row.concPressure}
                     </td>
                     <td style={{ border: '1px solid #ccc' }}>
