@@ -31,13 +31,13 @@ export const MEMBRANES = [
   rejection: 99.6,
 },
   {
-  id: 'cpa3',
-  name: 'CPA3-4040',
-  area: 400,
-  areaM2: 37.16,
-  aValue: 3.1,
-  rejection: 99.3,
-},  
+    id: 'cpa3',
+    name: 'CPA3-4040',
+    area: 400,
+    areaM2: 37.16,
+    aValue: 3.8,
+    rejection: 99.7,
+  },  
   {
     id: 'lfc3ld4040',
     name: 'LFC3-LD-4040',
@@ -151,7 +151,7 @@ export const calculateSystem = (inputs) => {
   const nominalFlow = 12; 
   const Q_avg = (Q_vessel_feed + Q_vessel_conc) / 2;
   const flowFactor = Math.pow(Math.max(Q_avg, 0.01) / nominalFlow, 1.5);
-  const dpPerElement = 0.165 * flowFactor; 
+  const dpPerElement = 0.23 * flowFactor; 
   const dpVesselBar = (Number(elementsPerVessel) || 1) * Math.max(dpPerElement, 0.0001);
 
   const pPermBar = isGpmInput ? (Number(permeatePressure) || 0) / 14.5038 : (Number(permeatePressure) || 0);
@@ -163,7 +163,7 @@ export const calculateSystem = (inputs) => {
     const baseP = isGpmInput ? Number(inputs.feedPressure) / 14.5038 : Number(inputs.feedPressure);
     feedPressureBar = baseP + pPermBar;
   } else {
-    feedPressureBar = ndpBar + effectivePiBar + dpVesselBar + pPermBar;
+    feedPressureBar = ndpBar + effectivePiBar + (0.5 * dpVesselBar) + pPermBar;
   }
   
   const concPressureBar = feedPressureBar - dpVesselBar;

@@ -76,7 +76,7 @@ const App = () => {
   const [snapshots, setSnapshots] = useState([]); 
   const [membranes, setMembranes] = useState([
     { id: 'espa2ld', name: 'ESPA2-LD', area: 400, aValue: 4.43, rejection: 99.3, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'cpa3', name: 'CPA3', area: 400, aValue: 3.1, rejection: 99.3, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
+    { id: 'cpa3', name: 'CPA3', area: 400, aValue: 3.1, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
     { id: 'swc5ld', name: 'SWC5-LD', area: 400, aValue: 1.48, rejection: 99.3, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
     { 
       id: 'lfc3ld4040',
@@ -250,7 +250,7 @@ const App = () => {
         const nominalFlow = 12; 
         const perVesselFeed = perTrainFeed_m3h / (totalStageVessels || 1);
         const flowFactor = Math.pow(Math.max(perVesselFeed, 0.01) / nominalFlow, 1.5);
-        const vesselDeltaP_bar = (Number(systemConfig.elementsPerVessel) || 7) * 0.165 * flowFactor;
+        const vesselDeltaP_bar = (Number(systemConfig.elementsPerVessel) || 7) * 0.23 * flowFactor;
 
         // Use the recovery from systemConfig as the starting point (defaults to 0.525 as requested)
         let currentR = (Number(systemConfig.recovery) || 52.5) / 100;
