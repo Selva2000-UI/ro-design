@@ -7,7 +7,7 @@ import Report from './components/Report';
 import MembraneEditor from './components/MembraneEditor';
 import DesignGuidelines from './components/DesignGuidelines';
 import ValidationBanner from './components/ValidationBanner';
-import { calculateSystem, calculateEC } from './utils/calculatorService';
+import { calculateSystem } from './utils/calculatorService';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -76,7 +76,7 @@ const App = () => {
   const [snapshots, setSnapshots] = useState([]); 
   const [membranes, setMembranes] = useState([
     { id: 'espa2ld', name: 'ESPA2-LD-4040', area: 80, areaM2: 7.43, aValue: 4.43, rejection: 99.6, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'cpa3', name: 'CPA3', area: 400, areaM2: 37.17, aValue: 3.1414, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.3078, type: 'Brackish' },
+    { id: 'cpa3', name: 'CPA3', area: 400, areaM2: 37.16, aValue: 3.16, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
     { id: 'swc5ld', name: 'SWC5-LD', area: 400, areaM2: 37.16, aValue: 1.6, rejection: 99.3, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
     { 
       id: 'lfc3ld4040',
@@ -118,28 +118,24 @@ const App = () => {
   const [postTreatment, setPostTreatment] = useState({ causticDose: 2.0 });
   
   const applyTdsProfile = (tdsValue) => {
-    const tds = Number(tdsValue) || 0;
-    if (tds <= 0) return;
+  const tds = Number(tdsValue) || 0;
+  if (tds <= 0) return;
 
-    const EW_NA = 23;
-    const EW_CL = 35.45;
+  const EW_NA = 23;
+  const EW_CL = 35.45;
 
-    const totalMeq = tds / (EW_NA + EW_CL);
+  const totalMeq = tds / (EW_NA + EW_CL);
 
-    const na = totalMeq * EW_NA;
-    const cl = totalMeq * EW_CL;
+  const na = totalMeq * EW_NA;
+  const cl = totalMeq * EW_CL;
 
-    setWaterData(prev => ({
-      ...prev,
-      calculatedTds: tds,
-      na: Number(na.toFixed(2)),
-      cl: Number(cl.toFixed(2)),
-      // Clear other ions for a pure profile
-      ca: 0, mg: 0, k: 0, sr: 0, ba: 0,
-      hco3: 0, so4: 0, no3: 0, sio2: 0,
-      nh4: 0, po4: 0, f: 0, b: 0, co2: 0, co3: 0
-    }));
-  };
+  setWaterData(prev => ({
+    ...prev,
+    calculatedTds: tds,
+    na: Number(na.toFixed(2)),
+    cl: Number(cl.toFixed(2))
+  }));
+};
 
   const [projection, setProjection] = useState({ 
     fluxGFD: 0, pumpPressure: 0, monthlyEnergyCost: 0, permeateFlow: 0 
@@ -163,9 +159,8 @@ const App = () => {
 
     const trains = Math.max(Number(systemConfig.numTrains) || 1, 1);
     
-    // User gives Feed Flow and Recovery as primary inputs now (System-level total)
-    const totalFeedInput = Number(systemConfig.feedFlow) || 0;
-    const trainFeedInput = totalFeedInput / trains;
+    // User gives Feed Flow and Recovery as primary inputs now
+    const trainFeedInput = Number(systemConfig.feedFlow) || 0;
     const perTrainFeed_m3h = trainFeedInput * unitFactor;
     
     // Recovery input from user
@@ -221,11 +216,9 @@ const App = () => {
 
     if (feedPressureInput > 0) {
         // SOLVE FOR RECOVERY based on Feed Pressure
-        // User rule: Total Feed P = Input P_feed + P_perm
-        const permeatePressureInput = Number(systemConfig.permeatePressure) || 0;
-        const P_feed_total = feedPressureInput + permeatePressureInput;
-        const P_feed_bar = isGpm ? P_feed_total / 14.5038 : P_feed_total;
-        const P_perm_bar = isGpm ? permeatePressureInput / 14.5038 : permeatePressureInput;
+        // Qp = Area * A * (P_feed - 0.5*dP - P_perm - Pi_avg)
+        // Pi_avg depends on R. We iterate.
+        const P_feed_bar = isGpm ? feedPressureInput / 14.5038 : feedPressureInput;
         // Calculate Pi_feed (Osmotic Pressure of feed)
         const ions = {
             ca: Number(waterData.ca) || 0,
@@ -247,7 +240,7 @@ const App = () => {
             nh4: Number(waterData.nh4) || 0
         };
         const feedTDS = Object.values(ions).reduce((sum, v) => sum + v, 0);
-        const piFeed_bar = 0.00076 * feedTDS;
+        const piFeed_bar = 0.00078 * feedTDS;
         
         // Flow-dependent dP (Standardized to match calculatorService)
         const nominalFlow = 12; 
@@ -265,7 +258,7 @@ const App = () => {
             // Per user rule: Display P_feed = P_input + P_perm
             // Effective P_feed for calculation is just P_input
             // NDP = (P_input + P_perm) - 0.5*dP - P_perm - Pi_eff = P_input - 0.5*dP - Pi_eff
-            const netDrivingPressure = Math.max(P_feed_bar - P_perm_bar - (0.5 * vesselDeltaP_bar) - piEff_bar, 0);
+            const netDrivingPressure = Math.max(P_feed_bar - (0.5 * vesselDeltaP_bar) - piEff_bar, 0);
             
             const A_lmh_bar = Number(activeMem?.aValue) || 2.95;
             const Max_flux = (activeMem?.id === 'cpa3') ? 51.8 : 48.5;
@@ -293,7 +286,7 @@ const App = () => {
       vessels: totalStageVessels || Number(systemConfig.stage1Vessels) || 1,
       elementsPerVessel: Number(systemConfig.elementsPerVessel) || 0,
       feedPH: Number(systemConfig.feedPh) || Number(waterData.ph) || 7.0,
-      temp: Number(waterData.temp) || 25,
+      tempF: (Number(waterData.temp) * 9 / 5) + 32,
       feedIons: {
         ca: Number(waterData.ca) || 0,
         mg: Number(waterData.mg) || 0,
@@ -361,6 +354,8 @@ const App = () => {
     // Check if only the unit changed (not the permeate flow value)
     // If so, use the stored base values and just reformat with new precision
     const permeateNumeric = Number(trainPermeateInput) || 0;
+    const prevPermeate = baseValuesRef.current.permeate;
+    const prevUnit = baseValuesRef.current.unit;
     const onlyUnitChanged = false; // Disable this logic as it causes stale value issues with manual inputs
     
     // Back-convert for display (train-level, same unit as UI)
@@ -529,15 +524,13 @@ const App = () => {
 
     // Pump model expects a flux-like term; use rawFluxLMH to ensure consistency regardless of unit display
     const pressureTerm = (rawFluxLMH / (aEffective * TCF)) * foulingFactorValue;
-    const pumpPressureBar = calcResults?.results?.feedPressure != null
-      ? (isGpm ? Number(calcResults.results.feedPressure) / 14.5038 : Number(calcResults.results.feedPressure))
+    const pumpPressure = calcResults?.results?.feedPressure != null
+      ? Number(calcResults.results.feedPressure)
       : (pressureTerm + osmoticP + 1.2) * spFactor;
-
-    const pumpPressureDisplay = isGpm ? pumpPressureBar * 14.5038 : pumpPressureBar;
 
     // Use total plant feed for power (m3/h)
     const totalFeed_m3h = perTrainFeed_m3h * trains;
-    const powerKw = (pumpPressureBar * totalFeed_m3h) / (36.7 * 0.75);
+    const powerKw = (pumpPressure * totalFeed_m3h) / (36.7 * 0.75);
     const monthlyEnergy = powerKw * 24 * 30 * Number(systemConfig.energyCostPerKwh);
 
     // Format flux: Return 1 decimal place as requested for Average Flux display
@@ -590,7 +583,6 @@ const App = () => {
     };
 
     setProjection({
-      ...calcResults,
       // Train-level flows (match IMSDesign Train Information box with unit-based precision)
       permeateFlow: formatFlow(perTrainProduct_display, flowDecimals),
       feedFlow: formatFlow(perTrainFeed_display, flowDecimals),
@@ -610,7 +602,7 @@ const App = () => {
       calcFluxDisplay: calcResults?.results?.calcFlux ?? '0.0',
       displayFluxUnit: calcResults?.results?.fluxUnit ?? (unit === 'gpm' ? 'gfd' : 'lmh'),
       highestBeta: calcResults?.results?.highestBeta ?? '0.000',
-      pumpPressure: pumpPressureDisplay.toFixed(1),
+      pumpPressure: pumpPressure.toFixed(1),
       monthlyEnergyCost: monthlyEnergy.toFixed(2),
 
       chemicalActiveKgHr: chemicalActive_kg_hr.toFixed(3),
@@ -700,15 +692,6 @@ const App = () => {
         if (Array.isArray(parsed)) setRecentProjects(parsed);
       } catch (e) { console.error("Recent projects restore failed", e); }
     }
-
-    // Force update standard membranes to new calibrations (Persistence Migration)
-    setMembranes(prev => prev.map(m => {
-      if (m.id === 'cpa3' && (m.aValue !== 3.1414 || m.dpExponent !== 1.3078)) {
-        return { ...m, aValue: 3.1414, areaM2: 37.17, dpExponent: 1.3078 };
-      }
-      return m;
-    }));
-
     setIsLoaded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -823,7 +806,8 @@ const App = () => {
     const concTds = Number(projection?.concentrateParameters?.tds ?? 0);
     const permPh = Number(projection?.permeateParameters?.ph ?? feedPh);
     const concPh = Number(projection?.concentrateParameters?.ph ?? feedPh);
-    const toEcond = (tds, ph) => calculateEC(tds, ph).toFixed(0);
+    const econdFactor = 1.9095;
+    const toEcond = (value) => Math.round((Number(value) || 0) * econdFactor);
     const toNumber = (value) => Number(value) || 0;
     const formatCaCO3 = (key, value) => {
       const eq = EQ_WEIGHTS[key];
@@ -909,7 +893,6 @@ const App = () => {
             <div><strong>Project name:</strong> ${waterData.projectName || ''}</div>
             <div><strong>Client Name:</strong> ${waterData.clientName || ''}</div>
             <div><strong>Calculated by:</strong> ${waterData.calculatedBy || ''}</div>
-            <div><strong>Calculated TDS:</strong> ${waterData.calculatedTds || ''}</div>
             <div><strong>Permeate flow/train:</strong> ${projection.permeateFlow || '0.00'} ${unit}</div>
             <div><strong>Raw water flow/train:</strong> ${projection.feedFlow || '0.00'} ${unit}</div>
             <div><strong>Permeate recovery:</strong> ${Number(systemConfig.recovery || 0).toFixed(2)} %</div>
@@ -1148,39 +1131,31 @@ const App = () => {
                   <td>0</td>
                   <td>${rawTds.toFixed(0)}</td>
                   <td>${Number(waterData.ph || 7).toFixed(2)}</td>
-                  <td>${toEcond(rawTds, waterData.ph || 7)}</td>
+                  <td>${toEcond(rawTds)}</td>
                 </tr>
                 <tr>
                   <td>2</td>
                   <td>${projection.feedFlow || '0.00'}</td>
-                  <td>0</td>
-                  <td>${rawTds.toFixed(0)}</td>
-                  <td>${feedPh.toFixed(2)}</td>
-                  <td>${toEcond(rawTds, feedPh)}</td>
-                </tr>
-                <tr>
-                  <td>3</td>
-                  <td>${projection.feedFlow || '0.00'}</td>
                   <td>${projection.calcFeedPressurePsi || '0.0'}</td>
                   <td>${rawTds.toFixed(0)}</td>
                   <td>${feedPh.toFixed(2)}</td>
-                  <td>${toEcond(rawTds, feedPh)}</td>
+                  <td>${toEcond(rawTds)}</td>
                 </tr>
                 <tr>
-                  <td>4</td>
+                  <td>3</td>
                   <td>${projection.concentrateFlow || '0.00'}</td>
                   <td>${projection.calcConcPressurePsi || '0.0'}</td>
                   <td>${concTds.toFixed(0)}</td>
                   <td>${concPh.toFixed(2)}</td>
-                  <td>${toEcond(concTds, concPh)}</td>
+                  <td>${toEcond(concTds)}</td>
                 </tr>
                 <tr>
-                  <td>5</td>
+                  <td>4</td>
                   <td>${projection.permeateFlow || '0.00'}</td>
                   <td>0</td>
                   <td>${permTds.toFixed(1)}</td>
                   <td>${permPh.toFixed(2)}</td>
-                  <td>${toEcond(permTds, permPh)}</td>
+                  <td>${toEcond(permTds)}</td>
                 </tr>
               </tbody>
             </table>
