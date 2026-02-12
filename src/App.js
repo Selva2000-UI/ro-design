@@ -617,8 +617,8 @@ const App = () => {
       
       
       
-      calcFeedPressurePsi: calcResults?.results ? Number(calcResults.results.feedPressure).toFixed(1) : '0.0',
-      calcConcPressurePsi: calcResults?.results ? Number(calcResults.results.concPressure).toFixed(1) : '0.0',
+      calcFeedPressurePsi: calcResults?.results ? Number(calcResults.results.feedPressure).toFixed(2) : '0.00',
+      calcConcPressurePsi: calcResults?.results ? Number(calcResults.results.concPressure).toFixed(2) : '0.00',
 
       calcFeedFlowGpm: calcResults?.results?.feedFlowVessel ?? '0.00',
       calcConcFlowGpm: calcResults?.results?.concFlowVessel ?? '0.00',

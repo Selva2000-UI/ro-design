@@ -354,8 +354,8 @@ const SystemDesign = ({
                       <th style="border: 1px solid #ccc; padding: 6px;">Vessels</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Feed (${pUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Conc (${pUnit})</th>
-                      <th style="border: 1px solid #ccc; padding: 6px;">Feed per vessel (${fUnit})</th>
-                      <th style="border: 1px solid #ccc; padding: 6px;">Conc per vessel (${fUnit})</th>
+                      <th style="border: 1px solid #ccc; padding: 6px;">Feed (${fUnit})</th>
+                      <th style="border: 1px solid #ccc; padding: 6px;">Conc (${fUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Flux (${fluxUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest flux (${fluxUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest beta</th>
@@ -1027,13 +1027,12 @@ const SystemDesign = ({
                   <th style={{ border: '1px solid #ccc' }}>Vessels</th>
                   <th style={{ border: '1px solid #ccc' }}>Feed ({pUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Conc ({pUnit})</th>
-                  <th style={{ border: '1px solid #ccc' }}>Feed per vessel <br/> ({fUnit})</th>
-                  <th style={{ border: '1px solid #ccc' }}>Conc per vessel <br/> ({fUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Feed ({fUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Conc ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Flux ({fluxUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Highest flux ({fluxUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>
                     Highest beta <br/>
-                    
                   </th>
                 </tr>
               </thead>
