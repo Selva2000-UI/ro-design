@@ -181,9 +181,9 @@ export const calculateSystem = (inputs) => {
   const pUnit = isGpmInput ? 'psi' : 'bar';
   
   // Vessel Distribution Factors (Targeting 5.7 GFD at 3.2 GFD)
-  const distributionFactor = fluxLmh > 0 
-    ? (is4040 ? 1.503 : (1.04 + 3.4 / Math.pow(Math.max(fluxLmh, 0.1), 1.0))) 
-    : 1.15;
+  const distributionFactor =
+1 + (0.09 * recFrac);
+
   const highestFluxLmh = fluxLmh * distributionFactor;
   const highestFluxGfd = highestFluxLmh / 1.6976;
 
