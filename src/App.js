@@ -356,10 +356,7 @@ const App = () => {
     const permeateNumeric = Number(trainPermeateInput) || 0;
     const prevPermeate = baseValuesRef.current.permeate;
     const prevUnit = baseValuesRef.current.unit;
-    const onlyUnitChanged = prevUnit !== null && 
-                            prevUnit !== unit &&
-                            prevPermeate !== null &&
-                            Math.abs(prevPermeate - permeateNumeric) < 0.0001;
+    const onlyUnitChanged = false; // Disable this logic as it causes stale value issues with manual inputs
     
     // Back-convert for display (train-level, same unit as UI)
     let perTrainProduct_display, perTrainFeed_display, perTrainConc_display;
@@ -478,11 +475,11 @@ const App = () => {
     const cfAvg = recovery > 0.01 ? -Math.log(1 - recovery) / recovery : 1;
     const testFluxLMH = 25; 
 
-    const permeateConcentration = calcResults?.permeateIons || Object.fromEntries(
+    const permeateConcentration = calcResults?.permeateConcentration || calcResults?.permeateIons || Object.fromEntries(
       Object.entries(ionFeed).map(([key, value]) => {
         const rejection = getIonRejection(key);
         const saltPassageTest = Math.max(1 - rejection / 100, 0);
-        const ionB = testFluxLMH * saltPassageTest;
+        const ionB = testFluxLMH * saltPassageTest * spFactor;
         const ionSPActual = ionB / (Math.max(rawFluxLMH, 0.1) + ionB);
         const ionCavg = value * cfAvg;
         const permVal = ionCavg * ionSPActual;
@@ -493,7 +490,7 @@ const App = () => {
         return [key, formatConc(permVal)];
       })
     );
-    const concentrateConcentration = calcResults?.concentrateIons || Object.fromEntries(
+    const concentrateConcentration = calcResults?.concentrateConcentration || calcResults?.concentrateIons || Object.fromEntries(
       Object.entries(ionFeed).map(([key, value]) => [key, formatConc(value * CF)])
     );
 
