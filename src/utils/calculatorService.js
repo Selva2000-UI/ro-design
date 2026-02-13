@@ -181,13 +181,22 @@ export const calculateSystem = (inputs) => {
 
   const pPermBar = isGpmInput ? (Number(permeatePressure) || 0) / 14.5038 : (Number(permeatePressure) || 0);
   
-  // Vessel Distribution Factors (Calibrated for Metric Benchmarks)
-  // Re-calibrated to hit ~1.20 and ~1.25 for extreme high flux (16000 LMH)
-  const distributionFactor = 1.05 + 0.0000096 * fluxLmh;
-  const highestFluxLmh = fluxLmh * distributionFactor;
+  // Vessel Distribution Factors (Responsive to Flux and Elements/Vessel)
+  const getDistributionFactor = (flux, elements) => {
+    const base = 1.02 + (elements * 0.007);
+    const fluxComp = 0.000009 * flux;
+    return base + fluxComp;
+  };
 
-  // Highest Beta formula: Adjusted to hit target 1.25 at 16000 LMH
-  const highestBeta = 1.10 + 0.0000094 * fluxLmh;
+  const getHighestBeta = (flux, elements) => {
+    const base = 1.06 + (elements * 0.01);
+    const fluxComp = 0.000008 * flux;
+    return base + fluxComp;
+  };
+
+  const distributionFactor = getDistributionFactor(fluxLmh, elementsPerVessel);
+  const highestFluxLmh = fluxLmh * distributionFactor;
+  const currentHighestBeta = getHighestBeta(fluxLmh, elementsPerVessel);
 
   // If feedPressure is provided as an input, use it. Otherwise calculate it.
   let feedPressureBar;
@@ -210,10 +219,7 @@ export const calculateSystem = (inputs) => {
   const displayConcP = isGpmInput ? concPressureBar * BAR_TO_PSI_STEP : concPressureBar;
   const pUnit = isGpmInput ? 'psi' : 'bar';
   
-  const highestFluxGfd = highestFluxLmh / 1.6976;
-
   const displayFlux = isGpmInput ? fluxGfd : fluxLmh;
-  const displayHighestFlux = isGpmInput ? highestFluxGfd : highestFluxLmh;
   const fluxUnit = isGpmInput ? 'gfd' : 'lmh';
 
   // Flows for Result Table (Per Vessel: Feed/Vessels and Conc/Vessels as per requirement)
@@ -234,6 +240,10 @@ export const calculateSystem = (inputs) => {
     
     const stageDP = stageElements * dpPerElement; // Use global dpPerElement for now
     
+    const stageDF = getDistributionFactor(fluxLmh, stageElements);
+    const stageHF = isGpmInput ? (fluxGfd * stageDF) : (fluxLmh * stageDF);
+    const stageBeta = getHighestBeta(fluxLmh, stageElements);
+
     const stageResult = {
       index: sIdx + 1,
       vessels: stageVessels,
@@ -242,8 +252,8 @@ export const calculateSystem = (inputs) => {
       feedFlow: (isGpmInput ? (runningFeedM3h / stageVessels) * M3H_TO_GPM : (runningFeedM3h / stageVessels)).toFixed(2),
       concFlow: (isGpmInput ? (Math.max(stageConcM3h, 0) / stageVessels) * M3H_TO_GPM : (Math.max(stageConcM3h, 0) / stageVessels)).toFixed(2),
       flux: displayFlux.toFixed(1),
-      highestFlux: displayHighestFlux.toFixed(1),
-      highestBeta: highestBeta.toFixed(2),
+      highestFlux: stageHF.toFixed(1),
+      highestBeta: stageBeta.toFixed(2),
       pressureUnit: pUnit,
       fluxUnit: fluxUnit
     };
@@ -264,8 +274,8 @@ export const calculateSystem = (inputs) => {
       feedFlow: (isGpmInput ? (totalFeedM3h / numVessels) * M3H_TO_GPM : (totalFeedM3h / numVessels)).toFixed(2),
       concFlow: (isGpmInput ? (Math.max(totalFeedM3h - totalSystemPermeate, 0) / numVessels) * M3H_TO_GPM : (Math.max(totalFeedM3h - totalSystemPermeate, 0) / numVessels)).toFixed(2),
       flux: displayFlux.toFixed(1),
-      highestFlux: displayHighestFlux.toFixed(1),
-      highestBeta: highestBeta.toFixed(2),
+      highestFlux: (isGpmInput ? (highestFluxLmh / 1.6976) : highestFluxLmh).toFixed(1),
+      highestBeta: currentHighestBeta.toFixed(2),
       pressureUnit: pUnit,
       fluxUnit: fluxUnit
     });
@@ -287,6 +297,8 @@ export const calculateSystem = (inputs) => {
       feedPressure: displayFeedP.toFixed(1),
       concPressure: displayConcP.toFixed(1),
       recovery: recPct.toFixed(1),
+      highestFlux: (isGpmInput ? (highestFluxLmh / 1.6976) : highestFluxLmh).toFixed(1),
+      highestBeta: currentHighestBeta.toFixed(2),
       osmoticPressure: (isGpmInput ? piFeedBar * 14.5038 : piFeedBar).toFixed(2),
       effectiveOsmoticPressure: (isGpmInput ? effectivePiBar * 14.5038 : effectivePiBar).toFixed(2),
       pressureUnit: pUnit
