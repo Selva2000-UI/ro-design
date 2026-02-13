@@ -182,9 +182,12 @@ export const calculateSystem = (inputs) => {
   
   // Vessel Distribution Factors (Calibrated for Metric Benchmarks)
   // Power law hits targets at both standard and high flux ranges
-  const distributionFactor = fluxLmh > 0 
-    ? (is4040 ? (1.05 + 0.02 * Math.pow(fluxLmh, 0.25)) : (1.0 + 0.003 * Math.pow(fluxLmh, 0.5))) 
-    : 1.15;
+  // const distributionFactor = fluxLmh > 0 
+  //   ? (is4040 ? (1.05 + 0.02 * Math.pow(fluxLmh, 0.25)) : (1.0 + 0.003 * Math.pow(fluxLmh, 0.5))) 
+  //   : 1.15;
+   const distributionFactor = 1.0 + 0.00008 * fluxLmh;
+
+
   const highestFluxLmh = fluxLmh * distributionFactor;
 
   // Highest Beta formula: Highest Flux / Average Flux
