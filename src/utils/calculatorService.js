@@ -36,7 +36,7 @@ export const MEMBRANES = [
     name: 'CPA3-8040',
     area: 400,
     areaM2: 37.16,
-    aValue: 2.85, // Calibrated from user expected 18550 psi @ 2135 GFD
+    aValue: 3.4, // Calibrated for industry standard baseline
     rejection: 99.7,
   },  
   {
@@ -79,6 +79,10 @@ export const calculateSystem = (inputs) => {
   // Try specific key first, then fallback to normalized key
   const unitFactor = FLOW_TO_M3H[unitKey] || FLOW_TO_M3H[unitKey.replace('/', '')] || 1;
   const totalFeedM3h = Q_raw * unitFactor;
+
+  // Temperature Correction Factor (TCF)
+  const temp = Number(inputs.temp) || (inputs.tempF ? (Number(inputs.tempF) - 32) * 5 / 9 : 25);
+  const tcf = Math.exp(2640 * (1 / 298.15 - 1 / (temp + 273.15)));
 
   //  Per-Vessel Flow Calculation
   const numVessels = Math.max(Number(vessels) || 1, 1);
@@ -137,7 +141,7 @@ export const calculateSystem = (inputs) => {
 
   // TDS and Concentration Calculations (Flux-Sensitive Salt Passage)
   const baseRejection = (Number(activeMembrane.rejection) || 99.7) / 100;
-  const testFlux = 25; 
+  const testFlux = 40; 
   
   const permeateConcentration = {};
   let totalIonsPermeate = 0;
@@ -150,12 +154,12 @@ export const calculateSystem = (inputs) => {
     const ionSPTest = 1 - ionRej;
     const ionB = testFlux * ionSPTest * spFactor;
     
-    // Targeted Beta/Flux sensitivity for 1.13 Beta at 3.2 GFD
-    const betaFactor = 1 + (0.28 * Math.pow(recFrac, 0.5)) * (1.0 + 1.25 / Math.pow(Math.max(fluxLmh, 0.1), 0.5));
-    const ionSPActual = ionB * betaFactor / (Math.max(fluxLmh, 0.1) + ionB * betaFactor);
+    // Beta (Concentration Polarization) increases with flux
+    const betaFactor = 1 + (0.12 + 0.1 * Math.pow(recFrac, 0.5)) * (Math.max(fluxLmh, 0.1) / 150);
+    const ionSPActual = (ionB * betaFactor) / (Math.max(fluxLmh, 0.1) + ionB * betaFactor);
     
     const ionCavg = Number(val) * cfLogMean;
-    const ionPerm = ionCavg * ionSPActual;
+    const ionPerm = ionCavg * Math.max(ionSPActual, ionSPTest * 0.5); // Floor salt passage at 50% of nominal
     permeateConcentration[ion] = ionPerm.toFixed(3);
     totalIonsPermeate += ionPerm;
   });
@@ -165,11 +169,12 @@ export const calculateSystem = (inputs) => {
     ? (Q_vessel_feed * feedTds - Q_vessel_perm * runningPermTds) / Q_vessel_conc 
     : feedTds / (1 - Math.min(recFrac, 0.99));
 
-  // Pressure Drop per Vessel (Calibrated for exact 3.44 bar diff)
+  // Pressure Drop per Vessel (Calibrated for 4 elements)
   const Q_avg = (Q_vessel_feed + Q_vessel_conc) / 2;
   const is4040 = membraneAreaM2 < 15;
   const nominalFlowDP = is4040 ? 3.5 : 15.5; 
-  const flowFactor = Math.pow(Math.max(Q_avg, 0.01) / nominalFlowDP, 1.7);
+  // Use a slightly lower exponent for extreme flows to prevent pressure explosion
+  const flowFactor = Math.pow(Math.max(Q_avg, 0.01) / nominalFlowDP, 1.45);
   const dpPerElement = (is4040 ? 0.35 : 0.082) * flowFactor; 
   const dpVesselBar = (Number(elementsPerVessel) || (activeStages[0]?.elementsPerVessel) || 6) * Math.max(dpPerElement, 0.0001);
 
@@ -181,8 +186,8 @@ export const calculateSystem = (inputs) => {
     : 1.15;
   const highestFluxLmh = fluxLmh * distributionFactor;
 
-  // Beta (Concentration Polarization) calculation: Calibrated for 1.25 @ 20-30 LMH
-  const highestBeta = 1 + (0.33 * Math.pow(recFrac, 0.5)) * (1.0 + 1.25 / Math.pow(Math.max(fluxLmh, 0.1), 0.5));
+  // Beta (Concentration Polarization) increases with flux
+  const highestBeta = 1 + (0.15 + 0.1 * Math.pow(recFrac, 0.5)) * (Math.max(fluxLmh, 0.1) / 120);
 
   // If feedPressure is provided as an input, use it. Otherwise calculate it.
   let feedPressureBar;
@@ -190,10 +195,9 @@ export const calculateSystem = (inputs) => {
     const baseP = isGpmInput ? Number(inputs.feedPressure) / 14.5038 : Number(inputs.feedPressure);
     feedPressureBar = baseP;
   } else {
-    // Lead Element Pressure Formula matching 62.41
-    const leadFluxP = highestFluxLmh / Math.max(aEffective * foulingFactor, 0.001);
-    const leadOsmoticP = piFeedBar * 1.35; // Slightly increased factor for lead element polarization
-    feedPressureBar = leadFluxP + leadOsmoticP + 0.35 + pPermBar; 
+    // Average Pressure model: P_in = NDP_avg + Pi_avg + P_perm + 0.5 * DP
+    const ndpAvg = fluxLmh / Math.max(aEffective * tcf * foulingFactor, 0.001);
+    feedPressureBar = ndpAvg + effectivePiBar + pPermBar + (0.5 * dpVesselBar);
   }
   
   const concPressureBar = feedPressureBar - dpVesselBar;
