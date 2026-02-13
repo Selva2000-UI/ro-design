@@ -76,7 +76,7 @@ const App = () => {
   const [snapshots, setSnapshots] = useState([]); 
   const [membranes, setMembranes] = useState([
     { id: 'espa2ld', name: 'ESPA2-LD-4040', area: 80, areaM2: 7.43, aValue: 4.43, rejection: 99.6, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'cpa3', name: 'CPA3', area: 400, areaM2: 37.16, aValue: 3.16, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
+    { id: 'cpa3', name: 'CPA3', area: 400, areaM2: 37.16, aValue: 3.4, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
     { id: 'swc5ld', name: 'SWC5-LD', area: 400, areaM2: 37.16, aValue: 1.6, rejection: 99.3, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
     { 
       id: 'lfc3ld4040',
@@ -159,8 +159,9 @@ const App = () => {
 
     const trains = Math.max(Number(systemConfig.numTrains) || 1, 1);
     
-    // User gives Feed Flow and Recovery as primary inputs now
-    const trainFeedInput = Number(systemConfig.feedFlow) || 0;
+    // User gives Feed Flow and Recovery as primary inputs now (System-level total)
+    const totalFeedInput = Number(systemConfig.feedFlow) || 0;
+    const trainFeedInput = totalFeedInput / trains;
     const perTrainFeed_m3h = trainFeedInput * unitFactor;
     
     // Recovery input from user
@@ -286,7 +287,7 @@ const App = () => {
       vessels: totalStageVessels || Number(systemConfig.stage1Vessels) || 1,
       elementsPerVessel: Number(systemConfig.elementsPerVessel) || 0,
       feedPH: Number(systemConfig.feedPh) || Number(waterData.ph) || 7.0,
-      tempF: (Number(waterData.temp) * 9 / 5) + 32,
+      temp: Number(waterData.temp) || 25,
       feedIons: {
         ca: Number(waterData.ca) || 0,
         mg: Number(waterData.mg) || 0,
