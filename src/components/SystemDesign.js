@@ -1037,9 +1037,9 @@ const SystemDesign = ({
                 </tr>
               </thead>
               <tbody>
-                {(projection.stageResults && projection.stageResults.length > 0 ? projection.stageResults : []).map((row) => (
+                {(projection.stageResults && projection.stageResults.length > 0 ? projection.stageResults : []).map((row, idx) => (
                   <tr key={`stage-${row.index}`}>
-                    <td style={{ border: '1px solid #ccc' }}>1 - {row.index}</td>
+                    <td style={{ border: '1px solid #ccc' }}>{row.index} - {row.vessels}</td>
                     <td style={{ border: '1px solid #ccc' }}>{row.vessels}</td>
                     <td style={{ border: '1px solid #ccc', background: Number(row.feedPressure) < 0 ? '#f8d7da' : 'transparent' }}>
                       {row.feedPressure}
