@@ -73,12 +73,12 @@ const App = () => {
   }), []);
 
   // --- 1. STATE MANAGEMENT ---
-  const [snapshots, setSnapshots] = useState([]); 
+  const [snapshots, setSnapshots] = useState([]);
   const [membranes, setMembranes] = useState([
-    { id: 'espa2ld', name: 'ESPA2-LD-4040', area: 80, areaM2: 7.43, aValue: 4.43, rejection: 99.6, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'cpa3', name: 'CPA3', area: 400, areaM2: 37.16, aValue: 3.1, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'swc5ld', name: 'SWC5-LD', area: 400, areaM2: 37.16, aValue: 1.48, rejection: 99.3, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
-    { 
+    { id: 'espa2ld', name: 'ESPA2-LD-4040', area: 80, areaM2: 7.43, aValue: 4.43, rejection: 99.6, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish', nominalProduction: 2000, size: '4*40', spacer: 34, testPressure: 225 },
+    { id: 'cpa3', name: 'CPA3', area: 400, areaM2: 37.16, aValue: 3.8, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Brackish', nominalProduction: 11000, size: '8*40', spacer: 34, testPressure: 225 },
+    { id: 'swc5ld', name: 'SWC5-LD', area: 400, areaM2: 37.16, aValue: 1.48, rejection: 99.3, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater', nominalProduction: 9000, size: '8*40', spacer: 34, testPressure: 800 },
+    {
       id: 'lfc3ld4040',
       name: 'LFC3-LD4040',
       area: 80,
@@ -93,11 +93,15 @@ const App = () => {
       co2Rejection: 0.0,
       kFb: 0.315,
       dpExponent: 1.75,
-      type: 'Low Fouling'
+      type: 'Low Fouling',
+      nominalProduction: 2100,
+      size: '4*40',
+      spacer: 34,
+      testPressure: 225
     }
-  ]); 
-  
-  const [projectNotes, setProjectNotes] = useState(""); 
+  ]);
+
+  const [projectNotes, setProjectNotes] = useState("");
   const createProjectId = () => `proj_${Date.now()}`;
   const [waterData, setWaterData] = useState({
     projectId: createProjectId(),
@@ -107,7 +111,7 @@ const App = () => {
     pretreatment: 'Conventional',
     waterType: 'Well Water',
     calculatedTds: 0,
-    temp: 25, ph: 7.5, ca: 60, mg: 20, na: 250, k: 15,
+    temp: 77, ph: 7.5, ca: 60, mg: 20, na: 250, k: 15,
     hco3: 250, so4: 100, cl: 300, no3: 25, sio2: 20,
     nh4: 0, sr: 0, ba: 0, po4: 0, f: 0, b: 0, co2: 0, co3: 0
   });
@@ -116,39 +120,39 @@ const App = () => {
 
   const [pretreatment, setPretreatment] = useState({ antiscalantDose: 3.5, sbsDose: 2.0 });
   const [postTreatment, setPostTreatment] = useState({ causticDose: 2.0 });
-  
+
   const applyTdsProfile = (tdsValue) => {
-  const tds = Number(tdsValue) || 0;
-  if (tds <= 0) return;
+    const tds = Number(tdsValue) || 0;
+    if (tds <= 0) return;
 
-  const EW_NA = 23;
-  const EW_CL = 35.45;
+    const EW_NA = 23;
+    const EW_CL = 35.45;
 
-  const totalMeq = tds / (EW_NA + EW_CL);
+    const totalMeq = tds / (EW_NA + EW_CL);
 
-  const na = totalMeq * EW_NA;
-  const cl = totalMeq * EW_CL;
+    const na = totalMeq * EW_NA;
+    const cl = totalMeq * EW_CL;
 
-  setWaterData(prev => ({
-    ...prev,
-    calculatedTds: tds,
-    na: Number(na.toFixed(2)),
-    cl: Number(cl.toFixed(2))
-  }));
-};
+    setWaterData(prev => ({
+      ...prev,
+      calculatedTds: tds,
+      na: Number(na.toFixed(2)),
+      cl: Number(cl.toFixed(2))
+    }));
+  };
 
-  const [projection, setProjection] = useState({ 
-    fluxGFD: 0, pumpPressure: 0, monthlyEnergyCost: 0, permeateFlow: 0 
+  const [projection, setProjection] = useState({
+    fluxGFD: 0, pumpPressure: 0, monthlyEnergyCost: 0, permeateFlow: 0
   });
   const [recentProjects, setRecentProjects] = useState([]);
   const [selectedProjectIds, setSelectedProjectIds] = useState([]);
-  
+
   // Store base numeric values (without unit conversion) to preserve them when unit changes
-  const baseValuesRef = useRef({ 
-    permeate: null, 
-    feed: null, 
-    concentrate: null, 
-    unit: null 
+  const baseValuesRef = useRef({
+    permeate: null,
+    feed: null,
+    concentrate: null,
+    unit: null
   });
 
   // --- 2. MASTER CALCULATION ENGINE ---
@@ -160,20 +164,24 @@ const App = () => {
     const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(unit);
 
     const trains = Math.max(Number(systemConfig.numTrains) || 1, 1);
-    
+
     // User gives Feed Flow and Recovery as primary inputs now
     const trainFeedInput = Number(systemConfig.feedFlow) || 0;
     const perTrainFeed_m3h = trainFeedInput * unitFactor;
-    
+
+    // Temperature Correction Factor (TCF)
+    const tempC = Number(waterData.temp) || 25;
+    const tcf = Math.pow(1.03, tempC - 25);
+
     // Recovery input from user
     let recoveryPct = Math.min(Math.max(Number(systemConfig.recovery) || 0, 0), 99);
-    
+
     // Calculate total elements and area across all active stages
     // Use stages array if available, otherwise fall back to legacy stage1Vessels/stage2Vessels
     let totalElements = 0;
     let totalArea_ft2 = 0;
     const pass1Stages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);
-    
+
     if (systemConfig.stages && systemConfig.stages.length > 0) {
       // Sum elements from all active stages (up to pass1Stages)
       for (let i = 0; i < pass1Stages; i++) {
@@ -191,7 +199,7 @@ const App = () => {
       // Legacy fallback: use stage1Vessels and stage2Vessels
       totalElements = (Number(systemConfig.stage1Vessels) + Number(systemConfig.stage2Vessels)) * Number(systemConfig.elementsPerVessel);
     }
-    
+
     // Get membrane area - use first stage's membrane if stages array exists, otherwise use membraneModel
     let activeMem;
     if (systemConfig.stages && systemConfig.stages.length > 0 && systemConfig.stages[0]) {
@@ -199,7 +207,7 @@ const App = () => {
     } else {
       activeMem = membranes.find(m => m.id === systemConfig.membraneModel) || membranes[0];
     }
-    
+
     // Ensure we have a valid membrane with area
     const activeMemId = systemConfig.stages?.[0]?.membraneModel || systemConfig.membraneModel;
     const membraneArea = activeMemId === 'espa2ld' ? 80 : (Number(activeMem?.area) || 400);
@@ -219,63 +227,65 @@ const App = () => {
     const totalStageVessels = activeStages.reduce((sum, stage) => sum + (Number(stage?.vessels) || 0), 0);
 
     if (feedPressureInput > 0) {
-        // SOLVE FOR RECOVERY based on Feed Pressure
-        // Qp = Area * A * (P_feed - 0.5*dP - P_perm - Pi_avg)
-        // Pi_avg depends on R. We iterate.
-        const P_feed_bar = isGpm ? feedPressureInput / 14.5038 : feedPressureInput;
-        // Calculate Pi_feed (Osmotic Pressure of feed)
-        const ions = {
-            ca: Number(waterData.ca) || 0,
-            mg: Number(waterData.mg) || 0,
-            na: Number(waterData.na) || 0,
-            k: Number(waterData.k) || 0,
-            sr: Number(waterData.sr) || 0,
-            ba: Number(waterData.ba) || 0,
-            hco3: Number(waterData.hco3) || 0,
-            so4: Number(waterData.so4) || 0,
-            cl: Number(waterData.cl) || 0,
-            no3: Number(waterData.no3) || 0,
-            sio2: Number(waterData.sio2) || 0,
-            po4: Number(waterData.po4) || 0,
-            f: Number(waterData.f) || 0,
-            b: Number(waterData.b) || 0,
-            co2: Number(waterData.co2) || 0,
-            co3: Number(waterData.co3) || 0,
-            nh4: Number(waterData.nh4) || 0
-        };
-        const feedTDS = Object.values(ions).reduce((sum, v) => sum + v, 0);
-        const piFeed_bar = 0.00078 * feedTDS;
-        
-        // Flow-dependent dP (Standardized to match calculatorService)
-        const nominalFlow = 12; 
-        const perVesselFeed = perTrainFeed_m3h / (totalStageVessels || 1);
-        const flowFactor = Math.pow(Math.max(perVesselFeed, 0.01) / nominalFlow, 1.5);
-        const is4040 = membraneArea < 150; // ft2
-        const vesselDeltaP_bar = (Number(systemConfig.elementsPerVessel) || 7) * (is4040 ? 1.33 : 0.23) * flowFactor;
+      // SOLVE FOR RECOVERY based on Feed Pressure
+      // Qp = Area * A * (P_feed - 0.5*dP - P_perm - Pi_avg)
+      // Pi_avg depends on R. We iterate.
+      const P_feed_bar = isGpm ? feedPressureInput / 14.5038 : feedPressureInput;
+      // Calculate Pi_feed (Osmotic Pressure of feed)
+      const ions = {
+        ca: Number(waterData.ca) || 0,
+        mg: Number(waterData.mg) || 0,
+        na: Number(waterData.na) || 0,
+        k: Number(waterData.k) || 0,
+        sr: Number(waterData.sr) || 0,
+        ba: Number(waterData.ba) || 0,
+        hco3: Number(waterData.hco3) || 0,
+        so4: Number(waterData.so4) || 0,
+        cl: Number(waterData.cl) || 0,
+        no3: Number(waterData.no3) || 0,
+        sio2: Number(waterData.sio2) || 0,
+        po4: Number(waterData.po4) || 0,
+        f: Number(waterData.f) || 0,
+        b: Number(waterData.b) || 0,
+        co2: Number(waterData.co2) || 0,
+        co3: Number(waterData.co3) || 0,
+        nh4: Number(waterData.nh4) || 0
+      };
+      const feedTDS = Object.values(ions).reduce((sum, v) => sum + v, 0);
+      const piFeed_bar = 0.00078 * feedTDS;
 
-        // Use the recovery from systemConfig as the starting point (defaults to 0.525 as requested)
-        let currentR = (Number(systemConfig.recovery) || 52.5) / 100;
-        for (let iter = 0; iter < 10; iter++) {
-            const cfLogMean = currentR > 0.01 ? -Math.log(1 - Math.min(currentR, 0.99)) / currentR : 1;
-            const piEff_bar = piFeed_bar * Math.pow(cfLogMean, 0.5);
-            
-            // Per user rule: Display P_feed = P_input + P_perm
-            // Effective P_feed for calculation is just P_input
-            // NDP = (P_input + P_perm) - 0.5*dP - P_perm - Pi_eff = P_input - 0.5*dP - Pi_eff
-            const netDrivingPressure = Math.max(P_feed_bar - (0.5 * vesselDeltaP_bar) - piEff_bar, 0);
-            
-            const A_lmh_bar = Number(activeMem?.aValue) || 2.95;
-            const Max_flux = (activeMem?.id === 'cpa3') ? 51.8 : 48.5;
-            const Qp_lmh = Math.min(A_lmh_bar * netDrivingPressure, Max_flux);
-            const Qp_m3h = (Qp_lmh * totalArea_m2) / 1000;
-            perTrainProduct_m3h = Qp_m3h;
-            currentR = perTrainFeed_m3h > 0 ? perTrainProduct_m3h / perTrainFeed_m3h : 0.5;
-            currentR = Math.min(Math.max(currentR, 0.01), 0.95);
-        }
-        recoveryPct = currentR * 100;
+      // Flow-dependent dP (Standardized to match calculatorService)
+      const nominalFlow = 12;
+      const perVesselFeed = perTrainFeed_m3h / (totalStageVessels || 1);
+      const flowFactor = Math.pow(Math.max(perVesselFeed, 0.01) / nominalFlow, 1.5);
+      const is4040 = membraneArea < 150; // ft2
+      const vesselDeltaP_bar = (Number(systemConfig.elementsPerVessel) || 7) * (is4040 ? 1.33 : 0.23) * flowFactor;
+
+      // Use the recovery from systemConfig as the starting point (defaults to 0.525 as requested)
+      let currentR = (Number(systemConfig.recovery) || 52.5) / 100;
+      for (let iter = 0; iter < 10; iter++) {
+        const cfLogMean = currentR > 0.01 ? -Math.log(1 - Math.min(currentR, 0.99)) / currentR : 1;
+        const piEff_bar = piFeed_bar * Math.pow(cfLogMean, 0.5);
+
+        // Per user rule: Display P_feed = P_input + P_perm
+        // Effective P_feed for calculation is just P_input
+        // NDP = (P_input + P_perm) - 0.5*dP - P_perm - Pi_eff = P_input - 0.5*dP - Pi_eff
+        const netDrivingPressure = Math.max(P_feed_bar - (0.5 * vesselDeltaP_bar) - piEff_bar, 0);
+
+        const A_lmh_bar_at25 = Number(activeMem?.aValue) || 2.95;
+        const A_lmh_bar = A_lmh_bar_at25 * tcf;
+        const Max_flux = (activeMem?.id === 'cpa3') ? 51.8 : 48.5;
+        // Apply 10% reduction to match calculatorService
+        const Qp_lmh = Math.min(A_lmh_bar * (netDrivingPressure * 0.9), Max_flux);
+        const Qp_m3h = (Qp_lmh * totalArea_m2) / 1000;
+        perTrainProduct_m3h = Qp_m3h;
+        currentR = perTrainFeed_m3h > 0 ? perTrainProduct_m3h / perTrainFeed_m3h : 0.5;
+        currentR = Math.min(Math.max(currentR, 0.01), 0.95);
+      }
+      recoveryPct = currentR * 100;
     } else {
-        // NORMAL MODE: Calculate Permeate Flow from Recovery and Feed Flow
-        perTrainProduct_m3h = perTrainFeed_m3h * (recoveryPct / 100);
+      // NORMAL MODE: Calculate Permeate Flow from Recovery and Feed Flow
+      perTrainProduct_m3h = perTrainFeed_m3h * (recoveryPct / 100);
     }
 
     const recovery = recoveryPct / 100;
@@ -290,7 +300,7 @@ const App = () => {
       vessels: totalStageVessels || Number(systemConfig.stage1Vessels) || 1,
       elementsPerVessel: Number(systemConfig.elementsPerVessel) || 0,
       feedPH: Number(systemConfig.feedPh) || Number(waterData.ph) || 7.0,
-      tempF: (Number(waterData.temp) * 9 / 5) + 32,
+      tempF: (tempC * 9 / 5) + 32,
       feedIons: {
         ca: Number(waterData.ca) || 0,
         mg: Number(waterData.mg) || 0,
@@ -323,19 +333,19 @@ const App = () => {
       numTrains: systemConfig.numTrains
     });
     const stageResults = calcResults?.stageResults || [];
-    
+
     // Calculate flux - always calculate, but only display if designCalculated is true
     // Flux (lmh) = Qp(m3/h) * 1000 / Am(m2)
     // Flux (gfd) = Flux (lmh) / 1.6976
-    
+
     let rawFluxLMH = totalArea_m2 > 0 ? (perTrainProduct_m3h * 1000) / totalArea_m2 : 0;
     let rawFluxGFD = rawFluxLMH / 1.6976;
-    
+
     if (calcResults?.results) {
-        rawFluxGFD = calcResults.results.avgFluxGFD;
-        rawFluxLMH = calcResults.results.avgFluxLMH;
+      rawFluxGFD = calcResults.results.avgFluxGFD;
+      rawFluxLMH = calcResults.results.avgFluxLMH;
     }
-    
+
     // Debug logging to understand why flux is 0 (only log when calculated but still 0)
     if (systemConfig.designCalculated && rawFluxGFD === 0 && rawFluxLMH === 0) {
       console.warn('Flux is 0 after calculation! Debug info:');
@@ -349,11 +359,11 @@ const App = () => {
       console.log('  - rawFluxGFD:', rawFluxGFD);
       console.log('  - rawFluxLMH:', rawFluxLMH);
       console.log('  - pass1Stages:', systemConfig.pass1Stages);
-      console.log('  - stages:', systemConfig.stages?.map((s, i) => ({ 
-        stage: i + 1, 
-        vessels: s.vessels, 
+      console.log('  - stages:', systemConfig.stages?.map((s, i) => ({
+        stage: i + 1,
+        vessels: s.vessels,
         elements: s.elementsPerVessel,
-        membrane: s.membraneModel 
+        membrane: s.membraneModel
       })));
     }
 
@@ -362,14 +372,14 @@ const App = () => {
     const permeateNumeric = Number(trainPermeateInput) || 0;
     const prevPermeate = baseValuesRef.current.permeate;
     const prevUnit = baseValuesRef.current.unit;
-    const onlyUnitChanged = prevUnit !== null && 
-                            prevUnit !== unit &&
-                            prevPermeate !== null &&
-                            Math.abs(prevPermeate - permeateNumeric) < 0.0001;
-    
+    const onlyUnitChanged = prevUnit !== null &&
+      prevUnit !== unit &&
+      prevPermeate !== null &&
+      Math.abs(prevPermeate - permeateNumeric) < 0.0001;
+
     // Back-convert for display (train-level, same unit as UI)
     let perTrainProduct_display, perTrainFeed_display, perTrainConc_display;
-    
+
     if (onlyUnitChanged && baseValuesRef.current.feed !== null) {
       // Only unit changed - use stored values, just reformat
       perTrainProduct_display = baseValuesRef.current.permeate;
@@ -380,7 +390,7 @@ const App = () => {
       perTrainProduct_display = trainPermeateInput;
       perTrainFeed_display = perTrainFeed_m3h / unitFactor;
       perTrainConc_display = perTrainConc_m3h / unitFactor;
-      
+
       // Store base values for next unit change
       baseValuesRef.current = {
         permeate: permeateNumeric,
@@ -389,7 +399,7 @@ const App = () => {
         unit: unit
       };
     }
-    
+
     const totalPlantProduct_display = perTrainProduct_display * trains;
 
     // Format flows based on unit type (matching Hydranautics precision exactly)
@@ -459,10 +469,10 @@ const App = () => {
     const co2Rejection = Math.max(Math.min((Number(activeMem?.co2Rejection) || 0), 99.9), 0);
 
     const getSanitizedAValue = (m) => {
-        let a = Number(m?.aValue);
-        if (isNaN(a) || a <= 0) return 2.95;
-        if (a < 1.0) return a * 24.62; // Convert gfd/psi to lmh/bar (1.6976 * 14.5038)
-        return a;
+      let a = Number(m?.aValue);
+      if (isNaN(a) || a <= 0) return 2.95;
+      if (a < 1.0) return a * 24.62; // Convert gfd/psi to lmh/bar (1.6976 * 14.5038)
+      return a;
     };
 
     const getIonRejection = (ionKey) => {
@@ -482,7 +492,7 @@ const App = () => {
 
     // Calculate average concentration factor
     const cfAvg = recovery > 0.01 ? -Math.log(1 - recovery) / recovery : 1;
-    const testFluxLMH = 25; 
+    const testFluxLMH = 25;
 
     const permeateConcentration = calcResults?.permeateIons || Object.fromEntries(
       Object.entries(ionFeed).map(([key, value]) => {
@@ -492,7 +502,7 @@ const App = () => {
         const ionSPActual = ionB / (Math.max(rawFluxLMH, 0.1) + ionB);
         const ionCavg = value * cfAvg;
         const permVal = ionCavg * ionSPActual;
-        
+
         if (key === 'na' || key === 'cl') {
           return [key, Number(permVal).toFixed(2)];
         }
@@ -506,9 +516,13 @@ const App = () => {
     const permeateTds = calcResults?.permeateParameters?.tds != null
       ? Number(calcResults.permeateParameters.tds)
       : sumValues(permeateConcentration);
-    const concentrateTds = calcResults?.concentrateParameters?.tds != null
-      ? Number(calcResults.concentrateParameters.tds)
-      : sumValues(concentrateConcentration);
+
+    // Calculate total Feed TDS from ions
+    const currentFeedTds = sumValues(ionFeed);
+
+    // Apply specific formula: Concentrate TDS = Feed TDS / (1 - Recovery)
+    const concentrateTds = currentFeedTds / (1 - Math.min(recovery, 0.99));
+
     const osmoticP = calcResults?.concentrateParameters?.osmoticPressure != null
       ? Number(calcResults.concentrateParameters.osmoticPressure)
       : (isGpm ? (concentrateTds * 0.00076) * 14.5038 : (concentrateTds * 0.00076));
@@ -527,9 +541,9 @@ const App = () => {
     const spFactor = Math.pow(1 + spIncreasePct / 100, membraneAge);
 
     const permeateFlowGpm = perTrainProduct_m3h * 4.402867;
-    const avgFluxVal = calcResults?.results?.avgFlux != null 
-        ? Number(calcResults.results.avgFlux) 
-        : (totalElements > 0 ? permeateFlowGpm / (totalElements * currentGpmConst) : 0);
+    const avgFluxVal = calcResults?.results?.avgFlux != null
+      ? Number(calcResults.results.avgFlux)
+      : (totalElements > 0 ? permeateFlowGpm / (totalElements * currentGpmConst) : 0);
 
     // Pump model expects a flux-like term; use rawFluxLMH to ensure consistency regardless of unit display
     const pressureTerm = (rawFluxLMH / (aEffective * TCF)) * foulingFactorValue;
@@ -621,7 +635,7 @@ const App = () => {
       tcf: TCF.toFixed(2),
       activeMembrane: activeMem,
       totalElements: totalElements,
-      
+
 
       calcFeedPressurePsi: calcResults?.results ? Number(calcResults.results.feedPressure).toFixed(1) : '0.0',
       calcConcPressurePsi: calcResults?.results ? Number(calcResults.results.concPressure).toFixed(1) : '0.0',
@@ -1306,7 +1320,7 @@ const App = () => {
     }
     setSelectedProjectIds([]);
   };
-  
+
   useEffect(() => {
     if (activeTab === 'design') {
       setSystemConfig((current) => ({
@@ -1323,11 +1337,11 @@ const App = () => {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f4f7f9', display: 'flex', flexDirection: 'column' }}>
-      
+
       {/* GLOBAL HEADER */}
       <header style={{ backgroundColor: '#002f5d', color: '#fff', padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
         <h2 style={{ margin: 0, fontSize: '1.35rem', lineHeight: 1.2 }}>Morris-Jenkins IMS Design Pro 3.0</h2>
-        
+
         <nav style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.08)', padding: '4px', borderRadius: '10px' }}>
           {['dashboard', 'analysis', 'pretreatment', 'design', 'post', 'report', 'database'].map(t => (
             <button
@@ -1384,44 +1398,44 @@ const App = () => {
         {activeTab === 'dashboard' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '20px' }}>
             <div style={{ background: '#fff', borderRadius: '8px', border: '1px solid #c2d1df', padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <h3 style={{ margin: 0, color: '#002f5d' }}>My Projects</h3>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={handleDeleteSelectedProjects}
-                disabled={selectedProjectIds.length === 0}
-                style={{
-                  background: selectedProjectIds.length === 0 ? '#bdc3c7' : '#e74c3c',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '8px 12px',
-                  borderRadius: '4px',
-                  cursor: selectedProjectIds.length === 0 ? 'not-allowed' : 'pointer',
-                  fontSize: '0.8rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                🗑️ Delete Selected
-              </button>
-              <button
-                onClick={handleNewProject}
-                style={{ background: '#3498db', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
-              >
-                + New Project
-              </button>
-            </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={handleDeleteSelectedProjects}
+                    disabled={selectedProjectIds.length === 0}
+                    style={{
+                      background: selectedProjectIds.length === 0 ? '#bdc3c7' : '#e74c3c',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                      cursor: selectedProjectIds.length === 0 ? 'not-allowed' : 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    🗑️ Delete Selected
+                  </button>
+                  <button
+                    onClick={handleNewProject}
+                    style={{ background: '#3498db', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                  >
+                    + New Project
+                  </button>
+                </div>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ background: '#f4f7f9' }}>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea', width: '32px' }}>
-                  <input
-                    type="checkbox"
-                    checked={recentProjects.length > 0 && selectedProjectIds.length === recentProjects.length}
-                    onChange={handleToggleSelectAllProjects}
-                  />
-                </th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea' }}>Project</th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea', width: '32px' }}>
+                      <input
+                        type="checkbox"
+                        checked={recentProjects.length > 0 && selectedProjectIds.length === recentProjects.length}
+                        onChange={handleToggleSelectAllProjects}
+                      />
+                    </th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea' }}>Project</th>
                     <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea' }}>Client</th>
                     <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea' }}>Water Type</th>
                     <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea' }}>Modified</th>
@@ -1431,18 +1445,18 @@ const App = () => {
                 <tbody>
                   {recentProjects.length === 0 && (
                     <tr>
-                  <td colSpan={6} style={{ padding: '12px', color: '#666' }}>No recent projects yet.</td>
+                      <td colSpan={6} style={{ padding: '12px', color: '#666' }}>No recent projects yet.</td>
                     </tr>
                   )}
                   {recentProjects.map((project) => (
                     <tr key={project.id}>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedProjectIds.includes(project.id)}
-                      onChange={() => handleToggleProjectSelect(project.id)}
-                    />
-                  </td>
+                      <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedProjectIds.includes(project.id)}
+                          onChange={() => handleToggleProjectSelect(project.id)}
+                        />
+                      </td>
                       <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>{project.name}</td>
                       <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>{project.clientName}</td>
                       <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>{project.waterType}</td>
@@ -1487,7 +1501,7 @@ const App = () => {
           <SystemDesign
             membranes={membranes}
             systemConfig={systemConfig}
-            setWaterData={setWaterData} 
+            setWaterData={setWaterData}
             setSystemConfig={setSystemConfig}
             projection={projection}
             applyTdsProfile={applyTdsProfile}
@@ -1497,16 +1511,16 @@ const App = () => {
         )}
         {activeTab === 'post' && <PostTreatment projection={projection} postTreatment={postTreatment} setPostTreatment={setPostTreatment} systemConfig={systemConfig} />}
         {activeTab === 'report' && (
-          <Report 
-            waterData={waterData} 
-            systemConfig={systemConfig} 
-            applyTdsProfile={applyTdsProfile} 
-            projection={projection} 
+          <Report
+            waterData={waterData}
+            systemConfig={systemConfig}
+            applyTdsProfile={applyTdsProfile}
+            projection={projection}
             pretreatment={pretreatment}
             postTreatment={postTreatment}
-            projectNotes={projectNotes} 
-            setProjectNotes={setProjectNotes} 
-            snapshots={snapshots} 
+            projectNotes={projectNotes}
+            setProjectNotes={setProjectNotes}
+            snapshots={snapshots}
             setSnapshots={setSnapshots}
           />
         )}
