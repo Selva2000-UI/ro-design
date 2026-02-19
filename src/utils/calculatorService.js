@@ -264,6 +264,7 @@ export const calculateSystem = (inputs) => {
   // Point 1: System Feed (Raw)
   flowDiagramPoints.push({
     id: 1,
+    name: 'Feed Inlet',
     flow: totalFeedM3h.toFixed(1),
     pressure: (0).toFixed(1),
     tds: feedTds.toFixed(0),
@@ -274,6 +275,7 @@ export const calculateSystem = (inputs) => {
   // Point 2: After Pump
   flowDiagramPoints.push({
     id: 2,
+    name: 'After HP Pump',
     flow: totalFeedM3h.toFixed(1),
     pressure: (isGpmInput ? feedPressureBar * BAR_TO_PSI_STEP : feedPressureBar).toFixed(1),
     tds: feedTds.toFixed(0),
@@ -306,15 +308,15 @@ export const calculateSystem = (inputs) => {
     const stageBeta = sIdx === 0 ? 1.10 : 1.07;
 
     // Stage Permeate Quality (Approximate for diagram points)
-    const stageRejection = baseRejection + (sIdx * 0.001); 
-    const stagePermTds = runningFeedTds * (1 - stageRejection) * stageBeta;
+    const stageRejection = Math.min(baseRejection + (sIdx * 0.0002), 0.999); 
+    const stagePermTds = Math.max(runningFeedTds * (1 - stageRejection) * stageBeta, 0.01);
     const stagePermPh = runningFeedPh - 1.5 - (sIdx * 0.2);
 
     cumulativePermFlow += adjustedPermM3h;
     cumulativePermTdsWeighted += (stagePermTds * adjustedPermM3h);
     cumulativePermPhWeighted += (stagePermPh * adjustedPermM3h);
 
-    const stageConcTds = (runningFeedM3h * runningFeedTds - adjustedPermM3h * stagePermTds) / Math.max(stageConcM3h, 0.1);
+    const stageConcTds = Math.max((runningFeedM3h * runningFeedTds - adjustedPermM3h * stagePermTds) / Math.max(stageConcM3h, 0.1), runningFeedTds);
     const stageConcPh = runningFeedPh + 0.12;
 
     const displayStageFeedP = Math.max(runningPressureBar, 0.01);
@@ -324,6 +326,7 @@ export const calculateSystem = (inputs) => {
     // Point 3, 4, 5... (Concentrate line)
     flowDiagramPoints.push({
       id: 3 + sIdx,
+      name: sIdx === inputStages.length - 1 ? 'Final Conc (Reject)' : `St-${sIdx + 1} Outlet`,
       flow: stageConcM3h.toFixed(1),
       pressure: (isGpmInput ? displayStageConcP * BAR_TO_PSI_STEP : displayStageConcP).toFixed(1),
       tds: stageConcTds.toFixed(0),
@@ -335,6 +338,7 @@ export const calculateSystem = (inputs) => {
     const permPointId = inputStages.length + sIdx + 3;
     flowDiagramPoints.push({
       id: permPointId,
+      name: `St-${sIdx + 1} Permeate`,
       flow: adjustedPermM3h.toFixed(1),
       pressure: (0).toFixed(1),
       tds: stagePermTds.toFixed(2),
@@ -369,6 +373,7 @@ export const calculateSystem = (inputs) => {
   const finalPermPh = cumulativePermPhWeighted / cumulativePermFlow;
   flowDiagramPoints.push({
     id: 2 * inputStages.length + 3,
+    name: 'Final Blended Permeate',
     flow: cumulativePermFlow.toFixed(1),
     pressure: (0).toFixed(1),
     tds: finalPermTds.toFixed(2),
