@@ -588,6 +588,7 @@ const App = () => {
     };
 
     setProjection({
+      ...calcResults,
       // Train-level flows (match IMSDesign Train Information box with unit-based precision)
       permeateFlow: formatFlow(perTrainProduct_display, flowDecimals),
       feedFlow: formatFlow(perTrainFeed_display, flowDecimals),
