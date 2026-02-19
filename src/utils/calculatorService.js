@@ -242,11 +242,14 @@ export const calculateSystem = (inputs) => {
   const highestFluxLmh = fluxLmh * distributionFactor;
   const currentHighestBeta = getHighestBeta(fluxLmh, elementsPerVessel, recFrac);
 
-  // If feedPressure is provided as an input, use it. Otherwise calculate it.
+  // If feedPressure is provided as an input, use it (and add permeate pressure if requested). 
+  // Otherwise calculate it.
   let feedPressureBar;
+
   if (inputs.feedPressure && Number(inputs.feedPressure) > 0) {
     const baseP = isGpmInput ? Number(inputs.feedPressure) / 14.5038 : Number(inputs.feedPressure);
-    feedPressureBar = baseP;
+    // User requested: Feed Pressure = Input Feed Pressure + Permeate Pressure
+    feedPressureBar = baseP + pPermBar;
   } else {
     // Average Pressure model: P_in = NDP_avg + Pi_avg + P_perm + 0.5 * DP
     const ndpAvg = fluxLmh / Math.max(aEffective * tcf * foulingFactor, 0.001);
@@ -438,7 +441,15 @@ export const calculateSystem = (inputs) => {
         ion, 
         (Number(val) * cfLogMean).toFixed(2)
       ])
-    ) // For compatibility with App.js
+    ), // For compatibility with App.js
+    designWarnings: [
+      feedPressureBar > (600 / 14.5038) ? `Maximum Applied Pressure exceeded: ${ (feedPressureBar * 14.5038).toFixed(1) } psig > 600 psig` : null,
+      temp > 45 ? `Maximum Operating Temperature exceeded: ${ temp.toFixed(1) } °C > 45 °C` : null,
+      (currentFeedPh < 2 || currentFeedPh > 10.8) ? `pH is outside the continuous operating range (2 - 10.8)` : null,
+      (Q_vessel_feed * M3H_TO_GPM) > 85 ? `Maximum Feed Flow per vessel exceeded: ${ (Q_vessel_feed * M3H_TO_GPM).toFixed(1) } gpm > 85 gpm` : null,
+      (Q_vessel_conc * M3H_TO_GPM) < 12 ? `Minimum Brine Flow per vessel not met: ${ (Q_vessel_conc * M3H_TO_GPM).toFixed(1) } gpm < 12 gpm` : null,
+      (dpPerElement * 14.5038) > 15 ? `Maximum Pressure Drop per element exceeded: ${ (dpPerElement * 14.5038).toFixed(1) } psi > 15 psi` : null
+    ].filter(w => w !== null)
   };
 };
 
