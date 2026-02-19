@@ -7,7 +7,7 @@ import Report from './components/Report';
 import MembraneEditor from './components/MembraneEditor';
 import DesignGuidelines from './components/DesignGuidelines';
 import ValidationBanner from './components/ValidationBanner';
-import { calculateSystem } from './utils/calculatorService';
+import { calculateSystem, calculateEC } from './utils/calculatorService';
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -118,24 +118,28 @@ const App = () => {
   const [postTreatment, setPostTreatment] = useState({ causticDose: 2.0 });
   
   const applyTdsProfile = (tdsValue) => {
-  const tds = Number(tdsValue) || 0;
-  if (tds <= 0) return;
+    const tds = Number(tdsValue) || 0;
+    if (tds <= 0) return;
 
-  const EW_NA = 23;
-  const EW_CL = 35.45;
+    const EW_NA = 23;
+    const EW_CL = 35.45;
 
-  const totalMeq = tds / (EW_NA + EW_CL);
+    const totalMeq = tds / (EW_NA + EW_CL);
 
-  const na = totalMeq * EW_NA;
-  const cl = totalMeq * EW_CL;
+    const na = totalMeq * EW_NA;
+    const cl = totalMeq * EW_CL;
 
-  setWaterData(prev => ({
-    ...prev,
-    calculatedTds: tds,
-    na: Number(na.toFixed(2)),
-    cl: Number(cl.toFixed(2))
-  }));
-};
+    setWaterData(prev => ({
+      ...prev,
+      calculatedTds: tds,
+      na: Number(na.toFixed(2)),
+      cl: Number(cl.toFixed(2)),
+      // Clear other ions for a pure profile
+      ca: 0, mg: 0, k: 0, sr: 0, ba: 0,
+      hco3: 0, so4: 0, no3: 0, sio2: 0,
+      nh4: 0, po4: 0, f: 0, b: 0, co2: 0, co3: 0
+    }));
+  };
 
   const [projection, setProjection] = useState({ 
     fluxGFD: 0, pumpPressure: 0, monthlyEnergyCost: 0, permeateFlow: 0 
@@ -816,8 +820,7 @@ const App = () => {
     const concTds = Number(projection?.concentrateParameters?.tds ?? 0);
     const permPh = Number(projection?.permeateParameters?.ph ?? feedPh);
     const concPh = Number(projection?.concentrateParameters?.ph ?? feedPh);
-    const econdFactor = 1.9095;
-    const toEcond = (value) => Math.round((Number(value) || 0) * econdFactor);
+    const toEcond = (tds, ph) => calculateEC(tds, ph).toFixed(0);
     const toNumber = (value) => Number(value) || 0;
     const formatCaCO3 = (key, value) => {
       const eq = EQ_WEIGHTS[key];
@@ -903,6 +906,7 @@ const App = () => {
             <div><strong>Project name:</strong> ${waterData.projectName || ''}</div>
             <div><strong>Client Name:</strong> ${waterData.clientName || ''}</div>
             <div><strong>Calculated by:</strong> ${waterData.calculatedBy || ''}</div>
+            <div><strong>Calculated TDS:</strong> ${waterData.calculatedTds || ''}</div>
             <div><strong>Permeate flow/train:</strong> ${projection.permeateFlow || '0.00'} ${unit}</div>
             <div><strong>Raw water flow/train:</strong> ${projection.feedFlow || '0.00'} ${unit}</div>
             <div><strong>Permeate recovery:</strong> ${Number(systemConfig.recovery || 0).toFixed(2)} %</div>
@@ -1141,31 +1145,39 @@ const App = () => {
                   <td>0</td>
                   <td>${rawTds.toFixed(0)}</td>
                   <td>${Number(waterData.ph || 7).toFixed(2)}</td>
-                  <td>${toEcond(rawTds)}</td>
+                  <td>${toEcond(rawTds, waterData.ph || 7)}</td>
                 </tr>
                 <tr>
                   <td>2</td>
                   <td>${projection.feedFlow || '0.00'}</td>
-                  <td>${projection.calcFeedPressurePsi || '0.0'}</td>
+                  <td>0</td>
                   <td>${rawTds.toFixed(0)}</td>
                   <td>${feedPh.toFixed(2)}</td>
-                  <td>${toEcond(rawTds)}</td>
+                  <td>${toEcond(rawTds, feedPh)}</td>
                 </tr>
                 <tr>
                   <td>3</td>
+                  <td>${projection.feedFlow || '0.00'}</td>
+                  <td>${projection.calcFeedPressurePsi || '0.0'}</td>
+                  <td>${rawTds.toFixed(0)}</td>
+                  <td>${feedPh.toFixed(2)}</td>
+                  <td>${toEcond(rawTds, feedPh)}</td>
+                </tr>
+                <tr>
+                  <td>4</td>
                   <td>${projection.concentrateFlow || '0.00'}</td>
                   <td>${projection.calcConcPressurePsi || '0.0'}</td>
                   <td>${concTds.toFixed(0)}</td>
                   <td>${concPh.toFixed(2)}</td>
-                  <td>${toEcond(concTds)}</td>
+                  <td>${toEcond(concTds, concPh)}</td>
                 </tr>
                 <tr>
-                  <td>4</td>
+                  <td>5</td>
                   <td>${projection.permeateFlow || '0.00'}</td>
                   <td>0</td>
                   <td>${permTds.toFixed(1)}</td>
                   <td>${permPh.toFixed(2)}</td>
-                  <td>${toEcond(permTds)}</td>
+                  <td>${toEcond(permTds, permPh)}</td>
                 </tr>
               </tbody>
             </table>
