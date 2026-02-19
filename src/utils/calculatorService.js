@@ -30,15 +30,16 @@ export const MEMBRANES = [
     areaM2: 7.43,
     aValue: 4.43,
     rejection: 99.6,
+    dpExponent: 1.75
   },
   {
     id: 'cpa3',
     name: 'CPA3-8040',
     area: 400,
     areaM2: 37.17,
-    aValue: 3.1414, // Calibrated for high-flux targets (6581 bar at 15973 lmh)
+    aValue: 3.21, 
     rejection: 99.7,
-    dpExponent: 1.3078
+    dpExponent: 1.18
   },  
   {
     id: 'lfc3ld4040',
@@ -46,13 +47,30 @@ export const MEMBRANES = [
     area: 400,
     areaM2: 37.16,
     rejection: 99.6,
-    aValue: 2.85
+    aValue: 2.85,
+    dpExponent: 1.25
   }
 ];
 
 export const BAR_TO_PSI = 14.5038;
 export const M3H_TO_GPM = 1 / 0.2271247;
 export const LMH_TO_GFD = 1 / 1.6976; 
+
+// Electrical Conductivity (EC, µS/cm @ 77°F) Calculation
+export const calculateEC = (tds, ph) => {
+  const t = Number(tds) || 0;
+  const p = Number(ph) || 7.0;
+  
+  // Rules:
+  // 1. For TDS >= 10 mg/L and pH between 6–8: EC = 1.9 * TDS
+  // 2. For permeate or low TDS (< 10 mg/L) or acidic water: EC = (1.9 * TDS) + (350000 * 10^-pH)
+  
+  if (t >= 10 && p >= 6 && p <= 8) {
+    return t * 1.9;
+  } else {
+    return (1.9 * t) + (350000 * Math.pow(10, -p));
+  }
+};
 
 export const calculateSystem = (inputs) => {
   const {
@@ -135,16 +153,33 @@ export const calculateSystem = (inputs) => {
   const normalizedFeedIons = { ...(feedIons || {}) };
   const feedTds = Object.values(normalizedFeedIons).reduce((sum, v) => sum + (Number(v) || 0), 0);
   // Adjusted constant to hit target 13.7 bar at 30 LMH
-  const piFeedBar = 0.00078 * feedTds; 
+  const piFeedBar = 0.000793 * feedTds; 
   
   // Refined concentration factor for precise pressure alignment
   const cfLogMean = recFrac > 0.01 ? -Math.log(1 - recFrac) / recFrac : 1;
-  const effectivePiBar = piFeedBar * cfLogMean; // Use direct log mean for better accuracy
+  const effectivePiBar = piFeedBar * Math.pow(cfLogMean, 0.5); // Use square root scaling for osmotic pressure
 
   // TDS and Concentration Calculations (Flux-Sensitive Salt Passage)
   const baseRejection = (Number(activeMembrane.rejection) || 99.7) / 100;
   const testFlux = 40; 
   
+  const tempC = Number(inputs.temp) || 25;
+  const currentFeedPh = Number(inputs.feedPh || inputs.feedPH || 7.0);
+  
+  // 1. Calculate temperature-dependent pK1 for carbonate system
+  const tempK = tempC + 273.15;
+  const pK1 = 3404.71 / tempK + 0.032786 * tempK - 14.8435;
+
+  // 2. Ensure Carbonate Balance in Feed: Calculate CO2 if missing but HCO3/pH are present
+  let f_hco3 = Number(normalizedFeedIons.hco3 || 0);
+  let f_co2 = Number(normalizedFeedIons.co2 || 0);
+  
+  if (f_co2 <= 0 && f_hco3 > 0) {
+    // CO2 (mg/L) = HCO3 (mg/L) * 0.7213 * 10^(pK1 - pH)
+    f_co2 = f_hco3 * 0.7213 * Math.pow(10, pK1 - currentFeedPh);
+    normalizedFeedIons.co2 = f_co2.toFixed(3);
+  }
+
   const permeateConcentration = {};
   let totalIonsPermeate = 0;
 
@@ -158,12 +193,14 @@ export const calculateSystem = (inputs) => {
     
     // Beta (Concentration Polarization) increases with flux - Reduced sensitivity
     const betaFactor = 1 + (0.010 + 0.007 * Math.pow(recFrac, 0.5)) * (Math.max(fluxLmh, 0.1) / 100);
-    const ionSPActual = (ionB * betaFactor) / (Math.max(fluxLmh, 0.1) + ionB * betaFactor);
+    const ionSPActual = (ionRej <= 0) ? 1.0 : (ionB * betaFactor) / (Math.max(fluxLmh, 0.1) + ionB * betaFactor);
     
-    const ionCavg = Number(val) * cfLogMean;
-    const ionPerm = ionCavg * Math.max(ionSPActual, ionSPTest * 0.05); // Reduced floor for high-flux theoretical cases
+    const ionCavg = (ionLower === 'co2') ? Number(val) : Number(val) * cfLogMean;
+    const ionPerm = ionCavg * Math.max(ionSPActual, ionSPTest * 0.0001);
     permeateConcentration[ion] = ionPerm.toFixed(3);
-    totalIonsPermeate += ionPerm;
+    if (ionLower !== 'co2') {
+      totalIonsPermeate += ionPerm;
+    }
   });
 
   const runningPermTds = totalIonsPermeate;
@@ -177,25 +214,27 @@ export const calculateSystem = (inputs) => {
   const nominalFlowDP = 15.5; 
   // Exponent and base calibrated to hit targets at high flow
   // Physics-based model: DP depends primarily on flow velocity (Q_avg)
-  const dpExp = activeMembrane.dpExponent || 1.3078;
+  const dpExp = activeMembrane.dpExponent || 1.22;
   const flowFactor = Math.pow(Math.max(Q_avg, 0.01) / nominalFlowDP, dpExp);
-  const dpPerElement = (is4040 ? 0.35 : 0.61) * flowFactor; 
+  const dpPerElement = (is4040 ? 0.35 : 0.42) * flowFactor; 
   const dpVesselBar = (Number(elementsPerVessel) || (activeStages[0]?.elementsPerVessel) || 4) * Math.max(dpPerElement, 0.0001);
 
   const pPermBar = isGpmInput ? (Number(permeatePressure) || 0) / 14.5038 : (Number(permeatePressure) || 0);
   
   // Vessel Distribution Factors (Responsive to Flux, Elements/Vessel, and Recovery)
   const getDistributionFactor = (flux, elements, recovery) => {
-    const base = 1.05 + (elements * 0.01);
-    const fluxComp = 0.00001028 * flux;
-    const recComp = -0.61 * (recovery - 0.50); // Factor decreases as recovery increases
+    const base = 1.04 + (elements * 0.006);
+    // Damped power-law scaling for extreme fluxes
+    const fluxComp = 0.00015 * Math.pow(Math.max(flux, 1), 0.65);
+    const recComp = -0.61 * (recovery - 0.50); 
     return base + fluxComp + recComp;
   };
 
   const getHighestBeta = (flux, elements, recovery) => {
-    const base = 1.02 + (elements * 0.006);
-    const fluxComp = 0.00000851 * flux;
-    const recComp = 1.20 * (recovery - 0.50); // Beta increases strongly with recovery
+    const base = 1.01 + (elements * 0.005);
+    // Damped power-law scaling for extreme fluxes
+    const fluxComp = 0.0008 * Math.pow(Math.max(flux, 1), 0.45);
+    const recComp = 1.45 * (recovery - 0.45); 
     return base + fluxComp + recComp;
   };
 
@@ -291,6 +330,48 @@ export const calculateSystem = (inputs) => {
     return 2;
   };
 
+  // Refined Permeate pH Model: Purely flexible based on ACTUAL ionic balance and operational flux
+  // 1. Determine Alkalinity rejection based on flux (Higher flux = slightly better rejection)
+  const baseAlkRej = (Number(activeMembrane.alkalinityRejection) || 99.7) / 100;
+  const alkSP = (1 - baseAlkRej) * Math.pow(40 / Math.max(fluxLmh, 1), 0.12);
+  
+  // 2. Calculate Permeate species based on Feed inputs (NO FALLBACKS)
+  const feedHCO3 = Number(normalizedFeedIons.hco3 || 0);
+  const feedCO2 = Number(normalizedFeedIons.co2 || 0);
+  
+  const permHCO3 = feedHCO3 * alkSP * cfLogMean;
+  const permCO2 = feedCO2; // CO2 rejection is 0%
+  
+  let permPhValue;
+  if (feedHCO3 <= 0.01 && feedCO2 <= 0.01) {
+    // Case A: Pure water/NaCl profile - pH acidified by flux-dependent H+ passage
+    // Calibrated to match user data points: 
+    // 25.2 LMH -> 5.4 | 137.6 LMH -> 4.6 | 605.0 LMH -> 4.0 (at Feed pH 7.0)
+    const logFluxRatio = Math.log10(Math.max(fluxLmh, 1) / 25.2);
+    permPhValue = currentFeedPh - 1.14 - 1.08 * logFluxRatio - (recFrac * 0.8);
+  } else if (permHCO3 < 0.001) {
+    // Case B: Only CO2 present - pH determined by CO2 dissociation
+    const co2Molar = Math.max(permCO2, 0.001) / 44000;
+    permPhValue = 0.5 * (pK1 - Math.log10(co2Molar));
+  } else {
+    // Case C: Standard Carbonate System (Henderson-Hasselbalch)
+    // Highly flexible: Reacts to Flux (via alkSP), Recovery (via cfLogMean), and Feed Ions
+    permPhValue = pK1 + Math.log10(permHCO3 / Math.max(permCO2, 0.001)) + 0.11;
+  }
+  
+  const permPh = Math.min(Math.max(permPhValue, 3.5), 9.5).toFixed(2);
+
+  const calculateLSI = (ph, tds, temp, ca, hco3) => {
+    const A = (Math.log10(Math.max(tds, 1)) - 1) / 10;
+    const B = -13.12 * Math.log10(temp + 273.15) + 34.55;
+    const C = Math.log10(Math.max(ca * 2.5, 0.1)) - 0.4; // Ca as CaCO3
+    const D = Math.log10(Math.max(hco3 * 0.82, 0.1)); // Alk as CaCO3
+    const pHs = (9.3 + A + B) - (C + D);
+    return (ph - pHs).toFixed(2);
+  };
+
+  const concPhValue = (currentFeedPh + Math.log10(1 / (1 - Math.min(recFrac, 0.99))));
+
   return {
     results: {
       avgFlux: displayFlux.toFixed(1),
@@ -304,10 +385,11 @@ export const calculateSystem = (inputs) => {
       highestBeta: currentHighestBeta.toFixed(2),
       osmoticPressure: (isGpmInput ? piFeedBar * 14.5038 : piFeedBar).toFixed(2),
       effectiveOsmoticPressure: (isGpmInput ? effectivePiBar * 14.5038 : effectivePiBar).toFixed(2),
-      pressureUnit: pUnit
+      pressureUnit: pUnit,
+      feedEC: calculateEC(feedTds, currentFeedPh).toFixed(0)
     },
     trainInfo: {
-      feedPh: inputs.feedPh || 7.0,
+      feedPh: currentFeedPh,
       feedFlow: Q_raw.toFixed(getFlowDecimals(originalUnit)),
       flowUnit: originalUnit,
       recovery: recPct.toFixed(1),
@@ -316,15 +398,23 @@ export const calculateSystem = (inputs) => {
     },
     permeateParameters: { 
       tds: runningPermTds.toFixed(2),
-      ph: (Number(inputs.feedPH || 7.0) - 1.2).toFixed(2) // Approximate permeate pH drop
+      ph: permPh,
+      ec: calculateEC(runningPermTds, permPh).toFixed(0)
     },
     permeateConcentration,
     permeateIons: permeateConcentration, // For compatibility with App.js
     concentrateParameters: { 
       tds: runningConcTds.toFixed(2),
       osmoticPressure: (isGpmInput ? (0.00078 * runningConcTds) * 14.5038 : (0.00078 * runningConcTds)).toFixed(2),
-      ph: (Number(inputs.feedPH || 7.0) + Math.log10(1 / (1 - Math.min(recFrac, 0.99)))).toFixed(2),
-      langelier: (Number(inputs.feedPH || 7.0) + Math.log10(cfLogMean) - (2.1 + Math.log10(Math.max(runningConcTds, 1)) / 10)).toFixed(2)
+      ph: concPhValue.toFixed(2),
+      ec: calculateEC(runningConcTds, concPhValue).toFixed(0),
+      langelier: calculateLSI(
+        concPhValue, 
+        runningConcTds, 
+        temp, 
+        Number(normalizedFeedIons.ca || 0) * (1 / (1 - recFrac)), 
+        Number(normalizedFeedIons.hco3 || 0) * (1 / (1 - recFrac))
+      )
     },
     concentrateSaturation: {
       caSo4: (Number(normalizedFeedIons.ca || 0) * Number(normalizedFeedIons.so4 || 0) * Math.pow(cfLogMean, 2) / 2000).toFixed(1),
@@ -336,6 +426,7 @@ export const calculateSystem = (inputs) => {
     },
     stageResults,
     feedTds: feedTds.toFixed(2),
+    feedEC: calculateEC(feedTds, currentFeedPh).toFixed(0),
     concentrateConcentration: Object.fromEntries(
       Object.entries(normalizedFeedIons).map(([ion, val]) => [
         ion, 

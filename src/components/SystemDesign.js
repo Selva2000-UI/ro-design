@@ -302,28 +302,12 @@ const SystemDesign = ({
   const concTds = projection?.concentrateParameters?.tds ?? 0;
   const permPh = projection?.permeateParameters?.ph ?? treatedFeedPh;
   const concPh = projection?.concentrateParameters?.ph ?? treatedFeedPh;
+  const feedPressurePsi = projection?.results?.feedPressure ?? '0.0';
+  const concPressurePsi = projection?.results?.concPressure ?? '0.0';
   const flowDiagramReady = systemConfig.designCalculated && projection;
   const tdsToEcond = (value, ph) => Math.round(calculateEC(value, ph));
   const handlePrintFlowDiagram = () => {
     if (!flowDiagramRef.current) return;
-
-    const flowPoints = (projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id);
-    const flowIdHeader = flowPoints.map(p => `<th style="border: 1px solid #c9d3de; padding: 6px;">${p.id}</th>`).join('');
-    const flowNameHeader = flowPoints.map(p => `<th style="border: 1px solid #c9d3de; padding: 6px; font-weight: normal; font-size: 0.7rem;">${p.name || ''}</th>`).join('');
-    
-    const flowRows = [
-      { label: 'New Heading Name', key: 'name' },
-      { label: `Flow (${fUnit})`, key: 'flow' },
-      { label: `Pressure (${pUnit})`, key: 'pressure' },
-      { label: 'TDS (mg/l)', key: 'tds' },
-      { label: 'pH', key: 'ph' },
-      { label: 'Econd (µS/cm)', key: 'ec' }
-    ].map((row, rIdx) => `
-      <tr>
-        <td style="border: 1px solid #c9d3de; padding: 6px; fontWeight: bold; background: #f9f9f9;">${row.label}</td>
-        ${flowPoints.map(p => `<td style="border: 1px solid #c9d3de; padding: 6px; ${row.key === 'name' ? 'font-size: 0.7rem; background: #f9f9f9;' : ''}">${p[row.key] || ''}</td>`).join('')}
-      </tr>
-    `).join('');
 
     const stageRows = (projection.stageResults || []).map((row) => `
       <tr>
@@ -360,27 +344,7 @@ const SystemDesign = ({
             </head>
             <body>
               <div class="print-container">
-                <div class="header">Flow Diagram</div>
-                <div class="meta">
-                  <div>Project name: ${waterData?.projectName || 'Project'}</div>
-                  <div>Temperature: ${((Number(waterData?.temp || 25) * 9) / 5 + 32).toFixed(1)} °F</div>
-                  <div>Date: ${new Date().toLocaleDateString()}</div>
-                </div>
-                <div class="content">
-                  ${flowDiagramRef.current.querySelector('svg').outerHTML}
-                </div>
-                
-                <table>
-                  <thead>
-                    <tr style="background: #f0f3f7;">
-                      <th style="border: 1px solid #c9d3de; padding: 6px; width: 140px;">#</th>
-                      ${flowIdHeader}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${flowRows}
-                  </tbody>
-                </table>
+                ${flowDiagramRef.current.innerHTML}
                 
                 <div class="header">Calculation Result</div>
                 <table>
@@ -538,7 +502,7 @@ const SystemDesign = ({
 
         <div style={panelStyle}>
           <div style={headerStyle}>Conditions</div>
-          <div style={{ ...rowStyle, fontWeight: 'bold', marginTop: '2px' }}></div>  
+          <div style={{ ...rowStyle, fontWeight: 'bold', marginTop: '2px' }}><span>Pass 1</span></div>
           <div style={rowStyle}>
             <span>Chemical</span>
             <select style={{ ...inputStyle, width: '110px', textAlign: 'left' }} value={systemConfig.chemical} onChange={e => handleInputChange('chemical', e.target.value)}>
@@ -933,136 +897,88 @@ const SystemDesign = ({
                 <div>Date: {new Date().toLocaleDateString()}</div>
                 <div>Membrane age, P1: {Number(systemConfig.membraneAge || 0).toFixed(1)} years</div>
               </div>
-              <div style={{ padding: '20px', background: '#fff', overflowX: 'auto' }}>
-                <svg viewBox={`0 0 ${Math.max(900, 250 + (pass1Stages * 150) + 100)} ${Math.max(260, 100 + (pass1Stages * 80))}`} width="100%" height={Math.max(260, 100 + (pass1Stages * 80))}>
-                  {/* --- DYNAMIC SVG GENERATION --- */}
-                  {(() => {
-                    const numStages = pass1Stages;
-                    const startX = 50;
-                    const startY = 80;
-                    const stageWidth = 100;
-                    const stageHeight = 60;
-                    const horizontalGap = 150;
-                    const verticalGap = 80;
-                    const elements = [];
-
-                    // 1. Feed line and Pump
-                    elements.push(<line key="f-line-1" x1={startX} y1={startY} x2={startX + 100} y2={startY} stroke="#1e6bd6" strokeWidth="6" />);
-                    elements.push(<polygon key="p1-hex" points={`${startX + 30},${startY - 15} ${startX + 60},${startY - 15} ${startX + 75},${startY} ${startX + 60},${startY + 15} ${startX + 30},${startY + 15} ${startX + 15},${startY}`} fill="white" stroke="#222" strokeWidth="2" />);
-                    elements.push(<text key="p1-txt" x={startX + 45} y={startY + 5} textAnchor="middle" fontSize="12" fontWeight="bold">1</text>);
-
-                    const pumpX = startX + 130;
-                    elements.push(<circle key="pump-c" cx={pumpX} cy={startY} r="25" fill="white" stroke="#222" strokeWidth="3" />);
-                    elements.push(<polygon key="pump-t" points={`${pumpX - 5},${startY - 12} ${pumpX + 15},${startY} ${pumpX - 5},${startY + 12}`} fill="none" stroke="#222" strokeWidth="2" />);
-
-                    elements.push(<line key="f-line-2" x1={pumpX + 25} y1={startY} x2={250} y2={startY} stroke="#1e6bd6" strokeWidth="6" />);
-                    elements.push(<polygon key="p2-hex" points={`${pumpX + 50},${startY - 15} ${pumpX + 80},${startY - 15} ${pumpX + 95},${startY} ${pumpX + 80},${startY + 15} ${pumpX + 50},${startY + 15} ${pumpX + 35},${startY}`} fill="white" stroke="#222" strokeWidth="2" />);
-                    elements.push(<text key="p2-txt" x={pumpX + 65} y={startY + 5} textAnchor="middle" fontSize="12" fontWeight="bold">2</text>);
-
-                    // Common Permeate Line at Top
-                    const permY = 25;
-                    const finalX = 250 + (numStages * horizontalGap);
-                    elements.push(<line key="perm-main" x1={250 + stageWidth} y1={permY} x2={finalX + 50} y2={permY} stroke="#3cc7f4" strokeWidth="6" />);
-
-                    for (let i = 0; i < numStages; i++) {
-                      const sX = 250 + (i * horizontalGap);
-                      const sY = startY + (i * verticalGap);
-
-                      // Membrane Block
-                      elements.push(<rect key={`m-r-${i}`} x={sX} y={sY - 25} width={stageWidth} height={50} fill="white" stroke="#222" strokeWidth="2" />);
-                      elements.push(<line key={`m-l-${i}`} x1={sX} y1={sY + 25} x2={sX + stageWidth} y2={sY - 25} stroke="#222" strokeWidth="1" />);
-
-                      // Permeate branch
-                      elements.push(<line key={`p-b-${i}`} x1={sX + stageWidth} y1={sY - 15} x2={sX + stageWidth} y2={permY} stroke="#3cc7f4" strokeWidth="4" />);
-                      const pLabelId = numStages + i + 3;
-                      const pY = i === 0 ? permY : (sY + permY) / 2 - 10;
-                      const pX = i === 0 ? sX + stageWidth + 40 : sX + stageWidth;
-                      
-                      elements.push(<polygon key={`pp-${i}`} points={`${pX - 15},${pY - 12} ${pX + 15},${pY - 12} ${pX + 25},${pY} ${pX + 15},${pY + 12} ${pX - 15},${pY + 12} ${pX - 25},${pY}`} fill="white" stroke="#222" strokeWidth="1.5" />);
-                      elements.push(<text key={`pt-${i}`} x={pX} y={pY + 4} textAnchor="middle" fontSize="11" fontWeight="bold">{pLabelId}</text>);
-
-                      // Reject / Next Feed
-                      if (i < numStages - 1) {
-                        const nY = startY + (i + 1) * verticalGap;
-                        elements.push(<line key={`r-v-${i}`} x1={sX + stageWidth / 2} y1={sY + 25} x2={sX + stageWidth / 2} y2={nY} stroke="#35c84b" strokeWidth="6" />);
-                        elements.push(<line key={`r-h-${i}`} x1={sX + stageWidth / 2} y1={nY} x2={sX + horizontalGap} y2={nY} stroke="#35c84b" strokeWidth="6" />);
-                        const rLabelId = i + 3;
-                        const rY = (sY + 25 + nY) / 2;
-                        elements.push(<polygon key={`rp-${i}`} points={`${sX + stageWidth / 2 - 15},${rY - 12} ${sX + stageWidth / 2 + 15},${rY - 12} ${sX + stageWidth / 2 + 25},${rY} ${sX + stageWidth / 2 + 15},${rY + 12} ${sX + stageWidth / 2 - 15},${rY + 12} ${sX + stageWidth / 2 - 25},${rY}`} fill="white" stroke="#222" strokeWidth="1.5" />);
-                        elements.push(<text key={`rt-${i}`} x={sX + stageWidth / 2} y={rY + 4} textAnchor="middle" fontSize="11" fontWeight="bold">{rLabelId}</text>);
-                      } else {
-                        // Final Concentrate
-                        elements.push(<line key="conc-f" x1={sX + stageWidth / 2} y1={sY + 25} x2={sX + stageWidth / 2} y2={sY + 70} stroke="#35c84b" strokeWidth="6" />);
-                        const cLabelId = numStages + 2;
-                        elements.push(<polygon key="cp" points={`${sX + stageWidth / 2 - 15},${sY + 50 - 12} ${sX + stageWidth / 2 + 15},${sY + 50 - 12} ${sX + stageWidth / 2 + 25},${sY + 50} ${sX + stageWidth / 2 + 15},${sY + 50 + 12} ${sX + stageWidth / 2 - 15},${sY + 50 + 12} ${sX + stageWidth / 2 - 25},${sY + 50}`} fill="white" stroke="#222" strokeWidth="1.5" />);
-                        elements.push(<text key="ct" x={sX + stageWidth / 2} y={sY + 50 + 4} textAnchor="middle" fontSize="11" fontWeight="bold">{cLabelId}</text>);
-                      }
-                    }
-
-                    // Final Permeate Label
-                    const finalPLab = 2 * numStages + 3;
-                    elements.push(<polygon key="fpl" points={`${finalX + 45 - 15},${permY - 12} ${finalX + 45 + 15},${permY - 12} ${finalX + 45 + 25},${permY} ${finalX + 45 + 15},${permY + 12} ${finalX + 45 - 15},${permY + 12} ${finalX + 45 - 25},${permY}`} fill="white" stroke="#222" strokeWidth="1.5" />);
-                    elements.push(<text key="fpt" x={finalX + 45} y={permY + 4} textAnchor="middle" fontSize="11" fontWeight="bold">{finalPLab}</text>);
-
-                    return elements;
-                  })()}
-
+              <div style={{ padding: '20px' }}>
+                <svg viewBox="0 0 900 260" width="100%" height="260">
+                  <line x1="40" y1="130" x2="240" y2="130" stroke="#1e6bd6" strokeWidth="6" />
+                  <line x1="240" y1="130" x2="320" y2="130" stroke="#1e6bd6" strokeWidth="6" />
+                  <line x1="320" y1="130" x2="380" y2="130" stroke="#1e6bd6" strokeWidth="6" />
+                  <line x1="440" y1="130" x2="520" y2="130" stroke="#1e6bd6" strokeWidth="6" />
+                  <line x1="520" y1="130" x2="660" y2="130" stroke="#1e6bd6" strokeWidth="6" />
+                  <line x1="660" y1="130" x2="780" y2="130" stroke="#3cc7f4" strokeWidth="6" />
+                  <line x1="660" y1="130" x2="660" y2="210" stroke="#35c84b" strokeWidth="6" />
+                  <polygon points="90,110 120,110 135,130 120,150 90,150 75,130" fill="white" stroke="#222" strokeWidth="2" />
+                  <text x="105" y="136" textAnchor="middle" fontSize="14" fontFamily="Arial">1</text>
+                  <polygon points="210,110 240,110 255,130 240,150 210,150 195,130" fill="white" stroke="#222" strokeWidth="2" />
+                  <text x="225" y="136" textAnchor="middle" fontSize="14" fontFamily="Arial">2</text>
+                  <circle cx="380" cy="130" r="30" fill="white" stroke="#222" strokeWidth="3" />
+                  <polygon points="372,115 402,130 372,145" fill="white" stroke="#222" strokeWidth="2" />
+                  <polygon points="520,110 550,110 565,130 550,150 520,150 505,130" fill="white" stroke="#222" strokeWidth="2" />
+                  <text x="535" y="136" textAnchor="middle" fontSize="14" fontFamily="Arial">3</text>
+                  <rect x="660" y="95" width="140" height="70" fill="white" stroke="#222" strokeWidth="2" />
+                  <polygon points="650,205 670,205 680,220 670,235 650,235 640,220" fill="white" stroke="#222" strokeWidth="2" />
+                  <text x="660" y="226" textAnchor="middle" fontSize="14" fontFamily="Arial">4</text>
+                  <polygon points="800,110 830,110 845,130 830,150 800,150 785,130" fill="white" stroke="#222" strokeWidth="2" />
+                  <text x="815" y="136" textAnchor="middle" fontSize="14" fontFamily="Arial">5</text>
                   {systemConfig.chemical !== 'None' && (
                     <>
-                      <text x="180" y="45" textAnchor="middle" fontSize="11" fontFamily="Arial" fill="#b83b2e" fontWeight="bold">
-                        {systemConfig.chemical}
+                      <text x="180" y="60" textAnchor="middle" fontSize="12" fontFamily="Arial" fill="#b83b2e">
+                        {systemConfig.chemical} Dosing
                       </text>
-                      <line x1="180" y1="50" x2="180" y2="80" stroke="#b83b2e" strokeWidth="2" strokeDasharray="4" />
+                      <line x1="180" y1="70" x2="180" y2="110" stroke="#b83b2e" strokeWidth="2" />
                     </>
                   )}
                 </svg>
 
-                <div style={{ border: '1px solid #c9d3de', borderRadius: '4px', overflow: 'hidden', marginTop: '15px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'center' }}>
+                <div style={{ border: '1px solid #c9d3de', borderRadius: '4px', overflow: 'hidden' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', textAlign: 'center' }}>
                     <thead style={{ background: '#f0f3f7' }}>
                       <tr>
-                        <th style={{ border: '1px solid #c9d3de', padding: '6px', width: '140px' }}>#</th>
-                        {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
-                          <th key={p.id} style={{ border: '1px solid #c9d3de', padding: '6px' }}>{p.id}</th>
+                        <th style={{ border: '1px solid #c9d3de', padding: '6px', width: '140px' }}></th>
+                        {[1, 2, 3, 4, 5].map((n) => (
+                          <th key={n} style={{ border: '1px solid #c9d3de', padding: '6px' }}>{n}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>New Heading Name</td>
-                        {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
-                          <td key={`name-${p.id}`} style={{ border: '1px solid #c9d3de', padding: '6px', fontSize: '0.7rem', background: '#f9f9f9' }}>{p.name || ''}</td>
-                        ))}
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>Flow ({fUnit})</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.feedFlow || systemConfig.feedFlow || '0.00'}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.feedFlow || systemConfig.feedFlow || '0.00'}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.feedFlow || systemConfig.feedFlow || '0.00'}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.concentrateFlow ?? '0.00'}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.permeateFlow ?? '0.00'}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>Flow ({fUnit})</td>
-                        {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
-                          <td key={p.id} style={{ border: '1px solid #c9d3de', padding: '6px' }}>{p.flow}</td>
-                        ))}
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>Pressure ({pUnit})</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>0</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>0</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.results?.feedPressure ?? '0.0'}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.results?.concPressure ?? '0.0'}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>0</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>Pressure ({pUnit})</td>
-                        {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
-                          <td key={p.id} style={{ border: '1px solid #c9d3de', padding: '6px' }}>{p.pressure}</td>
-                        ))}
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>TDS (mg/l)</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(feedTds, 1)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(feedTds, 1)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(feedTds, 1)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(concTds, 1)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{Number(permTds) < 0.2 ? Number(permTds).toFixed(3) : formatNumber(permTds, 1)}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>TDS (mg/l)</td>
-                        {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
-                          <td key={p.id} style={{ border: '1px solid #c9d3de', padding: '6px' }}>{p.tds}</td>
-                        ))}
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>pH</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(rawFeedPh, 2)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(treatedFeedPh, 2)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(treatedFeedPh, 2)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(concPh, 2)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(permPh, 2)}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>pH</td>
-                        {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
-                          <td key={p.id} style={{ border: '1px solid #c9d3de', padding: '6px' }}>{p.ph}</td>
-                        ))}
-                      </tr>
-                      <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>Econd (µS/cm)</td>
-                        {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
-                          <td key={p.id} style={{ border: '1px solid #c9d3de', padding: '6px' }}>{p.ec}</td>
-                        ))}
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>Econd (µS/cm)</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(feedTds, rawFeedPh)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(feedTds, treatedFeedPh)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(feedTds, treatedFeedPh)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(concTds, concPh)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(permTds, permPh)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -1144,11 +1060,17 @@ const SystemDesign = ({
                 ))}
               </tbody>
             </table>
-            
+            <div style={{ marginTop: '10px', padding: '8px', background: 'white', borderTop: '1px solid #ccc', fontSize: '0.8rem', fontWeight: 'bold', color: '#004a80', display: 'flex', gap: '20px' }}>
+              <div>Feed Pressure is {projection.results?.feedPressure ?? '0.0'} {pUnit}</div>
+              <div>Permeate Pressure is {systemConfig.permeatePressure || '0.0'} {pUnit}</div>
+              <div>Osmotic {projection.results?.osmoticPressure ?? '0.0'} {pUnit}</div>
+              <div>Average flux / Flux {projection.results?.avgFlux ?? '0.0'} {fluxUnit}</div>
+            </div>
           </div>
 
           <div style={{ marginTop: '12px', background: 'white', padding: '8px', border: '1px solid #c2d1df' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Permeate Concentration (mg/L)</div>
+            <div style={{ fontSize: '0.65rem', color: '#666', marginBottom: '8px' }}>Formula: Cp = Cf × (1 - Rejection)</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
               <div>Ca: {projection.permeateConcentration?.ca ?? '0.000'}</div>
               <div>Mg: {projection.permeateConcentration?.mg ?? '0.000'}</div>
@@ -1164,7 +1086,7 @@ const SystemDesign = ({
               <div>PO4: {projection.permeateConcentration?.po4 ?? '0.000'}</div>
               <div>F: {projection.permeateConcentration?.f ?? '0.000'}</div>
               <div>B: {projection.permeateConcentration?.b ?? '0.000'}</div>
-              <div>CO2: {'0.068'}</div>
+              <div>CO2: {projection.permeateConcentration?.co2 ?? '0.000'}</div>
               <div>CO3: {projection.permeateConcentration?.co3 ?? '0.000'}</div>
               <div>pH: {projection.permeateParameters?.ph ?? '0.0'}</div>
               <div>TDS: {projection.permeateParameters?.tds ?? '0.0'} mg/L</div>
@@ -1173,7 +1095,9 @@ const SystemDesign = ({
 
           <div style={{ marginTop: '10px', background: 'white', padding: '8px', border: '1px solid #c2d1df' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Concentrate Saturations and Parameters</div>
-            
+            <div style={{ fontSize: '0.65rem', color: '#666', marginBottom: '8px' }}>
+              Osmotic Pressure: {projection.concentrateParameters?.osmoticPressure ?? '0.0'} {pUnit}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
               <div>CaSO4: {projection.concentrateSaturation?.caSo4 ?? '0.0'}%</div>
               <div>BaSO4: {projection.concentrateSaturation?.baSo4 ?? '0.0'}%</div>
@@ -1182,8 +1106,7 @@ const SystemDesign = ({
               <div>Ca3(PO4)2: {projection.concentrateSaturation?.ca3po42 ?? '0.00'}%</div>
               <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.0'}%</div>
               <div>CCPP: {projection.concentrateParameters?.ccpp ?? '0.0'} mg/L</div>
-              {/* <div>Langelier: {projection.concentrateParameters?.langelier ?? '0.00'}</div> */}
-              <div>Langelier: { '0.00'}</div>
+              <div>Langelier: {projection.concentrateParameters?.langelier ?? '0.00'}</div>
               <div>pH: {projection.concentrateParameters?.ph ?? '0.0'}</div>
               <div>TDS: {projection.concentrateParameters?.tds ?? '0.0'} mg/L</div>
               <div>Osmotic: {projection.concentrateParameters?.osmoticPressure ?? '0.0'} {pUnit}</div>
