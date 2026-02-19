@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FLOW_TO_M3H } from '../utils/calculatorService';
+import { FLOW_TO_M3H, calculateEC } from '../utils/calculatorService';
 
 const SystemDesign = ({
   membranes,
@@ -305,7 +305,7 @@ const SystemDesign = ({
   const feedPressurePsi = projection?.results?.feedPressure ?? '0.0';
   const concPressurePsi = projection?.results?.concPressure ?? '0.0';
   const flowDiagramReady = systemConfig.designCalculated && projection;
-  const tdsToEcond = (value, factor = 1.97) => Math.round((Number(value) || 0) * factor);
+  const tdsToEcond = (value, ph) => Math.round(calculateEC(value, ph));
   const handlePrintFlowDiagram = () => {
     if (!flowDiagramRef.current) return;
 
@@ -941,44 +941,44 @@ const SystemDesign = ({
                     </thead>
                     <tbody>
                       <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>Flow ({flowUnitLabel})</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.feedFlow ?? '0.00'}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.feedFlow ?? '0.00'}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.feedFlow ?? '0.00'}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>Flow ({fUnit})</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.feedFlow || systemConfig.feedFlow || '0.00'}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.feedFlow || systemConfig.feedFlow || '0.00'}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.feedFlow || systemConfig.feedFlow || '0.00'}</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.concentrateFlow ?? '0.00'}</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.permeateFlow ?? '0.00'}</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>Pressure (psi)</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>Pressure ({pUnit})</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>0</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>0</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{feedPressurePsi}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{concPressurePsi}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.results?.feedPressure ?? '0.0'}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{projection?.results?.concPressure ?? '0.0'}</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>0</td>
                       </tr>
                       <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>TDS (mg/L)</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>TDS (mg/l)</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(feedTds, 1)}</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(feedTds, 1)}</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(feedTds, 1)}</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(concTds, 1)}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(permTds, 1)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{Number(permTds) < 0.2 ? Number(permTds).toFixed(3) : formatNumber(permTds, 1)}</td>
                       </tr>
                       <tr>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>pH</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(rawFeedPh, 2)}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(treatedFeedPh, 1)}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(treatedFeedPh, 1)}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(concPh, 1)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(treatedFeedPh, 2)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(treatedFeedPh, 2)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(concPh, 2)}</td>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{formatNumber(permPh, 2)}</td>
                       </tr>
                       <tr>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>Econd (µS/cm)</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(feedTds, 1.97)}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(feedTds, 1.97)}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(feedTds, 1.97)}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(concTds, 1.78)}</td>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(permTds, 2.29)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(feedTds, rawFeedPh)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(feedTds, treatedFeedPh)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(feedTds, treatedFeedPh)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(concTds, concPh)}</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px' }}>{tdsToEcond(permTds, permPh)}</td>
                       </tr>
                     </tbody>
                   </table>
