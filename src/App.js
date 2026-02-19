@@ -221,9 +221,11 @@ const App = () => {
 
     if (feedPressureInput > 0) {
         // SOLVE FOR RECOVERY based on Feed Pressure
-        // Qp = Area * A * (P_feed - 0.5*dP - P_perm - Pi_avg)
-        // Pi_avg depends on R. We iterate.
-        const P_feed_bar = isGpm ? feedPressureInput / 14.5038 : feedPressureInput;
+        // User rule: Total Feed P = Input P_feed + P_perm
+        const permeatePressureInput = Number(systemConfig.permeatePressure) || 0;
+        const P_feed_total = feedPressureInput + permeatePressureInput;
+        const P_feed_bar = isGpm ? P_feed_total / 14.5038 : P_feed_total;
+        const P_perm_bar = isGpm ? permeatePressureInput / 14.5038 : permeatePressureInput;
         // Calculate Pi_feed (Osmotic Pressure of feed)
         const ions = {
             ca: Number(waterData.ca) || 0,
@@ -263,7 +265,7 @@ const App = () => {
             // Per user rule: Display P_feed = P_input + P_perm
             // Effective P_feed for calculation is just P_input
             // NDP = (P_input + P_perm) - 0.5*dP - P_perm - Pi_eff = P_input - 0.5*dP - Pi_eff
-            const netDrivingPressure = Math.max(P_feed_bar - (0.5 * vesselDeltaP_bar) - piEff_bar, 0);
+            const netDrivingPressure = Math.max(P_feed_bar - P_perm_bar - (0.5 * vesselDeltaP_bar) - piEff_bar, 0);
             
             const A_lmh_bar = Number(activeMem?.aValue) || 2.95;
             const Max_flux = (activeMem?.id === 'cpa3') ? 51.8 : 48.5;
@@ -359,8 +361,6 @@ const App = () => {
     // Check if only the unit changed (not the permeate flow value)
     // If so, use the stored base values and just reformat with new precision
     const permeateNumeric = Number(trainPermeateInput) || 0;
-    const prevPermeate = baseValuesRef.current.permeate;
-    const prevUnit = baseValuesRef.current.unit;
     const onlyUnitChanged = false; // Disable this logic as it causes stale value issues with manual inputs
     
     // Back-convert for display (train-level, same unit as UI)

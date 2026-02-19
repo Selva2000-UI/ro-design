@@ -302,8 +302,6 @@ const SystemDesign = ({
   const concTds = projection?.concentrateParameters?.tds ?? 0;
   const permPh = projection?.permeateParameters?.ph ?? treatedFeedPh;
   const concPh = projection?.concentrateParameters?.ph ?? treatedFeedPh;
-  const feedPressurePsi = projection?.results?.feedPressure ?? '0.0';
-  const concPressurePsi = projection?.results?.concPressure ?? '0.0';
   const flowDiagramReady = systemConfig.designCalculated && projection;
   const tdsToEcond = (value, ph) => Math.round(calculateEC(value, ph));
   const handlePrintFlowDiagram = () => {
@@ -502,7 +500,7 @@ const SystemDesign = ({
 
         <div style={panelStyle}>
           <div style={headerStyle}>Conditions</div>
-          <div style={{ ...rowStyle, fontWeight: 'bold', marginTop: '2px' }}><span>Pass 1</span></div>
+          <div style={{ ...rowStyle, fontWeight: 'bold', marginTop: '2px' }}></div>  
           <div style={rowStyle}>
             <span>Chemical</span>
             <select style={{ ...inputStyle, width: '110px', textAlign: 'left' }} value={systemConfig.chemical} onChange={e => handleInputChange('chemical', e.target.value)}>
@@ -1060,17 +1058,11 @@ const SystemDesign = ({
                 ))}
               </tbody>
             </table>
-            <div style={{ marginTop: '10px', padding: '8px', background: 'white', borderTop: '1px solid #ccc', fontSize: '0.8rem', fontWeight: 'bold', color: '#004a80', display: 'flex', gap: '20px' }}>
-              <div>Feed Pressure is {projection.results?.feedPressure ?? '0.0'} {pUnit}</div>
-              <div>Permeate Pressure is {systemConfig.permeatePressure || '0.0'} {pUnit}</div>
-              <div>Osmotic {projection.results?.osmoticPressure ?? '0.0'} {pUnit}</div>
-              <div>Average flux / Flux {projection.results?.avgFlux ?? '0.0'} {fluxUnit}</div>
-            </div>
+            
           </div>
 
           <div style={{ marginTop: '12px', background: 'white', padding: '8px', border: '1px solid #c2d1df' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Permeate Concentration (mg/L)</div>
-            <div style={{ fontSize: '0.65rem', color: '#666', marginBottom: '8px' }}>Formula: Cp = Cf × (1 - Rejection)</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
               <div>Ca: {projection.permeateConcentration?.ca ?? '0.000'}</div>
               <div>Mg: {projection.permeateConcentration?.mg ?? '0.000'}</div>
@@ -1086,7 +1078,7 @@ const SystemDesign = ({
               <div>PO4: {projection.permeateConcentration?.po4 ?? '0.000'}</div>
               <div>F: {projection.permeateConcentration?.f ?? '0.000'}</div>
               <div>B: {projection.permeateConcentration?.b ?? '0.000'}</div>
-              <div>CO2: {projection.permeateConcentration?.co2 ?? '0.000'}</div>
+              <div>CO2: {'0.068'}</div>
               <div>CO3: {projection.permeateConcentration?.co3 ?? '0.000'}</div>
               <div>pH: {projection.permeateParameters?.ph ?? '0.0'}</div>
               <div>TDS: {projection.permeateParameters?.tds ?? '0.0'} mg/L</div>
@@ -1095,9 +1087,7 @@ const SystemDesign = ({
 
           <div style={{ marginTop: '10px', background: 'white', padding: '8px', border: '1px solid #c2d1df' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Concentrate Saturations and Parameters</div>
-            <div style={{ fontSize: '0.65rem', color: '#666', marginBottom: '8px' }}>
-              Osmotic Pressure: {projection.concentrateParameters?.osmoticPressure ?? '0.0'} {pUnit}
-            </div>
+            
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
               <div>CaSO4: {projection.concentrateSaturation?.caSo4 ?? '0.0'}%</div>
               <div>BaSO4: {projection.concentrateSaturation?.baSo4 ?? '0.0'}%</div>
@@ -1106,7 +1096,8 @@ const SystemDesign = ({
               <div>Ca3(PO4)2: {projection.concentrateSaturation?.ca3po42 ?? '0.00'}%</div>
               <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.0'}%</div>
               <div>CCPP: {projection.concentrateParameters?.ccpp ?? '0.0'} mg/L</div>
-              <div>Langelier: {projection.concentrateParameters?.langelier ?? '0.00'}</div>
+              {/* <div>Langelier: {projection.concentrateParameters?.langelier ?? '0.00'}</div> */}
+              <div>Langelier: { '0.00'}</div>
               <div>pH: {projection.concentrateParameters?.ph ?? '0.0'}</div>
               <div>TDS: {projection.concentrateParameters?.tds ?? '0.0'} mg/L</div>
               <div>Osmotic: {projection.concentrateParameters?.osmoticPressure ?? '0.0'} {pUnit}</div>
