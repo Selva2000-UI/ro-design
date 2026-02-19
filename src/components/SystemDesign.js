@@ -307,6 +307,23 @@ const SystemDesign = ({
   const handlePrintFlowDiagram = () => {
     if (!flowDiagramRef.current) return;
 
+    const flowPoints = (projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id);
+    const flowIdHeader = flowPoints.map(p => `<th style="border: 1px solid #c9d3de; padding: 6px;">${p.id}</th>`).join('');
+    const flowNameHeader = flowPoints.map(p => `<th style="border: 1px solid #c9d3de; padding: 6px; font-weight: normal; font-size: 0.7rem;">${p.name || ''}</th>`).join('');
+    
+    const flowRows = [
+      { label: `Flow (${fUnit})`, key: 'flow' },
+      { label: `Pressure (${pUnit})`, key: 'pressure' },
+      { label: 'TDS (mg/l)', key: 'tds' },
+      { label: 'pH', key: 'ph' },
+      { label: 'Econd (µS/cm)', key: 'ec' }
+    ].map(row => `
+      <tr>
+        <td style="border: 1px solid #c9d3de; padding: 6px; fontWeight: bold; background: #f9f9f9;">${row.label}</td>
+        ${flowPoints.map(p => `<td style="border: 1px solid #c9d3de; padding: 6px;">${p[row.key]}</td>`).join('')}
+      </tr>
+    `).join('');
+
     const stageRows = (projection.stageResults || []).map((row) => `
       <tr>
         <td style="border: 1px solid #ccc; padding: 6px;">1 - ${row.index}</td>
@@ -342,7 +359,31 @@ const SystemDesign = ({
             </head>
             <body>
               <div class="print-container">
-                ${flowDiagramRef.current.innerHTML}
+                <div class="header">Flow Diagram</div>
+                <div class="meta">
+                  <div>Project name: ${waterData?.projectName || 'Project'}</div>
+                  <div>Temperature: ${((Number(waterData?.temp || 25) * 9) / 5 + 32).toFixed(1)} °F</div>
+                  <div>Date: ${new Date().toLocaleDateString()}</div>
+                </div>
+                <div class="content">
+                  ${flowDiagramRef.current.querySelector('svg').outerHTML}
+                </div>
+                
+                <table>
+                  <thead>
+                    <tr style="background: #f0f3f7;">
+                      <th style="border: 1px solid #c9d3de; padding: 6px; width: 140px;">#</th>
+                      ${flowIdHeader}
+                    </tr>
+                    <tr style="background: #f0f3f7;">
+                      <th style="border: 1px solid #c9d3de; padding: 6px; fontWeight: bold;">New Heading Name</th>
+                      ${flowNameHeader}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${flowRows}
+                  </tbody>
+                </table>
                 
                 <div class="header">Calculation Result</div>
                 <table>
@@ -983,9 +1024,15 @@ const SystemDesign = ({
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'center' }}>
                     <thead style={{ background: '#f0f3f7' }}>
                       <tr>
-                        <th style={{ border: '1px solid #c9d3de', padding: '6px', width: '140px' }}></th>
+                        <th style={{ border: '1px solid #c9d3de', padding: '6px', width: '140px' }}>#</th>
                         {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
                           <th key={p.id} style={{ border: '1px solid #c9d3de', padding: '6px' }}>{p.id}</th>
+                        ))}
+                      </tr>
+                      <tr>
+                        <th style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>New Heading Name</th>
+                        {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
+                          <th key={`name-${p.id}`} style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'normal', fontSize: '0.7rem' }}>{p.name || ''}</th>
                         ))}
                       </tr>
                     </thead>
