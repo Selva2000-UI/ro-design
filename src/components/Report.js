@@ -27,6 +27,10 @@ const Report = ({
   const sectionStyle = { marginBottom: '25px', border: '1px solid #004a80', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#fff' };
   const headerStyle = { backgroundColor: '#004a80', color: '#fff', padding: '12px 15px', fontWeight: 'bold' };
 
+  const flowUnitLabel = systemConfig.flowUnit || 'gpm';
+  const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(flowUnitLabel);
+  const pUnit = isGpm ? 'psi' : 'bar';
+
   return (
     <div id="printable-report" style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px', fontFamily: 'Arial' }}>
       <style>{`@page { size: landscape; margin: 15mm; } @media print { .no-print { display: none !important; } }`}</style>
@@ -92,7 +96,7 @@ const Report = ({
           <div style={sectionStyle}>
             <div style={headerStyle}>System Performance</div>
             <div style={{ padding: '15px' }}>
-              <p>Feed Pressure: <strong>{projection?.pumpPressure || 0} bar</strong></p>
+              <p>Feed Pressure: <strong>{projection?.pumpPressure || 0} {pUnit}</strong></p>
               <p>Final pH: <strong>{projection?.finalPh || 'N/A'}</strong></p>
               <p>LSI Post-Treatment: <strong>{projection?.postTreatmentLsi || 'N/A'}</strong></p>
             </div>

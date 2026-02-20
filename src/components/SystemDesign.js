@@ -312,15 +312,16 @@ const SystemDesign = ({
     const flowNameHeader = flowPoints.map(p => `<th style="border: 1px solid #c9d3de; padding: 6px; font-weight: normal; font-size: 0.7rem;">${p.name || ''}</th>`).join('');
     
     const flowRows = [
+      { label: 'New Heading Name', key: 'name' },
       { label: `Flow (${fUnit})`, key: 'flow' },
       { label: `Pressure (${pUnit})`, key: 'pressure' },
       { label: 'TDS (mg/l)', key: 'tds' },
       { label: 'pH', key: 'ph' },
       { label: 'Econd (µS/cm)', key: 'ec' }
-    ].map(row => `
+    ].map((row, rIdx) => `
       <tr>
         <td style="border: 1px solid #c9d3de; padding: 6px; fontWeight: bold; background: #f9f9f9;">${row.label}</td>
-        ${flowPoints.map(p => `<td style="border: 1px solid #c9d3de; padding: 6px;">${p[row.key]}</td>`).join('')}
+        ${flowPoints.map(p => `<td style="border: 1px solid #c9d3de; padding: 6px; ${row.key === 'name' ? 'font-size: 0.7rem; background: #f9f9f9;' : ''}">${p[row.key] || ''}</td>`).join('')}
       </tr>
     `).join('');
 
@@ -374,10 +375,6 @@ const SystemDesign = ({
                     <tr style="background: #f0f3f7;">
                       <th style="border: 1px solid #c9d3de; padding: 6px; width: 140px;">#</th>
                       ${flowIdHeader}
-                    </tr>
-                    <tr style="background: #f0f3f7;">
-                      <th style="border: 1px solid #c9d3de; padding: 6px; fontWeight: bold;">New Heading Name</th>
-                      ${flowNameHeader}
                     </tr>
                   </thead>
                   <tbody>
@@ -1029,14 +1026,14 @@ const SystemDesign = ({
                           <th key={p.id} style={{ border: '1px solid #c9d3de', padding: '6px' }}>{p.id}</th>
                         ))}
                       </tr>
-                      <tr>
-                        <th style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold' }}>New Heading Name</th>
-                        {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
-                          <th key={`name-${p.id}`} style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'normal', fontSize: '0.7rem' }}>{p.name || ''}</th>
-                        ))}
-                      </tr>
                     </thead>
                     <tbody>
+                      <tr>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>New Heading Name</td>
+                        {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
+                          <td key={`name-${p.id}`} style={{ border: '1px solid #c9d3de', padding: '6px', fontSize: '0.7rem', background: '#f9f9f9' }}>{p.name || ''}</td>
+                        ))}
+                      </tr>
                       <tr>
                         <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>Flow ({fUnit})</td>
                         {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
