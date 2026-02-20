@@ -59,16 +59,15 @@ export const LMH_TO_GFD = 1 / 1.6976;
 // Electrical Conductivity (EC, µS/cm @ 77°F) Calculation
 export const calculateEC = (tds, ph) => {
   const t = Number(tds) || 0;
-  const p = Number(ph) || 7.0;
   
-  // Rules:
-  // 1. For TDS >= 10 mg/L and pH between 6–8: EC = 1.9 * TDS
-  // 2. For permeate or low TDS (< 10 mg/L) or acidic water: EC = (1.9 * TDS) + (350000 * 10^-pH)
-  // t >= 10 && p >= 6 && p <= 8
-  if (t >= 10) {
-    return t * 1.9;
+  if (t >= 100) {
+    return t * 2.06;
+  } else if (t >= 50) {
+    return t * 2.2;
+  } else if (t >= 10) {
+    return t * 2.4;
   } else {
-    return (1.9 * t) + (350000 * Math.pow(10, -p));
+    return t * 2.8;
   }
 };
 
@@ -378,7 +377,7 @@ export const calculateSystem = (inputs) => {
     pressure: (0).toFixed(1),
     tds: finalPermTds.toFixed(2),
     ph: finalPermPh.toFixed(2),
-    ec: calculateEC(finalPermTds, finalPermPh).toFixed(1)
+    ec: (finalPermTds * 2.2).toFixed(1)
   });
 
   // Fallback if no active stages
