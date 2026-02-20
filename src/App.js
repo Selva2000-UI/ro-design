@@ -247,7 +247,7 @@ const App = () => {
             nh4: Number(waterData.nh4) || 0
         };
         const feedTDS = Object.values(ions).reduce((sum, v) => sum + v, 0);
-        const piFeed_bar = 0.00078 * feedTDS;
+        const piFeed_bar = 0.00076 * feedTDS;
         
         // Flow-dependent dP (Standardized to match calculatorService)
         const nominalFlow = 12; 
@@ -529,13 +529,15 @@ const App = () => {
 
     // Pump model expects a flux-like term; use rawFluxLMH to ensure consistency regardless of unit display
     const pressureTerm = (rawFluxLMH / (aEffective * TCF)) * foulingFactorValue;
-    const pumpPressure = calcResults?.results?.feedPressure != null
-      ? Number(calcResults.results.feedPressure)
+    const pumpPressureBar = calcResults?.results?.feedPressure != null
+      ? (isGpm ? Number(calcResults.results.feedPressure) / 14.5038 : Number(calcResults.results.feedPressure))
       : (pressureTerm + osmoticP + 1.2) * spFactor;
+
+    const pumpPressureDisplay = isGpm ? pumpPressureBar * 14.5038 : pumpPressureBar;
 
     // Use total plant feed for power (m3/h)
     const totalFeed_m3h = perTrainFeed_m3h * trains;
-    const powerKw = (pumpPressure * totalFeed_m3h) / (36.7 * 0.75);
+    const powerKw = (pumpPressureBar * totalFeed_m3h) / (36.7 * 0.75);
     const monthlyEnergy = powerKw * 24 * 30 * Number(systemConfig.energyCostPerKwh);
 
     // Format flux: Return 1 decimal place as requested for Average Flux display
@@ -608,7 +610,7 @@ const App = () => {
       calcFluxDisplay: calcResults?.results?.calcFlux ?? '0.0',
       displayFluxUnit: calcResults?.results?.fluxUnit ?? (unit === 'gpm' ? 'gfd' : 'lmh'),
       highestBeta: calcResults?.results?.highestBeta ?? '0.000',
-      pumpPressure: pumpPressure.toFixed(1),
+      pumpPressure: pumpPressureDisplay.toFixed(1),
       monthlyEnergyCost: monthlyEnergy.toFixed(2),
 
       chemicalActiveKgHr: chemicalActive_kg_hr.toFixed(3),

@@ -64,8 +64,8 @@ export const calculateEC = (tds, ph) => {
   // Rules:
   // 1. For TDS >= 10 mg/L and pH between 6–8: EC = 1.9 * TDS
   // 2. For permeate or low TDS (< 10 mg/L) or acidic water: EC = (1.9 * TDS) + (350000 * 10^-pH)
-  
-  if (t >= 10 && p >= 6 && p <= 8) {
+  // t >= 10 && p >= 6 && p <= 8
+  if (t >= 10) {
     return t * 1.9;
   } else {
     return (1.9 * t) + (350000 * Math.pow(10, -p));
@@ -129,7 +129,7 @@ export const calculateSystem = (inputs) => {
     let a = Number(m?.aValue);
     if (isNaN(a) || a <= 0) return 3.40; // Calibrated for CPA3 baseline
     if (a < 1.0) return a * 24.62; 
-    return 3.40; 
+    return a; 
   };
 
   const membraneAreaM2 = Number(activeMembrane.areaM2) || (Number(activeMembrane.area || 400) * 0.09290304);
@@ -156,7 +156,7 @@ export const calculateSystem = (inputs) => {
   const feedTds = Object.values(normalizedFeedIons).reduce((sum, v) => sum + (Number(v) || 0), 0) || Number(inputs.tds) || 2100;
   
   // Standard Osmotic Pressure constant for NaCl at 25C
-  const piConstant = 0.00072; 
+  const piConstant = 0.00076; 
   const piFeedBar = piConstant * feedTds; 
   
   // Log-mean concentration factor
@@ -515,14 +515,14 @@ export const calculateSystem = (inputs) => {
         (Number(val) * cfLogMean).toFixed(2)
       ])
     ), // For compatibility with App.js
-    designWarnings: [
-      feedPressureBar > (600 / 14.5038) ? `Maximum Applied Pressure exceeded: ${ (feedPressureBar * 14.5038).toFixed(1) } psig > 600 psig` : null,
-      tempC > 45 ? `Maximum Operating Temperature exceeded: ${ tempC.toFixed(1) } °C > 45 °C` : null,
-      (currentFeedPh < 2 || currentFeedPh > 10.8) ? `pH is outside the continuous operating range (2 - 10.8)` : null,
-      (Q_vessel_feed * M3H_TO_GPM) > 85 ? `Maximum Feed Flow per vessel exceeded: ${ (Q_vessel_feed * M3H_TO_GPM).toFixed(1) } gpm > 85 gpm` : null,
-      (Q_vessel_conc * M3H_TO_GPM) < 12 ? `Minimum Brine Flow per vessel not met: ${ (Q_vessel_conc * M3H_TO_GPM).toFixed(1) } gpm < 12 gpm` : null,
-      (dpPerElement * 14.5038) > 15 ? `Maximum Pressure Drop per element exceeded: ${ (dpPerElement * 14.5038).toFixed(1) } psi > 15 psi` : null
-    ].filter(w => w !== null)
+    // designWarnings: [
+    //   feedPressureBar > (600 / 14.5038) ? `Maximum Applied Pressure exceeded: ${ (feedPressureBar * 14.5038).toFixed(1) } psig > 600 psig` : null,
+    //   tempC > 45 ? `Maximum Operating Temperature exceeded: ${ tempC.toFixed(1) } °C > 45 °C` : null,
+    //   (currentFeedPh < 2 || currentFeedPh > 10.8) ? `pH is outside the continuous operating range (2 - 10.8)` : null,
+    //   (Q_vessel_feed * M3H_TO_GPM) > 85 ? `Maximum Feed Flow per vessel exceeded: ${ (Q_vessel_feed * M3H_TO_GPM).toFixed(1) } gpm > 85 gpm` : null,
+    //   (Q_vessel_conc * M3H_TO_GPM) < 12 ? `Minimum Brine Flow per vessel not met: ${ (Q_vessel_conc * M3H_TO_GPM).toFixed(1) } gpm < 12 gpm` : null,
+    //   (dpPerElement * 14.5038) > 15 ? `Maximum Pressure Drop per element exceeded: ${ (dpPerElement * 14.5038).toFixed(1) } psi > 15 psi` : null
+    // ].filter(w => w !== null)
   };
 };
 

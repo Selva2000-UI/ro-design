@@ -16,7 +16,9 @@ const PreTreatment = ({ waterData, pretreatment, setPretreatment, systemConfig }
     const ph = Number(waterData.ph || 7.5);
     const ca = Number(waterData.ca || 0) * CF; // Concentrated Calcium
     const alkalinity = Number(waterData.hco3 || 0) * CF; // Concentrated Bicarbonate
-    const tds = (Number(waterData.na || 0) + Number(waterData.cl || 0)) * CF;
+    const ions = ['ca', 'mg', 'na', 'k', 'sr', 'ba', 'hco3', 'so4', 'cl', 'no3', 'sio2', 'f', 'b', 'po4', 'nh4'];
+    const totalTds = ions.reduce((sum, ion) => sum + Number(waterData[ion] || 0), 0);
+    const tds = totalTds * CF;
 
     // pCa = -log10(Ca as CaCO3), pAlk = -log10(Alk), C = Temp/TDS constant
     const pCa = 5.0 - Math.log10(ca * 2.5); 
