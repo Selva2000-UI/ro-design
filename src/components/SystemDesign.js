@@ -312,7 +312,7 @@ const SystemDesign = ({
     const flowNameHeader = flowPoints.map(p => `<th style="border: 1px solid #c9d3de; padding: 6px; font-weight: normal; font-size: 0.7rem;">${p.name || ''}</th>`).join('');
     
     const flowRows = [
-      { label: 'New Heading Name', key: 'name' },
+      { label: 'Stream', key: 'name' },
       { label: `Flow (${fUnit})`, key: 'flow' },
       { label: `Pressure (${pUnit})`, key: 'pressure' },
       { label: 'TDS (mg/l)', key: 'tds' },
@@ -336,6 +336,7 @@ const SystemDesign = ({
         <td style="border: 1px solid #ccc; padding: 6px;">${row.flux}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.highestFlux}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.highestBeta}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">${row.rejection}</td>
       </tr>
     `).join('');
 
@@ -395,6 +396,7 @@ const SystemDesign = ({
                       <th style="border: 1px solid #ccc; padding: 6px;">Flux (${fluxUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest flux (${fluxUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest beta</th>
+                      <th style="border: 1px solid #ccc; padding: 6px;">Final rejection (%)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1118,6 +1120,7 @@ const SystemDesign = ({
                   <th style={{ border: '1px solid #ccc' }}>
                     Highest beta <br/>
                   </th>
+                  <th style={{ border: '1px solid #ccc' }}>Final rejection (%)</th>
                 </tr>
               </thead>
               <tbody>
@@ -1140,6 +1143,7 @@ const SystemDesign = ({
                       {row.highestFlux}
                     </td>
                     <td style={{ border: '1px solid #ccc' }}>{row.highestBeta}</td>
+                    <td style={{ border: '1px solid #ccc' }}>{row.rejection}</td>
                   </tr>
                 ))}
               </tbody>
