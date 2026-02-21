@@ -25,6 +25,19 @@ const App = () => {
     mld: 41.6667
   }), []);
 
+  const DEFAULT_MEMBRANES = useMemo(() => [
+    { id: 'espa2ld', name: 'ESPA2-LD-4040', area: 80, areaM2: 7.43, aValue: 4.43, rejection: 99.6, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
+    { id: 'cpa3', name: 'CPA3', area: 400, areaM2: 37.17, aValue: 3.1414, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.3078, type: 'Brackish' },
+    { id: 'swc5ld', name: 'SWC5-LD', area: 400, areaM2: 37.16, aValue: 1.6, rejection: 99.3, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
+    { id: 'lfc3ld4040', name: 'LFC3-LD-4040', area: 80, areaM2: 7.43, aValue: 4.40, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.8, boronRejection: 98.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.75, type: 'Low Fouling' },
+    { id: 'bwtds2k8040', name: 'BW-TDS-2K-8040', area: 400, areaM2: 37.16, aValue: 3.18, rejection: 99.35, monoRejection: 97.5, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 91.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.36, dpExponent: 1.22, type: 'Brackish' },
+    { id: 'bwtds5k8040', name: 'BW-TDS-5K-8040', area: 400, areaM2: 37.16, aValue: 3.18, rejection: 99.35, monoRejection: 97.5, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 91.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.36, dpExponent: 1.22, type: 'Brackish' },
+    { id: 'bwtds10kfr8040', name: 'BW-TDS-10K-FR-8040', area: 400, areaM2: 37.16, aValue: 3.18, rejection: 99.35, monoRejection: 97.5, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 91.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.36, dpExponent: 1.22, type: 'Low Fouling' },
+    { id: 'swtds32k8040', name: 'SW-TDS-32K-8040', area: 400, areaM2: 37.16, aValue: 2.75, rejection: 99.35, monoRejection: 97.5, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 91.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.33, dpExponent: 1.22, type: 'Seawater' },
+    { id: 'cpa5max8040', name: 'CPA5-MAX-8040', area: 440, areaM2: 40.9, aValue: 3.35, rejection: 99.7, monoRejection: 98.5, divalentRejection: 99.9, silicaRejection: 99.2, boronRejection: 93.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.40, dpExponent: 1.18, type: 'Brackish' },
+    { id: 'cpa5ld4040', name: 'CPA5LD-4040', area: 80, areaM2: 7.43, aValue: 4.25, rejection: 99.7, monoRejection: 98.5, divalentRejection: 99.9, silicaRejection: 99.2, boronRejection: 93.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.40, dpExponent: 1.75, type: 'Low Fouling' }
+  ], []);
+
   const DEFAULT_SYSTEM_CONFIG = useMemo(() => ({
     // Inputs (follow IMSDesign layout: System-level total + trains; Train values are calculated)
     feedPh: 7.0,
@@ -74,133 +87,18 @@ const App = () => {
 
   // --- 1. STATE MANAGEMENT ---
   const [snapshots, setSnapshots] = useState([]); 
-  const [membranes, setMembranes] = useState([
-    { id: 'espa2ld', name: 'ESPA2-LD-4040', area: 80, areaM2: 7.43, aValue: 4.43, rejection: 99.6, monoRejection: 96.0, divalentRejection: 99.7, silicaRejection: 98.0, boronRejection: 90.0, alkalinityRejection: 99.5, co2Rejection: 0.0, kFb: 0.315, dpExponent: 1.75, type: 'Brackish' },
-    { id: 'cpa3', name: 'CPA3', area: 400, areaM2: 37.17, aValue: 3.1414, rejection: 99.7, monoRejection: 98.0, divalentRejection: 99.9, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.8, co2Rejection: 0.0, kFb: 0.38, dpExponent: 1.3078, type: 'Brackish' },
-    { id: 'swc5ld', name: 'SWC5-LD', area: 400, areaM2: 37.16, aValue: 1.6, rejection: 99.3, monoRejection: 98.0, divalentRejection: 99.8, silicaRejection: 99.0, boronRejection: 92.0, alkalinityRejection: 99.7, co2Rejection: 0.0, kFb: 0.35, dpExponent: 1.75, type: 'Seawater' },
-    { 
-      id: 'lfc3ld4040',
-      name: 'LFC3-LD-4040',
-      area: 80,
-      areaM2: 7.43,
-      aValue: 4.40,
-      rejection: 99.7,
-      monoRejection: 98.0,
-      divalentRejection: 99.9,
-      silicaRejection: 99.8,
-      boronRejection: 98.0,
-      alkalinityRejection: 99.8,
-      co2Rejection: 0.0,
-      kFb: 0.38,
-      dpExponent: 1.75,
-      type: 'Low Fouling'
-    },
-    {
-      id: 'bwtds2k8040',
-      name: 'BW-TDS-2K-8040',
-      area: 400,
-      areaM2: 37.16,
-      aValue: 3.18,
-      rejection: 99.35,
-      monoRejection: 97.5,
-      divalentRejection: 99.8,
-      silicaRejection: 99.0,
-      boronRejection: 91.0,
-      alkalinityRejection: 99.7,
-      co2Rejection: 0.0,
-      kFb: 0.36,
-      dpExponent: 1.22,
-      type: 'Brackish'
-    },
-    {
-      id: 'bwtds5k8040',
-      name: 'BW-TDS-5K-8040',
-      area: 400,
-      areaM2: 37.16,
-      aValue: 3.18,
-      rejection: 99.35,
-      monoRejection: 97.5,
-      divalentRejection: 99.8,
-      silicaRejection: 99.0,
-      boronRejection: 91.0,
-      alkalinityRejection: 99.7,
-      co2Rejection: 0.0,
-      kFb: 0.36,
-      dpExponent: 1.22,
-      type: 'Brackish'
-    },
-    {
-      id: 'bwtds10kfr8040',
-      name: 'BW-TDS-10K-FR-8040',
-      area: 400,
-      areaM2: 37.16,
-      aValue: 3.18,
-      rejection: 99.35,
-      monoRejection: 97.5,
-      divalentRejection: 99.8,
-      silicaRejection: 99.0,
-      boronRejection: 91.0,
-      alkalinityRejection: 99.7,
-      co2Rejection: 0.0,
-      kFb: 0.36,
-      dpExponent: 1.22,
-      type: 'Low Fouling'
-    },
-    {
-      id: 'swtds32k8040',
-      name: 'SW-TDS-32K-8040',
-      area: 400,
-      areaM2: 37.16,
-      aValue: 2.75,
-      rejection: 99.35,
-      monoRejection: 97.5,
-      divalentRejection: 99.8,
-      silicaRejection: 99.0,
-      boronRejection: 91.0,
-      alkalinityRejection: 99.7,
-      co2Rejection: 0.0,
-      kFb: 0.33,
-      dpExponent: 1.22,
-      type: 'Seawater'
-    },
-    {
-      id: 'cpa5max8040',
-      name: 'CPA5-MAX-8040',
-      area: 440,
-      areaM2: 40.9,
-      aValue: 3.35,
-      rejection: 99.7,
-      monoRejection: 98.5,
-      divalentRejection: 99.9,
-      silicaRejection: 99.2,
-      boronRejection: 93.0,
-      alkalinityRejection: 99.8,
-      co2Rejection: 0.0,
-      kFb: 0.40,
-      dpExponent: 1.18,
-      type: 'Brackish'
-    },
-    {
-      id: 'cpa5ld4040',
-      name: 'CPA5LD-4040',
-      area: 80,
-      areaM2: 7.43,
-      aValue: 4.25,
-      rejection: 99.7,
-      monoRejection: 98.5,
-      divalentRejection: 99.9,
-      silicaRejection: 99.2,
-      boronRejection: 93.0,
-      alkalinityRejection: 99.8,
-      co2Rejection: 0.0,
-      kFb: 0.40,
-      dpExponent: 1.75,
-      type: 'Low Fouling'
-    }
-  ]); 
+  const [membranes, setMembranes] = useState(DEFAULT_MEMBRANES); 
   
   const [projectNotes, setProjectNotes] = useState(""); 
   const createProjectId = () => `proj_${Date.now()}`;
+  
+  const mergeMembranes = (savedMembranes) => {
+    if (!savedMembranes || !Array.isArray(savedMembranes)) return DEFAULT_MEMBRANES;
+    const savedMap = new Map(savedMembranes.map(m => [m.id, m]));
+    const merged = DEFAULT_MEMBRANES.map(defaultMem => savedMap.get(defaultMem.id) || defaultMem);
+    const customMembranes = savedMembranes.filter(m => !DEFAULT_MEMBRANES.some(d => d.id === m.id));
+    return [...merged, ...customMembranes];
+  };
   const [waterData, setWaterData] = useState({
     projectId: createProjectId(),
     projectName: 'New_Project_V3',
@@ -643,7 +541,7 @@ const App = () => {
     const monthlyEnergy = powerKw * 24 * 30 * Number(systemConfig.energyCostPerKwh);
 
     // Format flux: Return 1 decimal place as requested for Average Flux display
-    const formatFlux = (value, isCalculated, flowUnit) => {
+    const formatFlux = (value) => {
       return Number(value || 0).toFixed(1);
     };
 
@@ -788,7 +686,7 @@ const App = () => {
           merged.permeateFlow = Number(merged.totalPlantProductFlow) / trains;
         }
         setSystemConfig(merged);
-        setMembranes(p.membranes || membranes);
+        setMembranes(mergeMembranes(p.membranes));
         setProjectNotes(p.projectNotes || "");
         setSnapshots(p.snapshots || []);
         setPretreatment(p.pretreatment || pretreatment);
@@ -1360,7 +1258,7 @@ const App = () => {
       projectId: incomingWater.projectId || createProjectId()
     });
     setSystemConfig({ ...DEFAULT_SYSTEM_CONFIG, ...(data.systemConfig || {}) });
-    setMembranes(data.membranes || membranes);
+    setMembranes(mergeMembranes(data.membranes));
     setSnapshots(data.snapshots || []);
     setProjectNotes(data.projectNotes || "");
     setPretreatment(data.pretreatment || pretreatment);
