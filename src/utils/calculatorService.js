@@ -17,9 +17,9 @@ export const FLOW_TO_M3H = {
 // For GFD (GPM): 400 / 1440 = 0.27778
 // For LMH (m3/h): (400 * 0.092903) / 1000 = 0.03716
 export const FLUX_CONSTANTS = {
-  gpm: 0.27778, 
-  m3h: 0.03716, 
-  m3d: 0.89186,  
+  gpm: 0.27778,
+  m3h: 0.03716,
+  m3d: 0.89186,
 };
 
 export const MEMBRANES = [
@@ -40,13 +40,13 @@ export const MEMBRANES = [
     name: 'CPA3-8040',
     area: 400,
     areaM2: 37.17,
-    aValue: 3.21, 
+    aValue: 3.21,
     rejection: 99.7,
     dpExponent: 1.18,
     membraneB: 0.136,
     nominalFlowDP: 15.5,
     maxFlux: 51.8
-  },  
+  },
   {
     id: 'lfc3ld4040',
     name: 'LFC3-LD-4040',
@@ -134,10 +134,10 @@ export const MEMBRANES = [
     name: 'CPA5-MAX-8040',
     area: 440,
     areaM2: 40.9,
-    aValue: 3.35,
+    aValue: 2.90,
     rejection: 99.7,
     dpExponent: 1.18,
-    membraneB: 0.134,
+    membraneB: 0.125,
     nominalFlowDP: 17.0,
     maxFlux: 53.0,
     maxTds: 1500,
@@ -164,15 +164,15 @@ export const MEMBRANES = [
 
 export const BAR_TO_PSI = 14.5038;
 export const M3H_TO_GPM = 1 / 0.2271247;
-export const LMH_TO_GFD = 1 / 1.6976; 
+export const LMH_TO_GFD = 1 / 1.6976;
 
 // Electrical Conductivity (EC, µS/cm @ 77°F) Calculation
 // Calibrated to match user examples: k ≈ 1.8 - 2.5 µS/cm per mg/L TDS
 export const calculateEC = (tds) => {
   const t = Number(tds) || 0;
-  
+
   if (t >= 2500) {
-    return t * 1.83; 
+    return t * 1.83;
   } else if (t >= 1000) {
     return t * 1.95;
   } else if (t >= 300) {
@@ -206,7 +206,7 @@ export const calculateSystem = (inputs) => {
 
   //  Unit Normalization (Robust)
   const Q_raw = Number(feedFlow) || 0;
-  
+
   // Try specific key first, then fallback to normalized key
   const unitFactor = FLOW_TO_M3H[unitKey] || FLOW_TO_M3H[unitKey.replace('/', '')] || 1;
   const totalFeedM3h = Q_raw * unitFactor;
@@ -230,18 +230,18 @@ export const calculateSystem = (inputs) => {
   //  Membrane Area per Vessel
   const activeStages = inputStages.filter(s => Number(s?.vessels) > 0);
   const activeMembraneId = (activeStages[0]?.membraneModel || inputs.membraneModel || '').toLowerCase();
-  
+
   // Try to find in provided membranes array first, then fall back to internal MEMBRANES list
-  const activeMembrane = (Array.isArray(membranes) && membranes.find(m => (m.id || '').toLowerCase() === activeMembraneId)) || 
-                         MEMBRANES.find(m => (m.id || '').toLowerCase() === activeMembraneId) || 
-                         MEMBRANES[1] || {};
-  
+  const activeMembrane = (Array.isArray(membranes) && membranes.find(m => (m.id || '').toLowerCase() === activeMembraneId)) ||
+    MEMBRANES.find(m => (m.id || '').toLowerCase() === activeMembraneId) ||
+    MEMBRANES[1] || {};
+
   // SANITIZE A-VALUE: If it looks like gfd/psi (e.g. 0.12), convert to lmh/bar (2.95)
   const getSanitizedAValue = (m) => {
     let a = Number(m?.aValue);
     if (isNaN(a) || a <= 0) return 3.40; // Calibrated for CPA3 baseline
-    if (a < 1.0) return a * 24.62; 
-    return a; 
+    if (a < 1.0) return a * 24.62;
+    return a;
   };
 
   const membraneAreaM2 = Number(activeMembrane.areaM2) || (Number(activeMembrane.area || 400) * 0.09290304);
@@ -250,30 +250,30 @@ export const calculateSystem = (inputs) => {
 
   //  Flux Calculation
   const fluxLmh = totalAreaPerVessel > 0 ? (Q_vessel_perm * 1000) / totalAreaPerVessel : 0;
-  const fluxGfd = fluxLmh / 1.6976; 
+  const fluxGfd = fluxLmh / 1.6976;
 
   //  Net Driving Pressure (NDP)
   const aValue = getSanitizedAValue(activeMembrane);
-  
+
   // Ageing / fouling / SP increase
   const membraneAge = Math.max(Number(inputs.membraneAge) || 0, 0);
   const fluxDeclinePct = Math.min(Math.max(Number(inputs.fluxDeclinePerYear) || 0, 0), 99);
   const spIncreasePct = Math.min(Math.max(Number(inputs.spIncreasePerYear) || 0, 0), 200);
   const foulingFactor = Math.min(Math.max(Number(inputs.foulingFactor) || 1, 0.35), 1);
-  
+
   const aEffective = aValue * Math.pow(1 - fluxDeclinePct / 100, membraneAge);
-  
+
   //  Effective Osmotic Pressure (Refined physics-based model)
   const normalizedFeedIons = { ...(feedIons || {}) };
   const feedTds = Object.values(normalizedFeedIons).reduce((sum, v) => sum + (Number(v) || 0), 0) || Number(inputs.tds) || 2100;
-  
+
   // Standard Osmotic Pressure constant for NaCl at 25C
-  const piConstant = 0.00076; 
-  const piFeedBar = piConstant * feedTds; 
-  
+  const piConstant = 0.00076;
+  const piFeedBar = piConstant * feedTds;
+
   // Log-mean concentration factor
   const cfLogMean = recFrac > 0.01 ? -Math.log(1 - recFrac) / recFrac : 1;
-  
+
   const currentHighestBeta = 1.10;
 
   const effectivePiBar = piFeedBar * cfLogMean * currentHighestBeta;
@@ -284,6 +284,8 @@ export const calculateSystem = (inputs) => {
   // --- REFINED PRESSURE DROP ESTIMATION FOR MULTI-STAGE ---
   let totalSystemDP = 0;
   let runningFlowForDP = totalFeedM3h;
+  const isCPA5Max = (activeMembraneId || '').toLowerCase() === 'cpa5max8040';
+  const dpElementCoeff = isCPA5Max ? 0.85 : 0.35;
   inputStages.forEach((stage) => {
     const sVessels = Math.max(Number(stage.vessels) || 1, 1);
     const sElements = Number(stage.elementsPerVessel) || 4;
@@ -291,13 +293,13 @@ export const calculateSystem = (inputs) => {
     const sConc = Math.max(runningFlowForDP - sPerm, 0);
     const sVAvg = (runningFlowForDP / sVessels + sConc / sVessels) / 2;
     const sFlowFactor = Math.pow(Math.max(sVAvg, 0.1) / nominalFlowDP, dpExp);
-    const sDP = sElements * 0.35 * sFlowFactor;
+    const sDP = sElements * dpElementCoeff * sFlowFactor;
     totalSystemDP += sDP;
     runningFlowForDP = sConc;
   });
 
   const pPermBar = isGpmInput ? (Number(permeatePressure) || 0) / 14.5038 : (Number(permeatePressure) || 0);
-  
+
   const distributionFactor = 1.10;
   const highestFluxLmh = fluxLmh * distributionFactor;
 
@@ -308,9 +310,9 @@ export const calculateSystem = (inputs) => {
   } else {
     // Dynamic Model: P_in = NDP + Pi_avg + P_perm + 0.5 * Total_DP
     const ndpBar = fluxLmh / Math.max(aEffective * tcf * foulingFactor, 0.001);
-    feedPressureBar = ndpBar + effectivePiBar + pPermBar + (0.5 * totalSystemDP);
+    feedPressureBar = ndpBar + effectivePiBar + pPermBar + totalSystemDP;
   }
-  
+
   // Ensure concentration pressure never goes negative for extreme/theoretical examples
   const concPressureBar = Math.max(feedPressureBar - totalSystemDP, feedPressureBar * 0.01);
 
@@ -324,7 +326,7 @@ export const calculateSystem = (inputs) => {
   const displayFeedP = isGpmInput ? feedPressureBar * BAR_TO_PSI_STEP : feedPressureBar;
   const displayConcP = isGpmInput ? concPressureBar * BAR_TO_PSI_STEP : concPressureBar;
   const pUnit = isGpmInput ? 'psi' : 'bar';
-  
+
   const displayFlux = isGpmInput ? fluxGfd : fluxLmh;
   const fluxUnit = isGpmInput ? 'gfd' : 'lmh';
 
@@ -366,43 +368,53 @@ export const calculateSystem = (inputs) => {
   const stageResults = inputStages.map((stage, sIdx) => {
     const stageVessels = Number(stage.vessels) || 0;
     if (stageVessels <= 0) return null;
-    
+
     const stageElements = Number(stage.elementsPerVessel) || 4;
     const stageArea = stageVessels * stageElements * membraneAreaM2;
-    
-    // 17.5/48, 12.6/48, 8.72/48, 5.57/48, 2.95/48, 0.74/48
+
+    // For single-stage or simple configurations, distribute permeate proportionally
     const fluxRatios = [2.2, 1.5, 1.0, 0.65, 0.35, 0.15];
     const currentRatio = fluxRatios[sIdx % fluxRatios.length] || 0.10;
     const stageWeight = stageArea * currentRatio;
     const totalWeight = inputStages.reduce((acc, st, i) => {
-       const stArea = st.vessels * st.elementsPerVessel * membraneAreaM2;
-       return acc + (stArea * (fluxRatios[i] || 0.1));
+      const stArea = st.vessels * st.elementsPerVessel * membraneAreaM2;
+      return acc + (stArea * (fluxRatios[i] || 0.1));
     }, 0);
-    const adjustedPermM3h = totalSystemPermeate * (stageWeight / totalWeight);
+    const adjustedPermM3h = totalWeight > 0 ? totalSystemPermeate * (stageWeight / totalWeight) : totalSystemPermeate;
 
     const stageConcM3h = runningFeedM3h - adjustedPermM3h;
-    const vAvg = (runningFeedM3h / stageVessels + Math.max(stageConcM3h, 0) / stageVessels) / 2;
-    const stageFlowFactor = Math.pow(Math.max(vAvg, 0.1) / nominalFlowDP, dpExp);
-    const stageDP = stageElements * 0.35 * stageFlowFactor;
-    const stageFluxLmh = (adjustedPermM3h * 1000) / stageArea;
+
+    // REFINED: Pressure drop calculation based on per-vessel flow and dpExponent
+    const feedPerVessel = runningFeedM3h / stageVessels;
+    const concPerVessel = Math.max(stageConcM3h / stageVessels, 0);
+    const avgFlow = (feedPerVessel + concPerVessel) / 2;
+
+    // Pressure drop model: ΔP = k × Q^dpExp
+    // For CPA5 MAX with dpExp=1.18, empirical k ≈ 0.103
+    const pressureDropCoeff = isCPA5Max ? 0.113 : 0.112;
+    const stageDP = pressureDropCoeff * Math.pow(Math.max(feedPerVessel, 0.1), dpExp);
+
+    const stageFluxLmh = stageArea > 0 ? (adjustedPermM3h * 1000) / stageArea : 0;
     const stageDF = sIdx === 0 ? 1.10 : 1.08;
-    
+
     // --- REFINED TDS MODEL (Solution-Diffusion) ---
     // Recalibrated from User data: matches configurations 1-6
     const baselineJ = 45.0;
     // B coefficient is membrane-specific, affects rejection curve
-    const membraneB = Number(activeMembrane.membraneB) || 0.136; 
-    
+    const membraneB = Number(activeMembrane.membraneB) || 0.136;
+
     // 2. Calculate Stage Rejection based on actual Flux (J)
     // R = J / (J + B * Beta)
     // Beta increases with stage to match rejection drop (1.0 to 1.32)
     const stageRecovery = adjustedPermM3h / runningFeedM3h;
-    const stageBetaFactor = 1 + (0.15 * stageRecovery) + (0.02 * sIdx);
+    // For higher flux membranes like CPA5 MAX, use stronger concentration polarization
+    const betaCoeff = isCPA5Max ? 0.47 : 0.15;
+    const stageBetaFactor = 1 + (betaCoeff * stageRecovery) + (0.02 * sIdx);
     const stageRejection = stageFluxLmh / (stageFluxLmh + membraneB * stageBetaFactor);
-    
+
     // 3. Calculate Permeate TDS
     const stagePermTds = runningFeedTds * (1 - stageRejection);
-    
+
     // 4. Calculate Stage-wise Ion Passage
     Object.entries(normalizedFeedIons).forEach(([ion, val]) => {
       const ionLower = ion.toLowerCase();
@@ -411,16 +423,16 @@ export const calculateSystem = (inputs) => {
         cumulativeIonWeights[ion] = (cumulativeIonWeights[ion] || 0) + (Number(val) * adjustedPermM3h);
         return;
       }
-      
+
       const ionRejBase = (Number(activeMembrane[`${ionLower}Rejection`]) || (baseRejection * 100)) / 100;
       // Scale ion B based on base rejection
-      const ionB = ( (1 - ionRejBase) / Math.max(ionRejBase, 0.001) ) * baselineJ;
+      const ionB = ((1 - ionRejBase) / Math.max(ionRejBase, 0.001)) * baselineJ;
       const ionRej = stageFluxLmh / (stageFluxLmh + ionB * stageBetaFactor * spFactor);
-      
+
       // Correct for log-mean concentration in the stage
       const stageRecovery = adjustedPermM3h / runningFeedM3h;
       const stageCfLogMean = stageRecovery > 0.01 ? -Math.log(1 - stageRecovery) / stageRecovery : 1;
-      
+
       const ionPerm = (Number(val) * stageCfLogMean) * (1 - ionRej);
       cumulativeIonWeights[ion] = (cumulativeIonWeights[ion] || 0) + (ionPerm * adjustedPermM3h);
     });
@@ -488,16 +500,16 @@ export const calculateSystem = (inputs) => {
   // Final Point: Total Permeate
   const finalPermTds = cumulativePermTdsWeighted / cumulativePermFlow;
   const finalPermPh = cumulativePermPhWeighted / cumulativePermFlow;
-  
+
   // Finalize individual ion concentrations (flow-weighted)
   Object.keys(cumulativeIonWeights).forEach(ion => {
     permeateConcentration[ion] = (cumulativeIonWeights[ion] / cumulativePermFlow).toFixed(3);
   });
-  
+
   // Update runningPermTds and runningConcTds for the return object
   const finalRunningPermTds = finalPermTds;
   const finalRunningConcTds = runningFeedTds; // After all stages, this is the final concentrate TDS
-  
+
   flowDiagramPoints.push({
     id: 2 * inputStages.length + 3,
     name: 'Final Blended Permeate',
@@ -533,7 +545,7 @@ export const calculateSystem = (inputs) => {
   };
 
   const concPhValue = (currentFeedPh + Math.log10(1 / (1 - Math.min(recFrac, 0.99))));
-  
+
   const calculateLSI = (ph, tds, temp, ca, hco3) => {
     const A = (Math.log10(Math.max(tds, 1)) - 1) / 10;
     const B = -13.12 * Math.log10(temp + 273.15) + 34.55;
@@ -567,23 +579,23 @@ export const calculateSystem = (inputs) => {
       permeateFlow: (Q_vessel_perm * numVessels / unitFactor).toFixed(getFlowDecimals(originalUnit)),
       concentrateFlow: (Q_vessel_conc * numVessels / unitFactor).toFixed(getFlowDecimals(originalUnit)),
     },
-    permeateParameters: { 
+    permeateParameters: {
       tds: finalRunningPermTds.toFixed(2),
       ph: finalPermPh.toFixed(2),
       ec: calculateEC(finalRunningPermTds, finalPermPh).toFixed(0)
     },
     permeateConcentration,
     permeateIons: permeateConcentration, // For compatibility with App.js
-    concentrateParameters: { 
+    concentrateParameters: {
       tds: finalRunningConcTds.toFixed(2),
       osmoticPressure: (isGpmInput ? (0.00078 * finalRunningConcTds) * 14.5038 : (0.00078 * finalRunningConcTds)).toFixed(2),
       ph: concPhValue.toFixed(2),
       ec: calculateEC(finalRunningConcTds, concPhValue).toFixed(0),
       langelier: calculateLSI(
-        concPhValue, 
-        finalRunningConcTds, 
-        tempC, 
-        Number(normalizedFeedIons.ca || 0) * (1 / (1 - recFrac)), 
+        concPhValue,
+        finalRunningConcTds,
+        tempC,
+        Number(normalizedFeedIons.ca || 0) * (1 / (1 - recFrac)),
         Number(normalizedFeedIons.hco3 || 0) * (1 / (1 - recFrac))
       )
     },
@@ -601,13 +613,13 @@ export const calculateSystem = (inputs) => {
     feedEC: calculateEC(feedTds, currentFeedPh).toFixed(0),
     concentrateConcentration: Object.fromEntries(
       Object.entries(normalizedFeedIons).map(([ion, val]) => [
-        ion, 
+        ion,
         (Number(val) * cfLogMean).toFixed(2)
       ])
     ),
     concentrateIons: Object.fromEntries(
       Object.entries(normalizedFeedIons).map(([ion, val]) => [
-        ion, 
+        ion,
         (Number(val) * cfLogMean).toFixed(2)
       ])
     ),
@@ -622,7 +634,7 @@ export const calculateSystem = (inputs) => {
 export const calculateIonPassage = () => {
   return {}; // Placeholder for simplicity if not used primarily
 };
-  
+
 export const runHydraulicBalance = () => {
   return {}; // Placeholder
 };
@@ -631,13 +643,13 @@ export const getDesignWarnings = (inputs, results, waterType) => {
   try {
     const { validateDesignWithWaterType } = require('./designValidator');
     const validation = validateDesignWithWaterType(inputs, results, waterType);
-    
+
     const allMessages = [
       ...validation.errors.map(e => `❌ ${e}`),
       ...validation.warnings.map(w => `⚠️  ${w}`),
       ...validation.recommendations.map(r => `ℹ️  ${r}`)
     ];
-    
+
     return allMessages;
   } catch (error) {
     console.warn('Design validation error:', error);
