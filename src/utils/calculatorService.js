@@ -30,7 +30,10 @@ export const MEMBRANES = [
     areaM2: 7.43,
     aValue: 4.43,
     rejection: 99.6,
-    dpExponent: 1.75
+    dpExponent: 1.75,
+    membraneB: 0.145,
+    nominalFlowDP: 6.0,
+    maxFlux: 50.0
   },
   {
     id: 'cpa3',
@@ -39,16 +42,123 @@ export const MEMBRANES = [
     areaM2: 37.17,
     aValue: 3.21, 
     rejection: 99.7,
-    dpExponent: 1.18
+    dpExponent: 1.18,
+    membraneB: 0.136,
+    nominalFlowDP: 15.5,
+    maxFlux: 51.8
   },  
   {
     id: 'lfc3ld4040',
-    name: 'LFC3-LD-8040',
+    name: 'LFC3-LD-4040',
+    area: 80,
+    areaM2: 7.43,
+    rejection: 99.7,
+    aValue: 4.40,
+    dpExponent: 1.75,
+    membraneB: 0.142,
+    nominalFlowDP: 6.0,
+    maxFlux: 48.0,
+    maxTds: 1500,
+    maxTemp: 45,
+    maxPressure: 600,
+    maxFlow: 16,
+    minBrineFlow: 3,
+    maxPressureDrop: 15,
+    lowFouling: true
+  },
+  {
+    id: 'bwtds2k8040',
+    name: 'BW-TDS-2K-8040',
     area: 400,
     areaM2: 37.16,
-    rejection: 99.6,
-    aValue: 2.85,
-    dpExponent: 1.25
+    aValue: 3.18,
+    rejection: 99.35,
+    dpExponent: 1.22,
+    membraneB: 0.152,
+    nominalFlowDP: 15.5,
+    maxFlux: 48.0,
+    maxTds: 2000,
+    maxTemp: 45,
+    maxPressure: 600
+  },
+  {
+    id: 'bwtds5k8040',
+    name: 'BW-TDS-5K-8040',
+    area: 400,
+    areaM2: 37.16,
+    aValue: 3.18,
+    rejection: 99.35,
+    dpExponent: 1.22,
+    membraneB: 0.152,
+    nominalFlowDP: 15.5,
+    maxFlux: 48.0,
+    maxTds: 5000,
+    maxTemp: 45,
+    maxPressure: 600
+  },
+  {
+    id: 'bwtds10kfr8040',
+    name: 'BW-TDS-10K-FR-8040',
+    area: 400,
+    areaM2: 37.16,
+    aValue: 3.18,
+    rejection: 99.35,
+    dpExponent: 1.22,
+    membraneB: 0.152,
+    nominalFlowDP: 15.5,
+    maxFlux: 48.0,
+    maxTds: 10000,
+    maxTemp: 45,
+    maxPressure: 600,
+    foulingResistant: true,
+    maxCod: 250
+  },
+  {
+    id: 'swtds32k8040',
+    name: 'SW-TDS-32K-8040',
+    area: 400,
+    areaM2: 37.16,
+    aValue: 2.75,
+    rejection: 99.35,
+    dpExponent: 1.22,
+    membraneB: 0.165,
+    nominalFlowDP: 15.5,
+    maxFlux: 42.0,
+    maxTds: 40000,
+    maxTemp: 45,
+    maxPressure: 1200,
+    seawater: true
+  },
+  {
+    id: 'cpa5max8040',
+    name: 'CPA5-MAX-8040',
+    area: 440,
+    areaM2: 40.9,
+    aValue: 3.35,
+    rejection: 99.7,
+    dpExponent: 1.18,
+    membraneB: 0.134,
+    nominalFlowDP: 17.0,
+    maxFlux: 53.0,
+    maxTds: 1500,
+    maxTemp: 45,
+    maxPressure: 600
+  },
+  {
+    id: 'cpa5ld4040',
+    name: 'CPA5LD-4040',
+    area: 80,
+    areaM2: 7.43,
+    aValue: 4.25,
+    rejection: 99.7,
+    dpExponent: 1.75,
+    membraneB: 0.139,
+    nominalFlowDP: 6.5,
+    maxFlux: 50.0,
+    maxTds: 1500,
+    maxTemp: 45,
+    maxPressure: 600,
+    lowFouling: true
   }
 ];
 
@@ -84,7 +194,8 @@ export const calculateSystem = (inputs) => {
     elementsPerVessel = 7,
     membranes = [],
     permeatePressure = 0,
-    stages = []
+    stages = [],
+    waterType = null
   } = inputs;
 
   const originalUnit = (flowUnit || 'gpm').toLowerCase().trim();
@@ -172,13 +283,11 @@ export const calculateSystem = (inputs) => {
 
   const effectivePiBar = piFeedBar * cfLogMean * currentHighestBeta;
 
-  //  Pressure Drop per Vessel (Calibrated for targets: 0.8 bar at 13 m3/h, 1.5 bar at 21.7 m3/h)
+  const nominalFlowDP = Number(activeMembrane.nominalFlowDP) || 15.5;
+  const dpExp = Number(activeMembrane.dpExponent) || 1.22;
   const Q_avg = (Q_vessel_feed + Q_vessel_conc) / 2;
-  const nominalFlowDP = 15.5; 
-  const dpExp = 1.22;
   const flowFactor = Math.pow(Math.max(Q_avg, 0.01) / nominalFlowDP, dpExp);
-  const dpPerElement = 0.35 * flowFactor; 
-  const dpVesselBar = elements * Math.max(dpPerElement, 0.0001);
+  const dpPerElement = 0.35 * flowFactor;
 
   // --- REFINED PRESSURE DROP ESTIMATION FOR MULTI-STAGE ---
   let totalSystemDP = 0;
@@ -189,7 +298,8 @@ export const calculateSystem = (inputs) => {
     const sPerm = (totalFeedM3h * recFrac) / Math.max(inputStages.length, 1);
     const sConc = Math.max(runningFlowForDP - sPerm, 0);
     const sVAvg = (runningFlowForDP / sVessels + sConc / sVessels) / 2;
-    const sDP = sElements * 0.00815 * Math.pow(Math.max(sVAvg, 0.1), 1.4);
+    const sFlowFactor = Math.pow(Math.max(sVAvg, 0.1) / nominalFlowDP, dpExp);
+    const sDP = sElements * 0.35 * sFlowFactor;
     totalSystemDP += sDP;
     runningFlowForDP = sConc;
   });
@@ -275,9 +385,7 @@ export const calculateSystem = (inputs) => {
     
     // Improved Flux Distribution: Based on Stage NDP and user Example ratios
     const piStageBar = 0.00076 * runningFeedTds; // Osmotic pressure at stage inlet
-    const ndpStage = Math.max(runningPressureBar - pPermBar - piStageBar, 0.1);
     
-    // Ratios from Example 1 (normalized to sum of 6 stages):
     // 17.5/48, 12.6/48, 8.72/48, 5.57/48, 2.95/48, 0.74/48
     const fluxRatios = [2.2, 1.5, 1.0, 0.65, 0.35, 0.15];
     const currentRatio = fluxRatios[sIdx % fluxRatios.length] || 0.10;
@@ -290,17 +398,16 @@ export const calculateSystem = (inputs) => {
 
     const stageConcM3h = runningFeedM3h - adjustedPermM3h;
     const vAvg = (runningFeedM3h / stageVessels + Math.max(stageConcM3h, 0) / stageVessels) / 2;
-    const stageDP = stageElements * 0.00815 * Math.pow(vAvg, 1.4);
+    const stageFlowFactor = Math.pow(Math.max(vAvg, 0.1) / nominalFlowDP, dpExp);
+    const stageDP = stageElements * 0.35 * stageFlowFactor;
     const stageFluxLmh = (adjustedPermM3h * 1000) / stageArea;
     const stageDF = sIdx === 0 ? 1.10 : 1.08;
     
     // --- REFINED TDS MODEL (Solution-Diffusion) ---
     // Recalibrated from User data: matches configurations 1-6
     const baselineJ = 45.0;
-    const baselineCp = 8.43;
-    const baselineCf = 1500;
-    // B recalibrated to match Stage 1 rejection ~99.46% to 99.73% depending on flux
-    const membraneB = 0.136; 
+    // B coefficient is membrane-specific, affects rejection curve
+    const membraneB = Number(activeMembrane.membraneB) || 0.136; 
     
     // 2. Calculate Stage Rejection based on actual Flux (J)
     // R = J / (J + B * Beta)
@@ -470,8 +577,6 @@ export const calculateSystem = (inputs) => {
     permPhValue = pK1 + Math.log10(permHCO3 / Math.max(permCO2, 0.001)) + 0.11;
   }
   
-  const permPh = Math.min(Math.max(permPhValue, 3.5), 9.5).toFixed(2);
-
   const calculateLSI = (ph, tds, temp, ca, hco3) => {
     const A = (Math.log10(Math.max(tds, 1)) - 1) / 10;
     const B = -13.12 * Math.log10(temp + 273.15) + 34.55;
@@ -550,15 +655,12 @@ export const calculateSystem = (inputs) => {
         ion, 
         (Number(val) * cfLogMean).toFixed(2)
       ])
-    ), // For compatibility with App.js
-    // designWarnings: [
-    //   feedPressureBar > (600 / 14.5038) ? `Maximum Applied Pressure exceeded: ${ (feedPressureBar * 14.5038).toFixed(1) } psig > 600 psig` : null,
-    //   tempC > 45 ? `Maximum Operating Temperature exceeded: ${ tempC.toFixed(1) } °C > 45 °C` : null,
-    //   (currentFeedPh < 2 || currentFeedPh > 10.8) ? `pH is outside the continuous operating range (2 - 10.8)` : null,
-    //   (Q_vessel_feed * M3H_TO_GPM) > 85 ? `Maximum Feed Flow per vessel exceeded: ${ (Q_vessel_feed * M3H_TO_GPM).toFixed(1) } gpm > 85 gpm` : null,
-    //   (Q_vessel_conc * M3H_TO_GPM) < 12 ? `Minimum Brine Flow per vessel not met: ${ (Q_vessel_conc * M3H_TO_GPM).toFixed(1) } gpm < 12 gpm` : null,
-    //   (dpPerElement * 14.5038) > 15 ? `Maximum Pressure Drop per element exceeded: ${ (dpPerElement * 14.5038).toFixed(1) } psi > 15 psi` : null
-    // ].filter(w => w !== null)
+    ),
+    designWarnings: getDesignWarnings(inputs, {
+      feedPressure: displayFeedP,
+      recovery: recPct,
+      avgFlux: displayFlux
+    }, waterType)
   };
 };
 
@@ -568,4 +670,33 @@ export const calculateIonPassage = (feedIons, systemData) => {
   
 export const runHydraulicBalance = (config, membrane) => {
   return {}; // Placeholder
+};
+
+export const getDesignWarnings = (inputs, results, waterType) => {
+  try {
+    const { validateDesignWithWaterType } = require('./designValidator');
+    const validation = validateDesignWithWaterType(inputs, results, waterType);
+    
+    const allMessages = [
+      ...validation.errors.map(e => `❌ ${e}`),
+      ...validation.warnings.map(w => `⚠️  ${w}`),
+      ...validation.recommendations.map(r => `ℹ️  ${r}`)
+    ];
+    
+    return allMessages;
+  } catch (error) {
+    console.warn('Design validation error:', error);
+    return [];
+  }
+};
+
+export const getRecommendedMembranes = (waterType) => {
+  const waterTypeConfig = require('./waterTypeConfig');
+  const config = waterTypeConfig.getWaterTypeInfo(waterType);
+  return config?.recommended || [];
+};
+
+export const isGpmInput = (flowUnit) => {
+  const unit = (flowUnit || 'gpm').toLowerCase().trim();
+  return ['gpm', 'gpd', 'mgd', 'migd'].includes(unit.replace('/', ''));
 };

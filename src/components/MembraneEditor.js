@@ -7,7 +7,11 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
     area: 400, 
     type: 'Brackish',
     aValue: 0.12,
-    rejection: 99.7
+    rejection: 99.7,
+    maxFlux: 48.5,
+    membraneB: 0.14,
+    dpExponent: 1.22,
+    nominalFlowDP: 15.5
   });
 
   const handleAdd = (e) => {
@@ -24,7 +28,7 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
     }
 
     setMembranes([...membranes, newMembrane]);
-    setNewMembrane({ id: '', name: '', area: 400, type: 'Brackish', aValue: 0.12, rejection: 99.7 });
+    setNewMembrane({ id: '', name: '', area: 400, type: 'Brackish', aValue: 0.12, rejection: 99.7, maxFlux: 48.5, membraneB: 0.14, dpExponent: 1.22, nominalFlowDP: 15.5 });
   };
 
   const handleDelete = (id) => {
@@ -84,6 +88,38 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
             onChange={e => setNewMembrane({...newMembrane, rejection: parseFloat(e.target.value) || 0})} 
             style={{ ...inputStyle, maxWidth: '90px' }} 
           />
+          <input 
+            type="number" 
+            step="0.1"
+            placeholder="Max Flux (LMH)" 
+            value={newMembrane.maxFlux} 
+            onChange={e => setNewMembrane({...newMembrane, maxFlux: parseFloat(e.target.value) || 48.5})} 
+            style={{ ...inputStyle, maxWidth: '120px' }} 
+          />
+          <input 
+            type="number" 
+            step="0.01"
+            placeholder="Membrane B" 
+            value={newMembrane.membraneB} 
+            onChange={e => setNewMembrane({...newMembrane, membraneB: parseFloat(e.target.value) || 0.14})} 
+            style={{ ...inputStyle, maxWidth: '100px' }} 
+          />
+          <input 
+            type="number" 
+            step="0.01"
+            placeholder="DP Exponent" 
+            value={newMembrane.dpExponent} 
+            onChange={e => setNewMembrane({...newMembrane, dpExponent: parseFloat(e.target.value) || 1.22})} 
+            style={{ ...inputStyle, maxWidth: '110px' }} 
+          />
+          <input 
+            type="number" 
+            step="0.1"
+            placeholder="Nominal Flow DP" 
+            value={newMembrane.nominalFlowDP} 
+            onChange={e => setNewMembrane({...newMembrane, nominalFlowDP: parseFloat(e.target.value) || 15.5})} 
+            style={{ ...inputStyle, maxWidth: '130px' }} 
+          />
           <select 
             value={newMembrane.type} 
             onChange={e => setNewMembrane({...newMembrane, type: e.target.value})} 
@@ -109,6 +145,7 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
               <th style={thStyle}>Area (ft²)</th>
               <th style={thStyle}>A-value</th>
               <th style={thStyle}>Rej (%)</th>
+              <th style={thStyle}>Max Flux (LMH)</th>
               <th style={thStyle}>Type</th>
               <th style={thStyle}>Action</th>
             </tr>
@@ -129,6 +166,7 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
                 <td style={tdStyle}>{m.area}</td>
                 <td style={tdStyle}>{m.aValue ?? ''}</td>
                 <td style={tdStyle}>{m.rejection ?? ''}</td>
+                <td style={tdStyle}>{m.maxFlux ?? '48.5'}</td>
                 <td style={tdStyle}>
                    <span style={{ 
                      padding: '2px 8px', 
