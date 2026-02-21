@@ -168,7 +168,7 @@ export const LMH_TO_GFD = 1 / 1.6976;
 
 // Electrical Conductivity (EC, µS/cm @ 77°F) Calculation
 // Calibrated to match user examples: k ≈ 1.8 - 2.5 µS/cm per mg/L TDS
-export const calculateEC = (tds, ph) => {
+export const calculateEC = (tds) => {
   const t = Number(tds) || 0;
   
   if (t >= 2500) {
@@ -215,7 +215,6 @@ export const calculateSystem = (inputs) => {
   const tempC = Number(inputs.temp) || (inputs.tempF ? (Number(inputs.tempF) - 32) * 5 / 9 : 25);
   const currentFeedPh = Number(inputs.feedPh || inputs.feedPH || 7.0);
   const tempK = tempC + 273.15;
-  const pK1 = 3404.71 / tempK + 0.032786 * tempK - 14.8435;
 
   // Temperature Correction Factor (TCF)
   const tcf = Math.exp(2640 * (1 / 298.15 - 1 / (tempK)));
@@ -275,19 +274,12 @@ export const calculateSystem = (inputs) => {
   // Log-mean concentration factor
   const cfLogMean = recFrac > 0.01 ? -Math.log(1 - recFrac) / recFrac : 1;
   
-  // Beta (Concentration Polarization) matches user data 1.10 for multi-stage
-  const getStageBeta = (fluxLmh, elements, recFrac) => {
-    return 1.10;
-  };
-  const currentHighestBeta = getStageBeta(fluxLmh, elements, recFrac);
+  const currentHighestBeta = 1.10;
 
   const effectivePiBar = piFeedBar * cfLogMean * currentHighestBeta;
 
   const nominalFlowDP = Number(activeMembrane.nominalFlowDP) || 15.5;
   const dpExp = Number(activeMembrane.dpExponent) || 1.22;
-  const Q_avg = (Q_vessel_feed + Q_vessel_conc) / 2;
-  const flowFactor = Math.pow(Math.max(Q_avg, 0.01) / nominalFlowDP, dpExp);
-  const dpPerElement = 0.35 * flowFactor;
 
   // --- REFINED PRESSURE DROP ESTIMATION FOR MULTI-STAGE ---
   let totalSystemDP = 0;
@@ -306,12 +298,7 @@ export const calculateSystem = (inputs) => {
 
   const pPermBar = isGpmInput ? (Number(permeatePressure) || 0) / 14.5038 : (Number(permeatePressure) || 0);
   
-  // Vessel Distribution Factors (Matches targets: 1.10 Highest Flux / Flux ratio)
-  const getDistributionFactor = (flux, elements, recovery, tds) => {
-    return 1.10; // Calibrated for multi-stage examples
-  };
-
-  const distributionFactor = getDistributionFactor(fluxLmh, elements, recFrac, feedTds);
+  const distributionFactor = 1.10;
   const highestFluxLmh = fluxLmh * distributionFactor;
 
   let feedPressureBar;
@@ -382,9 +369,6 @@ export const calculateSystem = (inputs) => {
     
     const stageElements = Number(stage.elementsPerVessel) || 4;
     const stageArea = stageVessels * stageElements * membraneAreaM2;
-    
-    // Improved Flux Distribution: Based on Stage NDP and user Example ratios
-    const piStageBar = 0.00076 * runningFeedTds; // Osmotic pressure at stage inlet
     
     // 17.5/48, 12.6/48, 8.72/48, 5.57/48, 2.95/48, 0.74/48
     const fluxRatios = [2.2, 1.5, 1.0, 0.65, 0.35, 0.15];
@@ -548,45 +532,16 @@ export const calculateSystem = (inputs) => {
     return 2;
   };
 
-  // Refined Permeate pH Model: Purely flexible based on ACTUAL ionic balance and operational flux
-  // 1. Determine Alkalinity rejection based on flux (Higher flux = slightly better rejection)
-  const baseAlkRej = (Number(activeMembrane.alkalinityRejection) || 99.7) / 100;
-  const alkSP = (1 - baseAlkRej) * Math.pow(40 / Math.max(fluxLmh, 1), 0.12);
-  
-  // 2. Calculate Permeate species based on Feed inputs (NO FALLBACKS)
-  const feedHCO3 = Number(normalizedFeedIons.hco3 || 0);
-  const feedCO2 = Number(normalizedFeedIons.co2 || 0);
-  
-  const permHCO3 = feedHCO3 * alkSP * cfLogMean;
-  const permCO2 = feedCO2; // CO2 rejection is 0%
-  
-  let permPhValue;
-  if (feedHCO3 <= 0.01 && feedCO2 <= 0.01) {
-    // Case A: Pure water/NaCl profile - pH acidified by flux-dependent H+ passage
-    // Calibrated to match user data points: 
-    // 25.2 LMH -> 5.4 | 137.6 LMH -> 4.6 | 605.0 LMH -> 4.0 (at Feed pH 7.0)
-    const logFluxRatio = Math.log10(Math.max(fluxLmh, 1) / 25.2);
-    permPhValue = currentFeedPh - 1.14 - 1.08 * logFluxRatio - (recFrac * 0.8);
-  } else if (permHCO3 < 0.001) {
-    // Case B: Only CO2 present - pH determined by CO2 dissociation
-    const co2Molar = Math.max(permCO2, 0.001) / 44000;
-    permPhValue = 0.5 * (pK1 - Math.log10(co2Molar));
-  } else {
-    // Case C: Standard Carbonate System (Henderson-Hasselbalch)
-    // Highly flexible: Reacts to Flux (via alkSP), Recovery (via cfLogMean), and Feed Ions
-    permPhValue = pK1 + Math.log10(permHCO3 / Math.max(permCO2, 0.001)) + 0.11;
-  }
+  const concPhValue = (currentFeedPh + Math.log10(1 / (1 - Math.min(recFrac, 0.99))));
   
   const calculateLSI = (ph, tds, temp, ca, hco3) => {
     const A = (Math.log10(Math.max(tds, 1)) - 1) / 10;
     const B = -13.12 * Math.log10(temp + 273.15) + 34.55;
-    const C = Math.log10(Math.max(ca * 2.5, 0.1)) - 0.4; // Ca as CaCO3
-    const D = Math.log10(Math.max(hco3 * 0.82, 0.1)); // Alk as CaCO3
+    const C = Math.log10(Math.max(ca * 2.5, 0.1)) - 0.4;
+    const D = Math.log10(Math.max(hco3 * 0.82, 0.1));
     const pHs = (9.3 + A + B) - (C + D);
     return (ph - pHs).toFixed(2);
   };
-
-  const concPhValue = (currentFeedPh + Math.log10(1 / (1 - Math.min(recFrac, 0.99))));
 
   return {
     results: {
@@ -664,11 +619,11 @@ export const calculateSystem = (inputs) => {
   };
 };
 
-export const calculateIonPassage = (feedIons, systemData) => {
+export const calculateIonPassage = () => {
   return {}; // Placeholder for simplicity if not used primarily
 };
   
-export const runHydraulicBalance = (config, membrane) => {
+export const runHydraulicBalance = () => {
   return {}; // Placeholder
 };
 
