@@ -165,7 +165,7 @@ export const calculateSystem = (inputs) => {
   const cfLogMean = recFrac > 0.01 ? -Math.log(1 - recFrac) / recFrac : 1;
   
   // Beta (Concentration Polarization) matches user data 1.10 for multi-stage
-  const getStageBeta = (flux, elements, recovery) => {
+  const getStageBeta = (fluxLmh, elements, recFrac) => {
     return 1.10;
   };
   const currentHighestBeta = getStageBeta(fluxLmh, elements, recFrac);
@@ -305,7 +305,8 @@ export const calculateSystem = (inputs) => {
     // 2. Calculate Stage Rejection based on actual Flux (J)
     // R = J / (J + B * Beta)
     // Beta increases with stage to match rejection drop (1.0 to 1.32)
-    const stageBetaFactor = 1.0 + (sIdx * 0.065) + Math.pow(sIdx / 5, 6) * 0.5;
+    const stageRecovery = adjustedPermM3h / runningFeedM3h;
+    const stageBetaFactor = 1 + (0.15 * stageRecovery) + (0.02 * sIdx);
     const stageRejection = stageFluxLmh / (stageFluxLmh + membraneB * stageBetaFactor);
     
     // 3. Calculate Permeate TDS
