@@ -151,6 +151,12 @@ export const MEMBRANES = [
     areaM2: 7.43,
     aValue: 4.25,
     rejection: 99.7,
+    monoRejection: 98.5,
+    divalentRejection: 99.9,
+    silicaRejection: 99.2,
+    boronRejection: 93.0,
+    alkalinityRejection: 99.8,
+    co2Rejection: 0.0,
     dpExponent: 1.75,
     membraneB: 0.139,
     nominalFlowDP: 6.5,
@@ -274,7 +280,8 @@ export const calculateSystem = (inputs) => {
   // Log-mean concentration factor
   const cfLogMean = recFrac > 0.01 ? -Math.log(1 - recFrac) / recFrac : 1;
   
-  const currentHighestBeta = 1.10;
+  // Beta factor based on recovery: Beta = 1 + 0.25 × Recovery
+  const currentHighestBeta = 1 + (0.25 * recFrac);
 
   const effectivePiBar = piFeedBar * cfLogMean * currentHighestBeta;
 
@@ -298,7 +305,7 @@ export const calculateSystem = (inputs) => {
 
   const pPermBar = isGpmInput ? (Number(permeatePressure) || 0) / 14.5038 : (Number(permeatePressure) || 0);
   
-  const distributionFactor = 1.10;
+  const distributionFactor = 1.144;
   const highestFluxLmh = fluxLmh * distributionFactor;
 
   let feedPressureBar;
@@ -306,9 +313,9 @@ export const calculateSystem = (inputs) => {
     const baseP = isGpmInput ? Number(inputs.feedPressure) / 14.5038 : Number(inputs.feedPressure);
     feedPressureBar = baseP + pPermBar;
   } else {
-    // Dynamic Model: P_in = NDP + Pi_avg + P_perm + 0.5 * Total_DP
+    // Dynamic Model: P_in = NDP + Pi_avg + P_perm + Total_DP
     const ndpBar = fluxLmh / Math.max(aEffective * tcf * foulingFactor, 0.001);
-    feedPressureBar = ndpBar + effectivePiBar + pPermBar + (0.5 * totalSystemDP);
+    feedPressureBar = ndpBar + effectivePiBar + pPermBar + totalSystemDP;
   }
   
   // Ensure concentration pressure never goes negative for extreme/theoretical examples
@@ -381,23 +388,25 @@ export const calculateSystem = (inputs) => {
     const adjustedPermM3h = totalSystemPermeate * (stageWeight / totalWeight);
 
     const stageConcM3h = runningFeedM3h - adjustedPermM3h;
-    const vAvg = (runningFeedM3h / stageVessels + Math.max(stageConcM3h, 0) / stageVessels) / 2;
+    const vFeedPerVessel = runningFeedM3h / stageVessels;
+    const vConcPerVessel = Math.max(stageConcM3h, 0) / stageVessels;
+    const vAvg = (vFeedPerVessel + vConcPerVessel) / 2;
     const stageFlowFactor = Math.pow(Math.max(vAvg, 0.1) / nominalFlowDP, dpExp);
     const stageDP = stageElements * 0.35 * stageFlowFactor;
     const stageFluxLmh = (adjustedPermM3h * 1000) / stageArea;
-    const stageDF = sIdx === 0 ? 1.10 : 1.08;
+    const stageDF = sIdx === 0 ? 1.144 : 1.12;
     
     // --- REFINED TDS MODEL (Solution-Diffusion) ---
     // Recalibrated from User data: matches configurations 1-6
     const baselineJ = 45.0;
     // B coefficient is membrane-specific, affects rejection curve
-    const membraneB = Number(activeMembrane.membraneB) || 0.136; 
+    const membraneB = Number(activeMembrane.membraneB) || 0.184; 
     
     // 2. Calculate Stage Rejection based on actual Flux (J)
     // R = J / (J + B * Beta)
-    // Beta increases with stage to match rejection drop (1.0 to 1.32)
+    // Beta increases with recovery and stage
     const stageRecovery = adjustedPermM3h / runningFeedM3h;
-    const stageBetaFactor = 1 + (0.15 * stageRecovery) + (0.02 * sIdx);
+    const stageBetaFactor = 1 + (0.25 * stageRecovery) + (0.01 * sIdx);
     const stageRejection = stageFluxLmh / (stageFluxLmh + membraneB * stageBetaFactor);
     
     // 3. Calculate Permeate TDS
