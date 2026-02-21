@@ -1,6 +1,27 @@
 import { getWaterTypeInfo, isMembraneCompatible } from './waterTypeConfig';
 import { MEMBRANES, isGpmInput } from './calculatorService';
 
+export const MEMBRANE_SPECIFIC_CONSTRAINTS = {
+  'cpa5ld4040': {
+    fluxMin: 15,
+    fluxMax: 52,
+    recoveryMin: 40,
+    recoveryMax: 75,
+    pressureMin: 100,
+    pressureMax: 600,
+    optimalFlux: 35
+  },
+  'cpa3': {
+    fluxMin: 12,
+    fluxMax: 52,
+    recoveryMin: 45,
+    recoveryMax: 75,
+    pressureMin: 100,
+    pressureMax: 600,
+    optimalFlux: 40
+  }
+};
+
 export const DESIGN_CONSTRAINTS_BY_WATER_TYPE = {
   'Brackish Well Non-Fouling': {
     fluxMin: 10,
@@ -104,7 +125,6 @@ export const validateDesignWithWaterType = (inputs, results, waterType) => {
     return validation;
   }
 
-  const constraints = DESIGN_CONSTRAINTS_BY_WATER_TYPE[waterType];
   const {
     membraneModel = 'cpa3',
     tds = 2100,
@@ -119,6 +139,12 @@ export const validateDesignWithWaterType = (inputs, results, waterType) => {
   const displayPressure = isGpmInput(flowUnit) ? feedPressure : feedPressure * 14.5038;
 
   const activeMembrane = MEMBRANES.find(m => (m.id || '').toLowerCase() === (membraneModel || '').toLowerCase());
+  
+  const membraneId = (membraneModel || '').toLowerCase();
+  const membraneConstraints = MEMBRANE_SPECIFIC_CONSTRAINTS[membraneId];
+  const waterTypeConstraints = DESIGN_CONSTRAINTS_BY_WATER_TYPE[waterType];
+  
+  const constraints = membraneConstraints || waterTypeConstraints;
 
   if (tds > waterInfo.tdsRange.max) {
     validation.errors.push(`TDS (${tds} mg/L) exceeds water type maximum (${waterInfo.tdsRange.max} mg/L)`);
@@ -131,12 +157,12 @@ export const validateDesignWithWaterType = (inputs, results, waterType) => {
 
   if (constraints) {
     if (avgFlux > constraints.fluxMax) {
-      validation.errors.push(`Flux (${avgFlux} GFD/LMH) exceeds recommended max (${constraints.fluxMax}) for ${waterType}`);
+      validation.errors.push(`Flux (${avgFlux.toFixed(1)} LMH) exceeds recommended max (${constraints.fluxMax}) for ${activeMembrane?.name || waterType}`);
       validation.isValid = false;
     }
 
     if (avgFlux < constraints.fluxMin) {
-      validation.warnings.push(`Flux (${avgFlux} GFD/LMH) below recommended min (${constraints.fluxMin}) for ${waterType}`);
+      validation.warnings.push(`Flux (${avgFlux.toFixed(1)} LMH) below recommended min (${constraints.fluxMin}) for ${activeMembrane?.name || waterType}`);
     }
 
     if (recovery > constraints.recoveryMax) {
