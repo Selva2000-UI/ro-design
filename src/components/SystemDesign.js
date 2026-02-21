@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FLOW_TO_M3H, calculateEC } from '../utils/calculatorService';
+import { FLOW_TO_M3H } from '../utils/calculatorService';
 
 const SystemDesign = ({
   membranes,
@@ -259,34 +259,6 @@ const SystemDesign = ({
   const rowStyle = { display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.75rem' };
   const inputStyle = { width: '70px', textAlign: 'right', border: '1px solid #999' };
 
-  const getFeedTds = () => {
-    const ions = {
-      ca: Number(waterData?.ca) || 0,
-      mg: Number(waterData?.mg) || 0,
-      na: Number(waterData?.na) || 0,
-      k: Number(waterData?.k) || 0,
-      sr: Number(waterData?.sr) || 0,
-      ba: Number(waterData?.ba) || 0,
-      hco3: Number(waterData?.hco3) || 0,
-      so4: Number(waterData?.so4) || 0,
-      cl: Number(waterData?.cl) || 0,
-      no3: Number(waterData?.no3) || 0,
-      sio2: Number(waterData?.sio2) || 0,
-      po4: Number(waterData?.po4) || 0,
-      f: Number(waterData?.f) || 0,
-      b: Number(waterData?.b) || 0,
-      co2: Number(waterData?.co2) || 0,
-      co3: Number(waterData?.co3) || 0,
-      nh4: Number(waterData?.nh4) || 0
-    };
-    return Object.values(ions).reduce((sum, value) => sum + value, 0);
-  };
-
-  const formatNumber = (value, decimals = 1) => {
-    const num = Number(value);
-    return Number.isFinite(num) ? num.toFixed(decimals) : (0).toFixed(decimals);
-  };
-
   const flowUnitLabel = systemConfig.flowUnit || 'gpm';
   const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(flowUnitLabel);
   const pUnit = isGpm ? 'psi' : 'bar';
@@ -295,21 +267,12 @@ const SystemDesign = ({
   const fluxUnit = isGpm ? 'gfd' : 'lmh';
 //   const BAR_TO_PSI = 14.5038;
 
-  const feedTds = getFeedTds();
-  const rawFeedPh = Number(waterData?.ph) || 7.0;
-  const treatedFeedPh = Number(systemConfig.feedPh) || rawFeedPh;
-  const permTds = projection?.permeateParameters?.tds ?? 0;
-  const concTds = projection?.concentrateParameters?.tds ?? 0;
-  const permPh = projection?.permeateParameters?.ph ?? treatedFeedPh;
-  const concPh = projection?.concentrateParameters?.ph ?? treatedFeedPh;
   const flowDiagramReady = systemConfig.designCalculated && projection;
-  const tdsToEcond = (value, ph) => Math.round(calculateEC(value, ph));
   const handlePrintFlowDiagram = () => {
     if (!flowDiagramRef.current) return;
 
     const flowPoints = (projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id);
     const flowIdHeader = flowPoints.map(p => `<th style="border: 1px solid #c9d3de; padding: 6px;">${p.id}</th>`).join('');
-    const flowNameHeader = flowPoints.map(p => `<th style="border: 1px solid #c9d3de; padding: 6px; font-weight: normal; font-size: 0.7rem;">${p.name || ''}</th>`).join('');
     
     const flowRows = [
       { label: 'Stream', key: 'name' },
@@ -859,12 +822,15 @@ const SystemDesign = ({
             background: 'white',
             padding: '20px',
             borderRadius: '8px',
-            maxWidth: '600px',
-            maxHeight: '80vh',
-            overflow: 'auto',
+            width: '90vw',
+            maxWidth: '950px',
+            height: '85vh',
+            minWidth: '650px',
+            display: 'flex',
+            flexDirection: 'column',
             boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
           }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexShrink: 0 }}>
               <h3 style={{ margin: 0 }}>Select Membrane Type for Stage {selectedStageForMembrane}</h3>
               <button onClick={() => setShowMembraneModal(false)} style={{
                 background: '#e74c3c',
@@ -876,20 +842,24 @@ const SystemDesign = ({
                 fontSize: '0.9rem'
               }}>×</button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', width: '100%', overflowY: 'auto', overflowX: 'hidden', flex: 1, minHeight: '450px', alignContent: 'start', paddingRight: '5px' }}>
               {membranes.map(membrane => (
                 <button
                   key={membrane.id}
                   onClick={() => handleMembraneSelect(membrane.id)}
                   style={{
-                    padding: '10px',
+                    padding: '12px 8px',
                     border: '2px solid #004a80',
                     borderRadius: '4px',
                     background: 'white',
                     cursor: 'pointer',
                     textAlign: 'center',
-                    fontSize: '0.85rem',
-                    transition: 'all 0.2s'
+                    fontSize: '0.8rem',
+                    transition: 'all 0.2s',
+                    minHeight: '70px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center'
                   }}
                   onMouseOver={(e) => e.target.style.background = '#e3f2fd'}
                   onMouseOut={(e) => e.target.style.background = 'white'}
@@ -943,7 +913,6 @@ const SystemDesign = ({
                     const startX = 50;
                     const startY = 80;
                     const stageWidth = 100;
-                    const stageHeight = 60;
                     const horizontalGap = 150;
                     const verticalGap = 80;
                     const elements = [];

@@ -137,6 +137,7 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
       {/* DATABASE TABLE */}
       <div style={cardStyle}>
         <h3 style={{ marginTop: 0, color: '#004a80' }}>Current Library</h3>
+        <div style={{ overflowX: 'auto', width: '100%' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -190,6 +191,7 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
             ))}
           </tbody>
         </table>
+        </div>
         <div style={{ marginTop: '10px', fontSize: '0.75rem', color: '#666' }}>
           Tip: click a row to set it as the active membrane for the Design tab.
         </div>
