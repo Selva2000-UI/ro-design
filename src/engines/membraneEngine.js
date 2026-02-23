@@ -50,8 +50,8 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 7.43,
     transport: {
-      aValueRef: 4.43,
-      membraneBRef: 0.145,
+      aValueRef: 4.35,
+      membraneBRef: 0.14,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -89,7 +89,7 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.00076 × TDS',
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -150,7 +150,7 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.00076 × TDS',
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -211,7 +211,7 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.00076 × TDS',
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -272,7 +272,7 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.00076 × TDS',
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -333,7 +333,7 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.00076 × TDS',
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -357,8 +357,8 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
     transport: {
-      aValueRef: 3.18,
-      membraneBRef: 0.152,
+      aValueRef: 3.2,
+      membraneBRef: 0.148,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -396,7 +396,7 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.00076 × TDS',
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -417,8 +417,8 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
     transport: {
-      aValueRef: 3.18,
-      membraneBRef: 0.152,
+      aValueRef: 3.15,
+      membraneBRef: 0.150,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -456,7 +456,7 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.00076 × TDS',
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -477,8 +477,8 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.FOULING_RESISTANT,
     areaM2: 37.16,
     transport: {
-      aValueRef: 3.18,
-      membraneBRef: 0.152,
+      aValueRef: 3.15,
+      membraneBRef: 0.150,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -516,7 +516,7 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.00076 × TDS',
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -539,6 +539,8 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.SEAWATER,
     areaM2: 37.16,
     transport: {
+      // aValueRef: 0.98,
+      // membraneBRef: 0.165,
       aValueRef: 2.75,
       membraneBRef: 0.11,
       soluteBFactors: {
@@ -577,9 +579,9 @@ export const MEMBRANES = {
       foulingFactorDefault: 0.95
     },
     osmoticModel: {
-      type: 'industrial-linear',
-      formula: 'π(bar) = 0.00076 × TDS',
-      note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
+      type: 'seawater-polynomial',
+      formula: 'π(bar) = 0.0008 × TDS + 1.5×10^-9 × TDS²',
+      note: 'Industrial seawater polynomial model. Linear base (0.0008×TDS) matches van\'t Hoff. Small polynomial term for nonlinearity in concentrated brine. Mandatory for TDS > 10,000. Use calculateOsmoticPressure(tds, "bar", true)'
     },
     limits: {
       maxTds: 40000,
@@ -871,7 +873,7 @@ export const createCustomMembrane = (spec) => {
     },
     osmoticModel: spec.osmoticModel || {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.00076 × TDS',
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: spec.limits || {
