@@ -158,11 +158,6 @@ const App = () => {
       
       setProjection({
         ...results.results,
-        fluxGFD: isImperial ? results.results.avgFluxLMH / 1.6976 : results.results.avgFluxLMH,
-        pumpPressure: results.results.feedPressure,
-        monthlyEnergyCost: results.results.monthlyEnergyCost,
-        permeateFlow: results.flowDiagramPoints[2].flow,
-        feedFlow: results.flowDiagramPoints[0].flow,
         stageResults: results.stageResults,
         flowDiagramPoints: results.flowDiagramPoints,
         permeateIons: results.permeateParameters.ions || {},
@@ -171,17 +166,14 @@ const App = () => {
         concentrateTds: results.concentrateParameters.tds,
         osmoticP: results.concentrateParameters.osmoticPressure,
         concentrateSaturation: results.concentrateParameters.saturation?.saturations || {},
-        concentrateParameters: {
-            osmoticPressure: results.concentrateParameters.osmoticPressure,
-            ph: results.concentrateParameters.ph,
-            tds: results.concentrateParameters.tds,
-            lsi: results.concentrateParameters.saturation?.lsi,
-            ccpp: results.concentrateParameters.saturation?.ccpp,
-            langelier: results.concentrateParameters.saturation?.lsi
-        },
+        concentrateParameters: results.concentrateParameters,
         permeateParameters: results.permeateParameters,
         feedParameters: results.feedParameters,
-        chemicalSolution_kg_hr: results.chemicalResults.solution_kg_hr
+        permeateFlow: results.flowDiagramPoints[2].flow,
+        feedFlow: results.flowDiagramPoints[0].flow,
+        concentrateFlow: results.flowDiagramPoints[3].flow,
+        totalPlantProductFlowDisplay: results.flowDiagramPoints[2].flow,
+        pumpPressure: results.results.feedPressure,
       });
     } catch (error) {
       console.warn('Calculation failed:', error.message);

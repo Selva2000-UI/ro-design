@@ -480,8 +480,8 @@ const SystemDesign = ({
           <div style={rowStyle}>
             <span title={`Flux Calculation Logic (Standard: 400 ft² element):\n\n🔹 CASE 1: PERMEATE FLOW IN GPM → FLUX IN GFD\nFormula: Average Flux (GFD) = Permeate Flow (gpm) / (No. of Vessels × Nm × 0.2778)\n\n🔹 CASE 2: PERMEATE FLOW IN m³/h → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/h) / (No. of Vessels × Nm × 0.0372)\n\n🔹 CASE 3: PERMEATE FLOW IN m³/d → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/d) / (No. of Vessels × Nm × 0.893)\n\n⚠️ Note: Constants are valid for 400 ft² membranes. If membrane area changes, the constant is automatically recalculated.`}>Average flux</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
-              <div style={{...inputStyle, background: '#eee'}}>{projection?.results?.avgFlux ?? systemConfig.averageFlux ?? '0.0'}</div>
-              <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.results?.fluxUnit || (isGpm ? 'GFD' : 'LMH')}</span>
+              <div style={{...inputStyle, background: '#eee'}}>{Number(projection?.avgFlux || 0).toFixed(2)}</div>
+              <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.fluxUnit || (isGpm ? 'GFD' : 'LMH')}</span>
             </div>
           </div>
 
