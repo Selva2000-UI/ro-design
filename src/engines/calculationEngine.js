@@ -147,19 +147,31 @@ export const calculateRequiredArea = (flow, targetFlux) => {
 // ============================================
 
 /**
- * Calculate osmotic pressure from TDS - Dual unit support
- * Industrial approximation: π = k × TDS
- * For PSI: π(psi) = 0.011 × TDS
- * For BAR: π(bar) = 0.00076 × TDS
+ * Calculate osmotic pressure from TDS - Industrial seawater polynomial model
+ * Linear base: π(bar) = 0.0008 × TDS (valid for all TDS ranges, matches van't Hoff)
+ * Seawater polynomial (TDS ≥ 10,000): π(bar) = 0.0008 × TDS + 1.5×10^-9 × TDS²
+ * (Small polynomial correction for slight nonlinearity in concentrated seawater)
  * @param {number} tds - Total dissolved solids in mg/L
  * @param {string} unit - 'psi' or 'bar' (default: 'bar')
+ * @param {boolean} usePolynomial - Use seawater polynomial model (default: auto-detect for TDS > 10000)
  * @returns {number} Osmotic pressure in specified unit
  */
-export const calculateOsmoticPressure = (tds, unit = 'bar') => {
-  if (unit === 'psi') {
-    return 0.011 * tds;
+export const calculateOsmoticPressure = (tds, unit = 'bar', usePolynomial = null) => {
+  if (!tds || tds < 0) return 0;
+  
+  const isSeawater = usePolynomial !== null ? usePolynomial : (tds >= 10000);
+  
+  let osmoticBar;
+  if (isSeawater) {
+    osmoticBar = (0.0008 * tds) + (1.5e-9 * tds * tds);
+  } else {
+    osmoticBar = 0.0008 * tds;
   }
-  return 0.00076 * tds;
+  
+  if (unit === 'psi') {
+    return osmoticBar * 14.5038;
+  }
+  return osmoticBar;
 };
 
 /**
@@ -191,20 +203,222 @@ export const calculateAverageOsmoticPressure = (feedTds, recovery, unit = 'bar')
  * @param {number} recovery - Recovery fraction (0-1)
  * @returns {number} Log-mean CF
  */
+
+// ============================================
+// ION REJECTION & WATER CHEMISTRY
+// ============================================
+
+/**
+ * Calculate specific ion rejections based on membrane properties and flux
+ * @param {object} feedIons - Feed ion concentrations (mg/L)
+ * @param {number} globalRejection - Global TDS rejection (%)
+ * @param {number} fluxLmh - Current operating flux (LMH)
+ * @param {number} spFactor - Aging/fouling salt passage factor
+ * @param {object} membrane - Membrane property object
+ * @returns {object} { permeateIons, permeateTds }
+ */
+export const calculateIonComposition = (feedIons, globalRejection, fluxLmh, spFactor, membrane = {}) => {
+  const testFluxLMH = 25; // Standard test flux
+  const membraneRejection = Math.min(Math.max(Number(membrane.rejection) || globalRejection, 80), 99.9);
+  
+  // Rejection defaults based on ion valence and type
+  const defaultMono = Math.max(Math.min((Number(membrane.monoRejection) || (membraneRejection - 6)), 99.9), 80);
+  const defaultDivalent = Math.max(Math.min((Number(membrane.divalentRejection) || membraneRejection), 99.9), 80);
+  const silicaRejection = Math.max(Math.min((Number(membrane.silicaRejection) || (membraneRejection - 1)), 99.9), 80);
+  const boronRejection = Math.max(Math.min((Number(membrane.boronRejection) || (membraneRejection - 8)), 99.9), 60);
+  const alkalinityRejection = Math.max(Math.min((Number(membrane.alkalinityRejection) || (membraneRejection - 0.2)), 99.9), 80);
+  const co2Rejection = Math.max(Math.min((Number(membrane.co2Rejection) || 0), 99.9), 0);
+
+  const getBaseRejection = (ionKey) => {
+    const overrides = membrane.ionRejectionOverrides || {};
+    if (overrides[ionKey] != null) return Number(overrides[ionKey]);
+    if (['ca', 'mg', 'sr', 'ba', 'so4', 'po4'].includes(ionKey)) return defaultDivalent;
+    if (['na', 'k', 'cl', 'no3', 'f'].includes(ionKey)) return defaultMono;
+    if (['hco3', 'co3'].includes(ionKey)) return alkalinityRejection;
+    if (ionKey === 'sio2') return silicaRejection;
+    if (ionKey === 'b') return boronRejection;
+    if (ionKey === 'co2') return co2Rejection;
+    return membraneRejection;
+  };
+
+  const permeateIons = {};
+  let permeateTds = 0;
+
+  Object.entries(feedIons).forEach(([key, value]) => {
+    const ionVal = Number(value) || 0;
+    const rejection = getBaseRejection(key);
+    const saltPassageTest = Math.max(1 - rejection / 100, 0);
+    
+    // Concentration polarization and flux-dependent salt passage
+    // Simplified model: B = Flux_test * SP_test * AgeFactor
+    // SP_actual = B / (Flux_actual + B)
+    const ionB = testFluxLMH * saltPassageTest * spFactor;
+    const ionSPActual = ionB / (Math.max(fluxLmh, 0.1) + ionB);
+    
+    // For permeate, we use average concentration across element which is feed * CF_avg
+    // but here we just use the simplified SP * Feed for a single step calculation
+    const permVal = ionVal * ionSPActual;
+    permeateIons[key] = Number(permVal.toFixed(3));
+    if (key !== 'co2') { // CO2 is dissolved gas, doesn't contribute to TDS typically
+        permeateTds += permVal;
+    }
+  });
+
+  return { permeateIons, permeateTds: Number(permeateTds.toFixed(2)) };
+};
+
+/**
+ * Calculate saturation indices and scale potential
+ * @param {object} ions - Ion concentrations in mg/L
+ * @param {number} temp - Temperature in °C
+ * @param {number} ph - pH value
+ * @returns {object} Saturation results
+ */
+export const calculateWaterSaturations = (ions, temp, ph) => {
+  const tds = Object.entries(ions).reduce((sum, [k, v]) => sum + (k === 'co2' ? 0 : Number(v) || 0), 0);
+  
+  const getNum = (key) => Number(ions[key]) || 0;
+  
+  const ca = getNum('ca');
+  const hco3 = getNum('hco3');
+  const so4 = getNum('so4');
+  const sio2 = getNum('sio2');
+  const ba = getNum('ba');
+  const sr = getNum('sr');
+  const po4 = getNum('po4');
+  const f = getNum('f');
+
+  // Langelier Saturation Index (LSI)
+  // LSI = pH - pHs
+  // pHs = (pK2 - pKs) + pCa + pAlk
+  const pCa = 5.0 - Math.log10(Math.max(ca * 2.5, 0.0001));
+  const pAlk = 5.0 - Math.log10(Math.max(hco3 * 0.82, 0.0001));
+  const C = (Math.log10(Math.max(tds, 1)) - 1) / 10 + (temp > 25 ? 2.0 : 2.3);
+  const phs = C + pCa + pAlk;
+  const lsi = ph - phs;
+  const ccpp = lsi > 0 ? lsi * 50 : 0;
+
+  return {
+    tds: Number(tds.toFixed(2)),
+    lsi: Number(lsi.toFixed(2)),
+    phs: Number(phs.toFixed(2)),
+    ccpp: Number(ccpp.toFixed(2)),
+    osmoticPressureBar: Number((tds * 0.0008).toFixed(3)),
+    saturations: {
+      caSo4: Number(((ca * so4) / 1000).toFixed(2)),
+      baSo4: Number(((ba * so4) / 50).toFixed(2)),
+      srSo4: Number(((sr * so4) / 2000).toFixed(2)),
+      sio2: Number(((sio2 / 120) * 100).toFixed(2)),
+      ca3po42: Number(((ca * po4) / 100).toFixed(2)),
+      caF2: Number(((ca * f) / 500).toFixed(2))
+    }
+  };
+};
+
 export const calculateLogMeanCF = (recovery) => {
   if (recovery < 0.01) return 1;
   return -Math.log(1 - Math.min(recovery, 0.99)) / recovery;
 };
 
 /**
- * Calculate effective osmotic pressure
+ * Calculate log-mean concentration (MANDATORY for industrial seawater)
+ * Cavg = (Cc - Cf) / ln(Cc/Cf)
+ * Where: Cc = Cf × 1/(1 - stageRecovery)
+ * @param {number} feedConc - Feed concentration in mg/L
+ * @param {number} recovery - Stage recovery fraction (0-1)
+ * @returns {number} Log-mean concentration in mg/L
+ */
+export const calculateLogMeanConcentration = (feedConc, recovery) => {
+  if (recovery < 0.01 || !feedConc || feedConc <= 0) return feedConc;
+  
+  const recoveryLimited = Math.min(recovery, 0.99);
+  const cc = feedConc / (1 - recoveryLimited);
+  
+  if (cc <= feedConc || feedConc <= 0) return feedConc;
+  
+  const ratio = cc / feedConc;
+  const lnRatio = Math.log(ratio);
+  
+  if (Math.abs(lnRatio) < 1e-10) return feedConc;
+  
+  return (cc - feedConc) / lnRatio;
+};
+
+/**
+ * Calculate average osmotic pressure using LOG-MEAN CONCENTRATION (INDUSTRIAL SEAWATER REQUIRED)
+ * Uses proper log-mean averaging instead of arithmetic mean
+ * @param {number} feedTds - Feed TDS in mg/L
+ * @param {number} recovery - Stage recovery fraction (0-1)
+ * @param {string} unit - 'psi' or 'bar' (default: 'bar')
+ * @param {boolean} usePolynomial - Force polynomial seawater model (auto-detect by default)
+ * @returns {object} {feedOsmotic, concentrateOsmotic, avgOsmotic, logMeanConc, concentrationFactor}
+ */
+export const calculateAverageOsmoticPressureLogMean = (feedTds, recovery, unit = 'bar', usePolynomial = null) => {
+  const recoveryLimited = Math.min(recovery, 0.99);
+  const cf = 1 / (1 - recoveryLimited);
+  
+  const feedOsmotic = calculateOsmoticPressure(feedTds, unit, usePolynomial);
+  const concentrateTds = feedTds * cf;
+  const concentrateOsmotic = calculateOsmoticPressure(concentrateTds, unit, usePolynomial);
+  
+  const logMeanConc = calculateLogMeanConcentration(feedTds, recovery);
+  const avgOsmotic = calculateOsmoticPressure(logMeanConc, unit, usePolynomial);
+  
+  return {
+    feedOsmotic,
+    concentrateOsmotic,
+    avgOsmotic,
+    logMeanConc,
+    concentrationFactor: cf,
+    concentrateTds
+  };
+};
+
+/**
+ * Calculate effective osmotic pressure (INDUSTRIAL SEAWATER MODEL)
+ * Combines log-mean concentration with concentration polarization
+ * π_eff = π(C_avg) × β
  * @param {number} feedOsmotic - Feed osmotic pressure
- * @param {number} logMeanCF - Log-mean concentration factor
- * @param {number} beta - Concentration polarization factor
+ * @param {number} logMeanCF - Log-mean concentration factor (or feed conc if calc separately)
+ * @param {number} beta - Concentration polarization factor (1.1-1.6 typical)
  * @returns {number} Effective osmotic pressure
  */
 export const calculateEffectiveOsmoticPressure = (feedOsmotic, logMeanCF, beta = 1.1) => {
   return feedOsmotic * logMeanCF * beta;
+};
+
+/**
+ * Calculate concentration polarization factor β (INDUSTRIAL SEAWATER)
+ * β = exp(Jw / k)
+ * Where k = mass transfer coefficient (depends on crossflow, spacer, diffusion)
+ * @param {object} params - {fluxLmh, spacerMil, crossflowMSec, ionicStrength}
+ * @returns {number} Beta factor (typical 1.1-1.6, must be < 2.0)
+ */
+export const calculateConcentrationPolarization = (params) => {
+  const {
+    fluxLmh = 10,
+    spacerMil = 34,
+    crossflowMSec = null,
+    ionicStrength = null,
+    simplified = true
+  } = params;
+  
+  if (simplified) {
+    return Math.min(Math.exp(fluxLmh / 30), 1.6);
+  }
+  
+  if (!crossflowMSec || !ionicStrength) {
+    return Math.min(Math.exp(fluxLmh / 30), 1.6);
+  }
+  
+  const diffusivity = 1.0e-5 * Math.pow(crossflowMSec, 0.5);
+  const spacerThicknessM = (spacerMil * 0.0254) / 1000;
+  
+  const k = diffusivity / spacerThicknessM;
+  
+  const beta = Math.exp(Math.max(fluxLmh / k, 0));
+  
+  return Math.min(Math.max(beta, 1.0), 2.0);
 };
 
 // ============================================
@@ -294,58 +508,61 @@ export const calculateRecoveryFromFlux = (flux, feedDensity = 1.0) => {
 };
 
 // ============================================
-// SALT PASSAGE & REJECTION CALCULATION
+// SALT PASSAGE & REJECTION CALCULATION (TRUE INDUSTRIAL MODEL)
 // ============================================
 
 /**
- * Calculate salt passage using A/B transport model
- * B = solute permeability (mg/L-min or equivalent)
- * J = solute flux (permeate flux in LMH)
- * Salt passage fraction = B / (J + B)
- * @param {number} flux - Permeate flux in LMH
- * @param {number} membraneB - Membrane B coefficient (solute permeability)
- * @returns {number} Salt passage fraction (0-1)
+ * Calculate permeate concentration using TRUE industrial B/J transport model
+ * Cp = (B_eff / J) × C_avg
+ * Where: 
+ *   B_eff = B × β (effective B considering concentration polarization)
+ *   β = concentration polarization factor (typically 1.1-1.6 for seawater)
+ *   C_avg = log-mean concentration across membrane
+ * @param {object} params - {fluxLmh, bValue, feedConc, concentrateConc, beta=1.0}
+ * @returns {number} Permeate TDS in mg/L
  */
-export const calculateSaltPassage = (flux, membraneB) => {
-  if (flux === 0) return membraneB / (0.001 + membraneB);
-  if (membraneB === 0) return 0;
-  return membraneB / (flux + membraneB);
+export const calculatePermeateConcentrationIndustrial = ({
+  fluxLmh,
+  bValue,
+  feedConc,
+  concentrateConc,
+  beta = 1.0
+}) => {
+  if (!fluxLmh || fluxLmh <= 0) return 0;
+  if (!feedConc || feedConc <= 0) return 0;
+  
+  // Use LOG-MEAN concentration (INDUSTRIAL SEAWATER MODEL)
+  // Log-mean correctly accounts for exponential concentration profile across membrane
+  const ratio = concentrateConc / feedConc;
+  let avgConc;
+  
+  if (ratio > 1.001) {
+    avgConc = (concentrateConc - feedConc) / Math.log(ratio);
+  } else {
+    avgConc = (feedConc + concentrateConc) / 2;
+  }
+  
+  // CRITICAL: Apply concentration polarization to B-value
+  // B_eff = B × β (higher concentration at membrane surface due to boundary layer)
+  const effectiveBValue = bValue * beta;
+  
+  // Salt transport: Cp = (B_eff/J) × C_avg
+  return (effectiveBValue / fluxLmh) * avgConc;
 };
 
 /**
- * Calculate rejection from flux and B-value using A/B model
- * R = 1 - B / (J + B)
- * Where: J = flux, B = solute permeability
- * @param {number} flux - Permeate flux in LMH
- * @param {number} membraneB - Membrane B coefficient
- * @returns {number} Rejection fraction (0-1)
- */
-export const calculateRejectionFromFlux = (flux, membraneB) => {
-  if (membraneB === 0) return 1;
-  const saltPassage = calculateSaltPassage(flux, membraneB);
-  return 1 - saltPassage;
-};
-
-/**
- * Calculate actual rejection percentage
- * @param {number} saltPassage - Salt passage fraction (0-1)
+ * Calculate salt rejection percentage from concentrations
+ * R = (1 - Cp/Cf) × 100
+ * @param {number} feedConc - Feed concentration in mg/L
+ * @param {number} permeateConc - Permeate concentration in mg/L
  * @returns {number} Rejection percentage (0-100)
  */
-export const calculateRejection = (saltPassage) => {
-  return (1 - saltPassage) * 100;
+export const calculateRejectionPercent = (feedConc, permeateConc) => {
+  if (!feedConc || feedConc <= 0) return 0;
+  return Math.max(0, Math.min(100, (1 - permeateConc / feedConc) * 100));
 };
 
-/**
- * Calculate permeate ion concentration
- * @param {number} feedIon - Feed ion concentration
- * @param {number} saltPassage - Ion-specific salt passage
- * @param {number} logMeanCF - Log-mean concentration factor
- * @returns {number} Permeate ion concentration
- */
-export const calculatePermeateIon = (feedIon, saltPassage, logMeanCF) => {
-  const concentratedFeedIon = feedIon * logMeanCF;
-  return concentratedFeedIon * saltPassage;
-};
+
 
 // ============================================
 // TDS CALCULATION
@@ -427,7 +644,7 @@ export const calculateNDP = (feedPressure, avgOsmotic, permeate = 0, pressureDro
   const ndp = feedPressure - avgOsmotic - permeate - (0.5 * pressureDrop);
   
   if (ndp <= 0) {
-    throw new Error(`Net Driving Pressure <= 0. Feed pressure (${feedPressure.toFixed(1)}) must exceed average osmotic pressure (${avgOsmotic.toFixed(1)}) + pressure drop effect.`);
+    throw new Error(`Net Driving Pressure <= 0. Feed pressure (${feedPressure.toFixed(2)}) must exceed average osmotic pressure (${avgOsmotic.toFixed(2)}) + pressure drop effect.`);
   }
   
   return Math.max(ndp, 0);
@@ -560,6 +777,149 @@ export const validateDesign = (design, membrane) => {
   };
 };
 
+/**
+ * Validate seawater membrane flux (SW-TDS-32K-8040 specific)
+ * Design: 10 LMH, Min: 8 LMH, Max: 12 LMH
+ * @param {number} fluxLmh - Flux in LMH
+ * @returns {object} {valid, warning, status}
+ */
+export const validateSeawaterFlux = (fluxLmh) => {
+  const MIN_FLUX = 8;
+  const DESIGN_FLUX = 10;
+  const MAX_FLUX = 12;
+  
+  return {
+    valid: fluxLmh >= MIN_FLUX && fluxLmh <= MAX_FLUX,
+    warning: fluxLmh > MAX_FLUX ? '⚠️ High SW flux — rejection may drop' : null,
+    status: fluxLmh < MIN_FLUX ? 'Too low' : (fluxLmh > MAX_FLUX ? 'Too high' : 'Optimal'),
+    fluxLmh,
+    designFlux: DESIGN_FLUX,
+    minFlux: MIN_FLUX,
+    maxFlux: MAX_FLUX
+  };
+};
+
+/**
+ * Validate hydraulic limits per element (INDUSTRIAL GRADE)
+ * Per element: Feed < 16 m³/h, Min brine > 3 m³/h, ΔP < 1 bar
+ * @param {object} params - {feedFlowPerElement, brineFlowPerElement, pressureDropBar}
+ * @returns {object} Validation results with warnings
+ */
+export const validateHydraulicLimits = (params) => {
+  const {
+    feedFlowPerElement = 0,
+    brineFlowPerElement = 0,
+    pressureDropBar = 0
+  } = params;
+  
+  const issues = [];
+  const warnings = [];
+  
+  const MAX_FEED_FLOW = 16;
+  const MIN_BRINE_FLOW = 3;
+  const MAX_PRESSURE_DROP = 1.0;
+  
+  if (feedFlowPerElement > MAX_FEED_FLOW) {
+    issues.push(`Feed flow ${feedFlowPerElement.toFixed(2)} m³/h > max ${MAX_FEED_FLOW} m³/h`);
+  }
+  
+  if (brineFlowPerElement < MIN_BRINE_FLOW) {
+    issues.push(`Brine flow ${brineFlowPerElement.toFixed(2)} m³/h < min ${MIN_BRINE_FLOW} m³/h`);
+  }
+  
+  if (pressureDropBar > MAX_PRESSURE_DROP) {
+    warnings.push(`Pressure drop ${pressureDropBar.toFixed(2)} bar exceeds recommended ${MAX_PRESSURE_DROP} bar`);
+  }
+  
+  return {
+    valid: issues.length === 0,
+    issues,
+    warnings,
+    feedFlowPerElement,
+    brineFlowPerElement,
+    pressureDropBar
+  };
+};
+
+/**
+ * Calculate ionic-weighted B-value for salt passage (INDUSTRIAL SEAWATER)
+ * Monovalent: ×1.0, Divalent: ×0.6, Silica: ×0.8, Boron: ×1.4
+ * @param {object} params - {baseB, ionComposition}
+ * @returns {number} Weighted B-value
+ */
+export const calculateIonicWeightedBValue = (params) => {
+  const {
+    baseB = 0.105,
+    ionComposition = {}
+  } = params;
+  
+  const monovalent = (ionComposition.na || 0) + (ionComposition.k || 0) + (ionComposition.cl || 0);
+  const divalent = (ionComposition.ca || 0) + (ionComposition.mg || 0) + (ionComposition.so4 || 0);
+  const silica = ionComposition.sio2 || 0;
+  const boron = ionComposition.b || 0;
+  
+  const totalIons = monovalent + divalent + silica + boron;
+  if (totalIons <= 0) return baseB;
+  
+  const weightedB = baseB * (
+    (monovalent / totalIons) * 1.0 +
+    (divalent / totalIons) * 0.6 +
+    (silica / totalIons) * 0.8 +
+    (boron / totalIons) * 1.4
+  );
+  
+  return weightedB;
+};
+
+/**
+ * Validate expected seawater performance (QUALITY CHECK)
+ * For TDS=28000, Recovery=40%: Expect Rejection 97-99%, Permeate 300-700 mg/L
+ * @param {object} params - {feedTds, recovery, rejectionPercent, permeateConc}
+ * @returns {object} Performance assessment
+ */
+export const validateSeawaterPerformance = (params) => {
+  const {
+    feedTds = 28000,
+    rejectionPercent = 99,
+    permeateConc = 400
+  } = params;
+  
+  const issues = [];
+  const warnings = [];
+  
+  const MIN_REJECTION = 97;
+  const MAX_REJECTION = 99.5;
+  const MAX_PERMEATE_TDS = 1500;
+  
+  if (rejectionPercent < MIN_REJECTION) {
+    issues.push(`Rejection ${rejectionPercent.toFixed(2)}% < acceptable minimum ${MIN_REJECTION}%`);
+  }
+  
+  if (rejectionPercent > MAX_REJECTION) {
+    warnings.push(`Rejection ${rejectionPercent.toFixed(2)}% seems unrealistically high`);
+  }
+  
+  if (permeateConc > MAX_PERMEATE_TDS) {
+    issues.push(`Permeate TDS ${permeateConc.toFixed(0)} mg/L > max ~${MAX_PERMEATE_TDS} mg/L`);
+  }
+  
+  const expectedPermeate = feedTds * (1 - rejectionPercent / 100);
+  const permeateDeviation = Math.abs(permeateConc - expectedPermeate) / expectedPermeate * 100;
+  
+  if (permeateDeviation > 20) {
+    warnings.push(`Permeate TDS deviation ${permeateDeviation.toFixed(1)}% from expected`);
+  }
+  
+  return {
+    valid: issues.length === 0,
+    issues,
+    warnings,
+    rejectionPercent,
+    permeateConc,
+    expectedPermeate: expectedPermeate.toFixed(0)
+  };
+};
+
 // ============================================
 // DYNAMIC A & B NORMALIZATION ENGINE
 // ============================================
@@ -581,8 +941,9 @@ export const calculateTCF = (tempCelsius, type = 'A') => {
 };
 
 /**
- * Calculate dynamic A-value with temperature and aging
- * @param {object} params - {aValue25, tempCelsius, fluxDeclinePercent, membraneAgeYears}
+ * Calculate dynamic A-value with temperature, fouling, and aging (INDUSTRIAL GRADE)
+ * Acorrected = Aref × TCF × foulingFactor × agingFactor
+ * @param {object} params - {aValue25, tempCelsius, fluxDeclinePercent, membraneAgeYears, foulingFactor}
  * @returns {number} Actual A-value at operating conditions
  */
 export const calculateDynamicAValue = (params) => {
@@ -590,28 +951,32 @@ export const calculateDynamicAValue = (params) => {
     aValue25,
     tempCelsius = 25,
     fluxDeclinePercent = 0,
-    membraneAgeYears = 0
+    membraneAgeYears = 0,
+    foulingFactor = 1.0
   } = params;
   
   const tcf = calculateTCF(tempCelsius, 'A');
   const agingFactor = 1 - (fluxDeclinePercent / 100) * membraneAgeYears;
   
-  return aValue25 * tcf * Math.max(agingFactor, 0.7);
+  return aValue25 * tcf * Math.max(agingFactor, 0.7) * foulingFactor;
 };
 
 /**
- * Calculate dynamic B-value with temperature correction
- * @param {object} params - {bValue25, tempCelsius}
+ * Calculate dynamic B-value with temperature correction (INDUSTRIAL GRADE)
+ * Includes ionic weighting for different solutes
+ * @param {object} params - {bValue25, tempCelsius, ionicWeighting, foulingFactor}
  * @returns {number} Actual B-value at operating conditions
  */
 export const calculateDynamicBValue = (params) => {
   const {
     bValue25,
-    tempCelsius = 25
+    tempCelsius = 25,
+    ionicWeighting = 1.0,
+    foulingFactor = 1.0
   } = params;
   
   const tcf = calculateTCF(tempCelsius, 'B');
-  return bValue25 * tcf;
+  return bValue25 * tcf * ionicWeighting * foulingFactor;
 };
 
 /**
@@ -770,27 +1135,7 @@ export const calculateFluxImproved = (params) => {
   return aValueActual * Math.max(ndp, 0);
 };
 
-/**
- * Calculate salt passage with improved B-value method
- * J_s = B_actual × (C_avg)
- * @param {number} bValueActual - B-value at operating conditions
- * @param {number} avgFeedConcentration - Average feed concentration in mg/L
- * @returns {number} Salt passage in mg/L
- */
-export const calculateSaltPassageAdvanced = (bValueActual, avgFeedConcentration) => {
-  return bValueActual * avgFeedConcentration;
-};
 
-/**
- * Calculate permeate concentration from salt passage
- * @param {number} fluxLmh - Permeate flux in LMH
- * @param {number} saltPassageMgL - Salt passage in mg/L
- * @returns {number} Permeate concentration in mg/L
- */
-export const calculatePermeateFromSaltPassage = (fluxLmh, saltPassageMgL) => {
-  if (fluxLmh <= 0) return 0;
-  return saltPassageMgL / fluxLmh;
-};
 
 // ============================================
 // STAGE-BY-STAGE HYDRAULIC BALANCING
@@ -810,7 +1155,6 @@ export const calculateStageHydraulics = (params) => {
     feedPressure,
     feedOsmotic,
     feedConc,
-    feedIons = {},
     recovery = 0.5,
     membrane,
     tempCelsius = 25,
@@ -827,14 +1171,14 @@ export const calculateStageHydraulics = (params) => {
   const logMeanCF = calculateLogMeanCF(recovery);
   
   const dynamicAValue = calculateDynamicAValue({
-    aValue25: membrane.aValue,
+    aValue25: membrane.transport?.aValueRef || membrane.aValue || 3.2,
     tempCelsius,
     fluxDeclinePercent,
     membraneAgeYears
   });
   
   const dynamicBValue = calculateDynamicBValue({
-    bValue25: membrane.membraneB,
+    bValue25: membrane.transport?.membraneBRef || membrane.membraneB || 0.14,
     tempCelsius
   });
   
@@ -848,9 +1192,13 @@ export const calculateStageHydraulics = (params) => {
     membrane.nominalFlowDP || 15.5
   );
   
-  const concentration = feedConc * logMeanCF;
-  const concentrateOsmotic = calculateOsmoticPressure(concentration);
-  const avgFeedOsmotic = (feedOsmotic + concentrateOsmotic) / 2;
+  const isSeawater = feedConc >= 10000;
+  
+  const osmPressureData = calculateAverageOsmoticPressureLogMean(feedConc, recovery, 'bar', isSeawater);
+  const concentrateTds = osmPressureData.concentrateTds;
+  const logMeanConc = osmPressureData.logMeanConc;
+  
+  const avgFeedOsmotic = osmPressureData.avgOsmotic;
   
   const permeateFlux = calculateFluxImproved({
     aValueActual: dynamicAValue,
@@ -859,9 +1207,21 @@ export const calculateStageHydraulics = (params) => {
     systemDP: pressureDrop * vessels
   });
   
-  const avgFeedConc = feedConc * logMeanCF;
-  const saltPassage = calculateSaltPassageAdvanced(dynamicBValue, avgFeedConc);
-  const permeateConc = calculatePermeateFromSaltPassage(permeateFlux, saltPassage);
+  // FIXED: Calculate beta using actual flux (not incorrect feedConc/100)
+  const concentrationPolarization = calculateConcentrationPolarization({
+    fluxLmh: Math.max(permeateFlux, 1),
+    spacerMil: membrane.hydraulics?.spacerMil || 34,
+    simplified: true
+  });
+  
+  const permeateConc = calculatePermeateConcentrationIndustrial({
+    fluxLmh: permeateFlux,
+    bValue: dynamicBValue,
+    feedConc,
+    concentrateConc: concentrateTds,
+    beta: concentrationPolarization
+  });
+  const rejectionPercent = calculateRejectionPercent(feedConc, permeateConc);
   
   return {
     stageIndex,
@@ -870,8 +1230,11 @@ export const calculateStageHydraulics = (params) => {
     concentrateFlow,
     feedPressure,
     feedOsmotic,
+    osmPressureData,
+    logMeanConc,
+    concentrationPolarization,
     avgFeedOsmotic,
-    permeateOsmotic: calculateOsmoticPressure(permeateConc),
+    permeateOsmotic: calculateOsmoticPressure(permeateConc, 'bar', isSeawater),
     pressureDrop: pressureDrop * vessels,
     flux: permeateFlux,
     recovery,
@@ -880,13 +1243,14 @@ export const calculateStageHydraulics = (params) => {
     dynamicBValue,
     feedConc,
     permeateConc,
-    concentrateConc: concentration,
-    saltPassage,
+    concentrateConc: concentrateTds,
+    rejectionPercent,
     tempCelsius,
     vessels,
     elementsPerVessel,
     elements,
-    flowPerVessel
+    flowPerVessel,
+    isSeawater
   };
 };
 
@@ -951,7 +1315,8 @@ export const designMultiStageSystem = (params) => {
     
     currentFlow = stageResult.concentrateFlow;
     currentPressure = currentPressure - stageResult.pressureDrop;
-    currentOsmotic = calculateOsmoticPressure(stageResult.concentrateConc);
+    const isSeawater = stageResult.concentrateConc >= 10000;
+    currentOsmotic = calculateOsmoticPressure(stageResult.concentrateConc, 'bar', isSeawater);
     currentConc = stageResult.concentrateConc;
   }
   
@@ -1029,4 +1394,247 @@ export const validateMultiStageDesign = (stages, targetRecovery, finalPressure) 
     issues,
     warnings: []
   };
+};
+
+// ============================================
+// 9-STEP RO CALCULATION PROCEDURE (IMS/WAVE Compatible)
+// ============================================
+
+/**
+ * STEP 1: Calculate permeate and concentrate flows
+ * @param {number} feedFlow - Feed flow in m³/h
+ * @param {number} recovery - Recovery fraction (0-1)
+ * @returns {object} {permeateFlow, concentrateFlow}
+ */
+export const step1_FlowBalance = (feedFlow, recovery) => {
+  const permeateFlow = recovery * feedFlow;
+  const concentrateFlow = feedFlow - permeateFlow;
+  return { permeateFlow, concentrateFlow };
+};
+
+/**
+ * STEP 2: Initial concentrate TDS approximation + Step 7: Refine with exact mass balance
+ * Two-step process:
+ * 1. Initial: Cc = Cf / (1 - R)
+ * 2. Refined (after Cp calculated): Cc = (Qf×Cf - Qp×Cp) / Qc
+ * @param {number} feedTds - Feed TDS
+ * @param {number} recovery - Recovery fraction
+ * @param {number} permeateFlow - Permeate flow
+ * @param {number} concentrateFlow - Concentrate flow
+ * @param {number} permeateTds - Permeate TDS (for refinement)
+ * @returns {object} {initial, refined}
+ */
+export const step2_ConcentrateTDS = (feedTds, recovery, permeateFlow, concentrateFlow, permeateTds = null) => {
+  const initial = feedTds / (1 - Math.min(recovery, 0.99));
+  
+  let refined = initial;
+  if (permeateTds !== null && concentrateFlow > 0) {
+    refined = (feedTds - (permeateFlow / (permeateFlow + concentrateFlow)) * permeateTds) / 
+              (concentrateFlow / (permeateFlow + concentrateFlow));
+  }
+  
+  return { initial, refined };
+};
+
+/**
+ * STEP 3: Calculate total membrane area and flux
+ * @param {number} numMembranes - Total number of membrane elements
+ * @param {number} areaPerElement - Area per element in m²
+ * @param {number} permeateFlow - Permeate flow in m³/h
+ * @returns {object} {totalArea, fluxLmh}
+ */
+export const step3_MembraneAreaFlux = (numMembranes, areaPerElement, permeateFlow) => {
+  const totalArea = numMembranes * areaPerElement;
+  const fluxLmh = totalArea > 0 ? (permeateFlow * 1000) / totalArea : 0;
+  return { totalArea, fluxLmh };
+};
+
+/**
+ * STEP 4: Calculate average osmotic pressure
+ * π_feed = 0.0008 × TDS (bar)
+ * π_concentrate = 0.0008 × TDS_concentrate
+ * π_avg = (π_feed + π_concentrate) / 2
+ * @param {number} feedTds - Feed TDS in mg/L
+ * @param {number} concentrateTds - Concentrate TDS in mg/L
+ * @returns {object} {feedOsmotic, concentrateOsmotic, average}
+ */
+export const step4_OsmoticPressure = (feedTds, concentrateTds) => {
+  const feedOsmotic = 0.0008 * feedTds;
+  const concentrateOsmotic = 0.0008 * concentrateTds;
+  const average = (feedOsmotic + concentrateOsmotic) / 2;
+  return { feedOsmotic, concentrateOsmotic, average };
+};
+
+/**
+ * STEP 5: Calculate required feed pressure
+ * ΔP = J/A + π_avg
+ * Where J is flux in LMH, A is A-value in LMH/bar
+ * @param {number} flux - Flux in LMH
+ * @param {number} aValue - A-value in LMH/bar
+ * @param {number} avgOsmotic - Average osmotic pressure in bar
+ * @returns {number} Feed pressure in bar
+ */
+export const step5_FeedPressure = (flux, aValue, avgOsmotic) => {
+  const ndp = aValue > 0 ? flux / aValue : 0;
+  return ndp + avgOsmotic;
+};
+
+/**
+ * STEP 6: Calculate permeate TDS using B/J model
+ * Cp = (B / J) × C_avg
+ * Where C_avg = (Cf + Cc) / 2
+ * @param {number} membraneB - B coefficient in LMH
+ * @param {number} flux - Flux in LMH
+ * @param {number} feedTds - Feed TDS
+ * @param {number} concentrateTds - Concentrate TDS
+ * @returns {number} Permeate TDS in mg/L
+ */
+export const step6_PermeateTDS = (membraneB, flux, feedTds, concentrateTds) => {
+  if (flux <= 0) return 0;
+  const avgConc = (feedTds + concentrateTds) / 2;
+  return (membraneB / flux) * avgConc;
+};
+
+/**
+ * STEP 8: Calculate salt rejection
+ * R = (1 - Cp/Cf) × 100
+ * @param {number} permeateTds - Permeate TDS
+ * @param {number} feedTds - Feed TDS
+ * @returns {number} Rejection percentage (0-100)
+ */
+export const step8_SaltRejection = (permeateTds, feedTds) => {
+  if (feedTds <= 0) return 0;
+  return (1 - (permeateTds / feedTds)) * 100;
+};
+
+/**
+ * STEP 9: Calculate concentrate pressure
+ * ΔP_drop ≈ k × (Q_vessel)^exponent
+ * P_concentrate = P_feed - ΔP_drop
+ * @param {number} feedPressure - Feed pressure in bar
+ * @param {number} flowPerVessel - Flow per vessel in m³/h
+ * @param {number} numElements - Number of elements per vessel
+ * @param {number} dpCoefficient - Pressure drop coefficient (typical 0.0042)
+ * @param {number} dpExponent - Pressure drop exponent (typical 1.22)
+ * @returns {object} {pressureDrop, concentratePressure}
+ */
+export const step9_ConcentratePressure = (feedPressure, flowPerVessel, numElements, dpCoefficient = 0.0042, dpExponent = 1.22) => {
+  const flowFactor = Math.pow(Math.max(flowPerVessel, 0.01), dpExponent);
+  const pressureDrop = dpCoefficient * flowFactor * numElements;
+  const concentratePressure = Math.max(feedPressure - pressureDrop, 0.01);
+  return { pressureDrop, concentratePressure };
+};
+
+// ============================================
+// SINGLE-PASS RO STAGE ENGINE (INDUSTRIAL)
+// ============================================
+
+/**
+ * PHYSICALLY CONSISTENT RO STAGE ENGINE
+ * Implements the 10-step industrial calculation procedure.
+ * 
+ * @param {object} inputs - { Qf, Cf, R, membraneType, T, A_ref, B_ref, Area, spacerThickness, elementsPerVessel, vesselsPerStage, waterType }
+ * @returns {object} Results of the RO stage calculation
+ */
+export const calculateROStage = (inputs) => {
+  const {
+    Qf,                 // Feed Flow (m3/h)
+    Cf,                 // Feed TDS (mg/L)
+    R,                  // Permeate Recovery (fraction 0-1)
+    T,                  // Temperature (°C)
+    A_ref,              // Membrane A-value at 25°C (LMH/bar)
+    B_ref,              // Membrane B-value (LMH)
+    Area,               // Membrane Area per element (m2)
+    elementsPerVessel = 6,
+    vesselsPerStage = 1
+  } = inputs;
+
+  // STEP 2 — MASS BALANCE (ONLY ONCE)
+  const Qp = Qf * R;
+  const Qc = Qf - Qp;
+  const Cc = Cf / (1 - Math.min(R, 0.99));
+  // Do NOT apply beta here.
+
+  // STEP 3 — LOG-MEAN BULK CONCENTRATION
+  // Cavg = (Cc - Cf) / ln(Cc/Cf)
+  const Cavg = (Cc - Cf) / Math.log(Cc / Cf);
+
+  // STEP 4 — OSMOTIC PRESSURE (LOG-MEAN)
+  // Use high-fidelity seawater polynomial model for accuracy
+  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 10000;
+  const pi_f = calculateOsmoticPressure(Cf, 'bar', isSeawater);
+  const pi_c = calculateOsmoticPressure(Cc, 'bar', isSeawater);
+  
+  let pi_avg;
+  if (Math.abs(pi_c - pi_f) > 0.01) {
+    pi_avg = (pi_c - pi_f) / Math.log(pi_c / pi_f);
+  } else {
+    pi_avg = (pi_f + pi_c) / 2;
+  }
+
+  // STEP 5 — TEMPERATURE CORRECTION (ONLY ONCE)
+  const TCF = Math.exp(2640 * (1 / 298.15 - 1 / (T + 273.15)));
+  const A = A_ref * TCF;
+  // Do NOT apply TCF anywhere else.
+
+  // STEP 6 — PRESSURE DROP (ONLY ONCE)
+  // k_dp is a pressure drop coefficient.
+  // Industrial seawater elements (34-mil) typically exhibit higher ΔP per element at equivalent flow.
+  const k_dp = isSeawater ? 0.0082 : 0.0042; 
+  const Q_vessel = Qf / vesselsPerStage;
+  const deltaP_element = k_dp * Math.pow(Math.max(Q_vessel, 0.01), 1.22);
+  const deltaP_vessel = deltaP_element * elementsPerVessel;
+  const deltaP_system = deltaP_vessel;
+  // Do NOT multiply by vessels again.
+
+  // STEP 8 — FLUX (Calculated from recovery and area)
+  const totalArea = vesselsPerStage * elementsPerVessel * Area;
+  const J = totalArea > 0 ? (Qp * 1000) / totalArea : 0;
+
+  // STEP 7 — NET DRIVING PRESSURE
+  // NDP = Pfeed − πavg − 0.5ΔP
+  // STEP 10 — FEED PRESSURE (IF SOLVING)
+  // Pfeed = J/A + πavg + 0.5ΔP
+  const Pfeed = (J / A) + pi_avg + (0.5 * deltaP_system);
+  const NDP = Pfeed - pi_avg - (0.5 * deltaP_system);
+
+  // STEP 9 — SALT TRANSPORT
+  // k_mt (mass transfer coefficient) depends on spacer and conditions.
+  // Standard industrial value for 34-mil seawater spacer at nominal flow: ~400 LMH
+  const k_mt = 400; 
+  let beta = Math.exp(J / k_mt);
+  beta = Math.max(1.0, Math.min(1.4, beta)); // Clamp: 1.0 ≤ β ≤ 1.4
+  
+  const Csurface = beta * Cavg;
+  const Cp = (B_ref / J) * Csurface;
+  
+  // Rejection: R = 1 − Cp/Cf
+  const rejection = 1 - (Cp / Cf);
+
+  // helper function
+const round2 = (value) => 
+  Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
+
+return {
+  Qp: round2(Qp),
+  Qc: round2(Qc),
+  Cc: round2(Cc),
+  Cavg: round2(Cavg),
+  pi_f: round2(pi_f),
+  pi_c: round2(pi_c),
+  pi_avg: round2(pi_avg),
+  TCF: round2(TCF),
+  A: round2(A),
+  deltaP_system: round2(deltaP_system),
+  NDP: round2(NDP),
+  J: round2(J),
+  beta: round2(beta),
+  Csurface: round2(Csurface),
+  Cp: round2(Cp),
+  rejection: round2(rejection),
+  Pfeed: round2(Pfeed),
+  totalArea: round2(totalArea)
+};
+
+  
 };

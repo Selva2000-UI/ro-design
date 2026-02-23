@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
+import { calculateWaterSaturations } from '../engines/calculationEngine';
 
 // --- TECHNICAL CONSTANTS (Equivalent Weights) ---
-const EQ_WEIGHTS = {
+export const EQ_WEIGHTS = {
   ca: 20.04,
   mg: 12.15,
   na: 23.00,
@@ -18,55 +19,8 @@ const EQ_WEIGHTS = {
   po4: 31.67
 };
 
-const WaterAnalysis = ({ waterData, setWaterData }) => {
+export const WaterAnalysis = ({ waterData, setWaterData, handleApplyTdsProfile }) => {
   
-  const applyTdsProfile = (tdsValue) => {
-  const tds = Number(tdsValue) || 0;
-  if (tds <= 0) return;
-
-  // Equivalent weights
-  const EW_NA = EQ_WEIGHTS.na;   // 23
-  const EW_CL = EQ_WEIGHTS.cl;   // 35.45
-
-  // Step 1: calculate total meq/L (Na–Cl water)
-  const totalMeq = tds / (EW_NA + EW_CL);
-
-  // Step 2: convert meq/L → mg/L
-  const na = totalMeq * EW_NA;
-  const cl = totalMeq * EW_CL;
-
-  const updated = {
-    ca: 0,
-    mg: 0,
-    k: 0,
-    hco3: 0,
-    so4: 0,
-    no3: 0,
-    sio2: 0,
-
-    // calculated ions
-    na: Number(na.toFixed(2)),
-    cl: Number(cl.toFixed(2)),
-
-    // preserve user-entered trace species
-    nh4: waterData.nh4,
-    sr: waterData.sr,
-    ba: waterData.ba,
-    po4: waterData.po4,
-    f: waterData.f,
-    b: waterData.b,
-    co2: waterData.co2,
-    co3: waterData.co3
-  };
-
-  setWaterData({
-    ...waterData,
-    calculatedTds: Math.round(tds),
-    ...updated
-  });
-};
-
-
   // --- LOGIC: IONIC BALANCE CALCULATION ---
   const balanceResults = useMemo(() => {
     const cations = 
@@ -102,42 +56,16 @@ const WaterAnalysis = ({ waterData, setWaterData }) => {
     const cationMeq = cationKeys.reduce((sum, key) => sum + calcMeq(key), 0);
     const anionMeq = anionKeys.reduce((sum, key) => sum + calcMeq(key), 0);
 
-    const tdsKeys = [
-      'ca', 'mg', 'na', 'k', 'nh4', 'ba', 'sr',
-      'co3', 'hco3', 'so4', 'cl', 'f', 'no3', 'po4',
-      'sio2', 'b', 'co2'
-    ];
-    const calculatedTds = tdsKeys.reduce((sum, key) => sum + toNumber(waterData[key]), 0);
-
-    const osmoticPsi = calculatedTds * 0.0115;
-    const caConc = toNumber(waterData.ca);
-    const so4Conc = toNumber(waterData.so4);
-    const baConc = toNumber(waterData.ba);
-    const srConc = toNumber(waterData.sr);
-    const sio2Conc = toNumber(waterData.sio2);
-    const po4Conc = toNumber(waterData.po4);
-    const fConc = toNumber(waterData.f);
-
-    const pCa = 5.0 - Math.log10(Math.max(caConc * 2.5, 0.0001));
-    const pAlk = 5.0 - Math.log10(Math.max(toNumber(waterData.hco3) * 0.82, 0.0001));
-    const C = (Math.log10(Math.max(calculatedTds, 1)) - 1) / 10 + (Number(waterData.temp) > 25 ? 2.0 : 2.3);
-    const phs = C + pCa + pAlk;
-    const lsi = (toNumber(waterData.ph) || 7) - phs;
-    const ccpp = lsi > 0 ? lsi * 50 : 0;
+    const stats = calculateWaterSaturations(waterData, Number(waterData.temp) || 25, Number(waterData.ph) || 7.5);
 
     return {
-      calculatedTds,
-      osmoticPsi,
-      lsi,
-      ccpp,
+      calculatedTds: stats.tds,
+      osmoticPsi: stats.osmoticPressureBar * 14.5038,
+      lsi: stats.lsi,
+      ccpp: stats.ccpp,
       cationMeq,
       anionMeq,
-      caSo4: (caConc * so4Conc) / 1000,
-      baSo4: (baConc * so4Conc) / 50,
-      srSo4: (srConc * so4Conc) / 2000,
-      sio2: (sio2Conc / 120) * 100,
-      ca3po42: (caConc * po4Conc) / 100,
-      caF2: (caConc * fConc) / 500
+      ...stats.saturations
     };
   }, [waterData]);
 
@@ -174,13 +102,13 @@ const WaterAnalysis = ({ waterData, setWaterData }) => {
   const handleInputChange = (key, val) => {
     if (key === 'calculatedTds') {
       setWaterData({ ...waterData, calculatedTds: val });
-      applyTdsProfile(val, waterData.waterType);
+      handleApplyTdsProfile(val);
       return;
     }
     if (key === 'waterType') {
       setWaterData({ ...waterData, waterType: val });
       if (Number(waterData.calculatedTds) > 0) {
-        applyTdsProfile(waterData.calculatedTds, val);
+        handleApplyTdsProfile(waterData.calculatedTds);
       }
       return;
     }
@@ -280,7 +208,7 @@ const WaterAnalysis = ({ waterData, setWaterData }) => {
           <div style={inputGroupStyle}>
             <label style={labelStyle}>Auto-fill from TDS</label>
             <button
-              onClick={() => applyTdsProfile(waterData.calculatedTds, waterData.waterType)}
+              onClick={() => handleApplyTdsProfile(waterData.calculatedTds)}
               style={{ background: '#2ecc71', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem' }}
             >
               Apply
