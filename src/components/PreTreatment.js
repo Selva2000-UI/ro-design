@@ -35,7 +35,7 @@ const PreTreatment = ({ waterData, pretreatment, setPretreatment, systemConfig }
 
     return {
       lsi: LSI.toFixed(2),
-      silicaSat: silicaSat.toFixed(1),
+      silicaSat: silicaSat.toFixed(2),
       cf: CF.toFixed(2),
       isLsiDanger: LSI > 0.2,
       isSilicaDanger: silicaSat > 100

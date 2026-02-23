@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FLOW_TO_M3H } from '../utils/calculatorService';
+import { FLOW_CONVERSION_MAP } from '../utils/calculatorService';
 
 const SystemDesign = ({
   membranes,
@@ -218,8 +218,8 @@ const SystemDesign = ({
 
   const handleFlowUnitChange = (nextUnit) => {
     const prevUnit = systemConfig.flowUnit || 'gpm';
-    const prevFactor = FLOW_TO_M3H[prevUnit] || 1;
-    const nextFactor = FLOW_TO_M3H[nextUnit] || 1;
+    const prevFactor = FLOW_CONVERSION_MAP[prevUnit] || 1;
+    const nextFactor = FLOW_CONVERSION_MAP[nextUnit] || 1;
 
     // Get decimal precision for the new unit (matching Hydranautics)
     const getFlowDecimals = (flowUnit) => {
@@ -290,12 +290,12 @@ const SystemDesign = ({
 
     const stageRows = (projection.stageResults || []).map((row) => `
       <tr>
-        <td style="border: 1px solid #ccc; padding: 6px;">1 - ${row.index}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">1 - ${row.stage}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.vessels}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.feedPressure}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.concPressure}</td>
-        <td style="border: 1px solid #ccc; padding: 6px;">${row.feedFlow}</td>
-        <td style="border: 1px solid #ccc; padding: 6px;">${row.concFlow}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">${row.feedFlowVessel}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">${row.concFlowVessel}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.flux}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.highestFlux}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.highestBeta}</td>
@@ -327,7 +327,7 @@ const SystemDesign = ({
                 <div class="header">Flow Diagram</div>
                 <div class="meta">
                   <div>Project name: ${waterData?.projectName || 'Project'}</div>
-                  <div>Temperature: ${((Number(waterData?.temp || 25) * 9) / 5 + 32).toFixed(1)} °F</div>
+                  <div>Temperature: ${((Number(waterData?.temp || 25) * 9) / 5 + 32).toFixed(2)} °F</div>
                   <div>Date: ${new Date().toLocaleDateString()}</div>
                 </div>
                 <div class="content">
@@ -354,8 +354,8 @@ const SystemDesign = ({
                       <th style="border: 1px solid #ccc; padding: 6px;">Vessels</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Feed (${pUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Conc (${pUnit})</th>
-                      <th style="border: 1px solid #ccc; padding: 6px;">Feed (${fUnit})</th>
-                      <th style="border: 1px solid #ccc; padding: 6px;">Conc (${fUnit})</th>
+                      <th style="border: 1px solid #ccc; padding: 6px;">Feed per vessel (${fUnit})</th>
+                      <th style="border: 1px solid #ccc; padding: 6px;">Conc per vessel (${fUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Flux (${fluxUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest flux (${fluxUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest beta</th>
@@ -901,9 +901,9 @@ const SystemDesign = ({
               </div>
               <div style={{ padding: '12px 16px', borderBottom: '1px solid #d6e1ed', display: 'flex', gap: '20px', fontSize: '0.85rem' }}>
                 <div>Project name: {waterData?.projectName || 'Project'}</div>
-                <div>Temperature: {((Number(waterData?.temp || 25) * 9) / 5 + 32).toFixed(1)} °F</div>
+                <div>Temperature: {((Number(waterData?.temp || 25) * 9) / 5 + 32).toFixed(2)} °F</div>
                 <div>Date: {new Date().toLocaleDateString()}</div>
-                <div>Membrane age, P1: {Number(systemConfig.membraneAge || 0).toFixed(1)} years</div>
+                <div>Membrane age, P1: {Number(systemConfig.membraneAge || 0).toFixed(2)} years</div>
               </div>
               <div style={{ padding: '20px', background: '#fff', overflowX: 'auto' }}>
                 <svg viewBox={`0 0 ${Math.max(900, 250 + (pass1Stages * 150) + 100)} ${Math.max(260, 100 + (pass1Stages * 80))}`} width="100%" height={Math.max(260, 100 + (pass1Stages * 80))}>
@@ -1123,24 +1123,24 @@ const SystemDesign = ({
           <div style={{ marginTop: '12px', background: 'white', padding: '8px', border: '1px solid #c2d1df' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Permeate Concentration (mg/L)</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
-              <div>Ca: {projection.permeateConcentration?.ca ?? '0.000'}</div>
-              <div>Mg: {projection.permeateConcentration?.mg ?? '0.000'}</div>
-              <div>Na: {projection.permeateConcentration?.na ?? '0.000'}</div>
-              <div>K: {projection.permeateConcentration?.k ?? '0.000'}</div>
-              <div>Sr: {projection.permeateConcentration?.sr ?? '0.000'}</div>
-              <div>Ba: {projection.permeateConcentration?.ba ?? '0.000'}</div>
-              <div>HCO3: {projection.permeateConcentration?.hco3 ?? '0.000'}</div>
-              <div>SO4: {projection.permeateConcentration?.so4 ?? '0.000'}</div>
-              <div>Cl: {projection.permeateConcentration?.cl ?? '0.000'}</div>
-              <div>NO3: {projection.permeateConcentration?.no3 ?? '0.000'}</div>
-              <div>SiO2: {projection.permeateConcentration?.sio2 ?? '0.000'}</div>
-              <div>PO4: {projection.permeateConcentration?.po4 ?? '0.000'}</div>
-              <div>F: {projection.permeateConcentration?.f ?? '0.000'}</div>
-              <div>B: {projection.permeateConcentration?.b ?? '0.000'}</div>
-              <div>CO2: {'0.068'}</div>
-              <div>CO3: {projection.permeateConcentration?.co3 ?? '0.000'}</div>
-              <div>pH: {projection.permeateParameters?.ph ?? '0.0'}</div>
-              <div>TDS: {projection.permeateParameters?.tds ?? '0.0'} mg/L</div>
+              <div>Ca: {projection.permeateConcentration?.ca ?? '0.00'}</div>
+              <div>Mg: {projection.permeateConcentration?.mg ?? '0.00'}</div>
+              <div>Na: {projection.permeateConcentration?.na ?? '0.00'}</div>
+              <div>K: {projection.permeateConcentration?.k ?? '0.00'}</div>
+              <div>Sr: {projection.permeateConcentration?.sr ?? '0.00'}</div>
+              <div>Ba: {projection.permeateConcentration?.ba ?? '0.00'}</div>
+              <div>HCO3: {projection.permeateConcentration?.hco3 ?? '0.00'}</div>
+              <div>SO4: {projection.permeateConcentration?.so4 ?? '0.00'}</div>
+              <div>Cl: {projection.permeateConcentration?.cl ?? '0.00'}</div>
+              <div>NO3: {projection.permeateConcentration?.no3 ?? '0.00'}</div>
+              <div>SiO2: {projection.permeateConcentration?.sio2 ?? '0.00'}</div>
+              <div>PO4: {projection.permeateConcentration?.po4 ?? '0.00'}</div>
+              <div>F: {projection.permeateConcentration?.f ?? '0.00'}</div>
+              <div>B: {projection.permeateConcentration?.b ?? '0.00'}</div>
+              <div>CO2: {'0.00'}</div>
+              <div>CO3: {projection.permeateConcentration?.co3 ?? '0.00'}</div>
+              <div>pH: {projection.permeateParameters?.ph ?? '0.00'}</div>
+              <div>TDS: {projection.permeateParameters?.tds ?? '0.00'} mg/L</div>
             </div>
           </div>
 
@@ -1148,18 +1148,18 @@ const SystemDesign = ({
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Concentrate Saturations and Parameters</div>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
-              <div>CaSO4: {projection.concentrateSaturation?.caSo4 ?? '0.0'}%</div>
-              <div>BaSO4: {projection.concentrateSaturation?.baSo4 ?? '0.0'}%</div>
-              <div>SrSO4: {projection.concentrateSaturation?.srSo4 ?? '0.0'}%</div>
-              <div>SiO2: {projection.concentrateSaturation?.sio2 ?? '0.0'}%</div>
+              <div>CaSO4: {projection.concentrateSaturation?.caSo4 ?? '0.00'}%</div>
+              <div>BaSO4: {projection.concentrateSaturation?.baSo4 ?? '0.00'}%</div>
+              <div>SrSO4: {projection.concentrateSaturation?.srSo4 ?? '0.00'}%</div>
+              <div>SiO2: {projection.concentrateSaturation?.sio2 ?? '0.00'}%</div>
               <div>Ca3(PO4)2: {projection.concentrateSaturation?.ca3po42 ?? '0.00'}%</div>
-              <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.0'}%</div>
-              <div>CCPP: {projection.concentrateParameters?.ccpp ?? '0.0'} mg/L</div>
+              <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.00'}%</div>
+              <div>CCPP: {projection.concentrateParameters?.ccpp ?? '0.00'} mg/L</div>
               {/* <div>Langelier: {projection.concentrateParameters?.langelier ?? '0.00'}</div> */}
               <div>Langelier: { '0.00'}</div>
-              <div>pH: {projection.concentrateParameters?.ph ?? '0.0'}</div>
-              <div>TDS: {projection.concentrateParameters?.tds ?? '0.0'} mg/L</div>
-              <div>Osmotic: {projection.concentrateParameters?.osmoticPressure ?? '0.0'} {pUnit}</div>
+              <div>pH: {projection.concentrateParameters?.ph ?? '0.00'}</div>
+              <div>TDS: {projection.concentrateParameters?.tds ?? '0.00'} mg/L</div>
+              <div>Osmotic: {projection.concentrateParameters?.osmoticPressure ?? '0.00'} {pUnit}</div>
             </div>
           </div>
 

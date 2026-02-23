@@ -25,8 +25,8 @@ const PostTreatment = ({ projection, postTreatment, setPretreatment, setPostTrea
     return {
       finalPh: finalPh.toFixed(2),
       isCorrosive,
-      monthlyUsageKg: monthlyUsageKg.toFixed(1),
-      permeateFlow: permeateFlow.toFixed(1)
+      monthlyUsageKg: monthlyUsageKg.toFixed(2),
+      permeateFlow: permeateFlow.toFixed(2)
     };
   }, [postTreatment, projection]);
 

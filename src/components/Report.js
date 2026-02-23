@@ -21,8 +21,8 @@ const Report = ({
   const causticDose = Number(postTreatment?.causticDose || 0);
 
   // Monthly Calculations
-  const monthlyAS = ((feedFlow * asDose * 24 * 30) / 1000).toFixed(1);
-  const monthlyCaustic = ((feedFlow * causticDose * 24 * 30) / 1000).toFixed(1);
+  const monthlyAS = ((feedFlow * asDose * 24 * 30) / 1000).toFixed(2);
+  const monthlyCaustic = ((feedFlow * causticDose * 24 * 30) / 1000).toFixed(2);
 
   const sectionStyle = { marginBottom: '25px', border: '1px solid #004a80', borderRadius: '4px', overflow: 'hidden', backgroundColor: '#fff' };
   const headerStyle = { backgroundColor: '#004a80', color: '#fff', padding: '12px 15px', fontWeight: 'bold' };
