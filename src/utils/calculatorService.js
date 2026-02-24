@@ -216,6 +216,7 @@ export const calculateSystem = (inputs) => {
       tdsPerm: stageRes.Cp.toFixed(2),
       tdsConc: stageRes.Cc.toFixed(2),
       phPerm: stageRes.permeatePh.toFixed(2),
+      pi_c: stageRes.pi_c,
       pressureUnit: pUnit,
       fluxUnit: fluxUnit
     });
@@ -255,6 +256,9 @@ export const calculateSystem = (inputs) => {
   const permeatePh = totalWeightedPh / (totalPermeateFlowUnits || 1);
 
   const concIons = stageIonsMap.length > 0 ? stageIonsMap[stageIonsMap.length - 1].concentrate : { ...feedIons };
+  const lastStageRes = stageResults.length > 0 ? stageResults[stageResults.length - 1] : null;
+  const concentrateOsmotic = lastStageRes ? lastStageRes.pi_c : 0;
+  
   const cfActual = 1 / (1 - Math.min(systemRecovery, 0.99));
 
   const feedSaturations = calculateWaterSaturations(feedIons, temp, inputs.feedPh || 7.0);
@@ -340,7 +344,7 @@ export const calculateSystem = (inputs) => {
     },
     concentrateParameters: {
       tds: currentFeedTds,
-      osmoticPressure: concSaturations.osmoticPressureBar * (isImperial ? BAR_TO_PSI : 1),
+      osmoticPressure: concentrateOsmotic * (isImperial ? BAR_TO_PSI : 1),
       ph: concPh.toFixed(2),
       ions: concIons,
       saturation: concSaturations

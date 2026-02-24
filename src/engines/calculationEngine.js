@@ -273,7 +273,7 @@ export const calculateWaterSaturations = (ions, temp, ph) => {
     lsi: Number(lsi.toFixed(2)),
     phs: Number(phs.toFixed(2)),
     ccpp: Number(ccpp.toFixed(2)),
-    osmoticPressureBar: Number((tds * 0.00074).toFixed(3)),
+    osmoticPressureBar: Number((tds * (tds > 15000 ? 0.0007936 : 0.00074)).toFixed(3)),
     saturations: {
       caSo4: Number(((ca * so4) / 1000).toFixed(2)),
       baSo4: Number(((ba * so4) / 50).toFixed(2)),
@@ -841,7 +841,8 @@ export const calculateROStage = (inputs) => {
   
   const getOsmotic = (tds) => {
     if (isSeawater) {
-        return (0.0008 * tds) + (1.5e-9 * tds * tds);
+        // Seawater linear factor to match user examples: approx 0.7936 bar per 1000 mg/l
+        return 0.0007936 * tds;
     }
     return 0.00074 * tds;
   };
@@ -967,6 +968,7 @@ return {
     highestFlux: round2(highestFlux),
     highestBeta: round2(highestBeta),
     permeatePh: round2(permPh),
+    pi_c: round2(pi_c),
     permeateIons,
     concentrateIons
   };

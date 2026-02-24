@@ -254,10 +254,10 @@ const App = () => {
       if (m.id === 'swtds32k8080') {
         return { 
           ...m, 
-          aValue: 1.16, 
+          aValue: 1.005, 
           membraneB: 0.0547,
           transport: {
-            aValueRef: 1.16,
+            aValueRef: 1.005,
             membraneBRef: 0.0547,
             soluteBFactors: {
               monovalent: 1.0,
