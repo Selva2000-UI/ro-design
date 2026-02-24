@@ -1139,7 +1139,7 @@ const SystemDesign = ({
               <div>B: {(projection.permeateParameters?.ions?.b ?? 0).toFixed(3)}</div>
               <div>CO2: {(projection.permeateParameters?.ions?.co2 ?? 0).toFixed(3)}</div>
               <div>CO3: {(projection.permeateParameters?.ions?.co3 ?? 0).toFixed(3)}</div>
-              <div>pH: {Number(projection.permeateParameters?.ph || 7).toFixed(2)}</div>
+              <div>pH: {Number(projection.permeateParameters?.ph || 7).toFixed(1)}</div>
               <div>TDS: {Number(projection.permeateParameters?.tds || 0).toFixed(2)} mg/l</div>
             </div>
           </div>
@@ -1154,6 +1154,7 @@ const SystemDesign = ({
               <div>SiO2: {projection.concentrateSaturation?.sio2 ?? '0.00'}%</div>
               <div>Ca3(PO4)2: {projection.concentrateSaturation?.ca3po42 ?? '0.00'}%</div>
               <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.00'}%</div>
+              <div>Osmotic pressure: {Number(projection.concentrateParameters?.osmoticPressure || 0).toFixed(1)} {pUnit}</div>
               <div>CCPP: {projection.concentrateParameters?.ccpp ?? '0.00'} mg/L</div>
               {/* <div>Langelier: {projection.concentrateParameters?.langelier ?? '0.00'}</div> */}
               <div>Langelier: { '0.00'}</div>

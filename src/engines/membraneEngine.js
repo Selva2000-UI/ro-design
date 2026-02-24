@@ -600,7 +600,7 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.SEAWATER,
     areaM2: 37.16,
     transport: {
-      aValueRef: 1.16,
+      aValueRef: 1.005,
       membraneBRef: 0.0547,
       soluteBFactors: {
         monovalent: 1.0,
