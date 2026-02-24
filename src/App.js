@@ -30,26 +30,26 @@ const App = () => {
   const DEFAULT_SYSTEM_CONFIG = useMemo(() => ({
     // Inputs (follow IMSDesign layout: System-level total + trains; Train values are calculated)
     feedPh: 7.0,
-    recovery: 52,
-    flowUnit: 'gpm', // gpm/gpd/mgd/migd/m3/h/m3/d/mld
-    feedFlow: 100,
-    averageFlux: 15.0,
-    permeateFlow: 0, // train permeate flow in selected unit
+    recovery: 40,
+    flowUnit: 'm3/h', // gpm/gpd/mgd/migd/m3/h/m3/d/mld
+    feedFlow: 35,
+    averageFlux: 15.7,
+    permeateFlow: 14, // train permeate flow in selected unit
     numTrains: 1,
 
     // Array specification
     stage1Vessels: 4,
     stage2Vessels: 0,
     elementsPerVessel: 6,
-    membraneModel: 'cpa3',
+    membraneModel: 'swtds32k8080',
     pass1Stages: 1, // Initially only 1 stage is active
     stages: [
-      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 4 },
-      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
-      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
-      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
-      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 },
-      { membraneModel: 'cpa3', elementsPerVessel: 6, vessels: 0 }
+      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 4 },
+      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 0 }
     ],
 
     // Flux display
@@ -90,15 +90,15 @@ const App = () => {
   };
   const [waterData, setWaterData] = useState({
     projectId: createProjectId(),
-    projectName: 'New_Project_V3',
+    projectName: 'Seawater_RO_Design',
     clientName: '',
     calculatedBy: '',
     pretreatment: 'Conventional',
-    waterType: 'Well Water',
-    calculatedTds: 0,
-    temp: 25, ph: 7.5, ca: 60, mg: 20, na: 250, k: 15,
-    hco3: 250, so4: 100, cl: 300, no3: 25, sio2: 20,
-    nh4: 0, sr: 0, ba: 0, po4: 0, f: 0, b: 0, co2: 0, co3: 0
+    waterType: 'Sea Well',
+    calculatedTds: 20000,
+    temp: 25, ph: 7.0, ca: 0, mg: 0, na: 7869.96, k: 0,
+    hco3: 0.5, so4: 0, cl: 12129.94, no3: 0, sio2: 0,
+    nh4: 0, sr: 0, ba: 0, po4: 0, f: 0, b: 0, co2: 0.056, co3: 0.001
   });
 
   const [systemConfig, setSystemConfig] = useState(DEFAULT_SYSTEM_CONFIG);
@@ -250,6 +250,24 @@ const App = () => {
     setMembranes(prev => prev.map(m => {
       if (m.id === 'cpa3' && (m.aValue !== 3.1414 || m.dpExponent !== 1.3078)) {
         return { ...m, aValue: 3.1414, areaM2: 37.17, dpExponent: 1.3078 };
+      }
+      if (m.id === 'swtds32k8080') {
+        return { 
+          ...m, 
+          aValue: 1.16, 
+          membraneB: 0.0547,
+          transport: {
+            aValueRef: 1.16,
+            membraneBRef: 0.0547,
+            soluteBFactors: {
+              monovalent: 1.0,
+              divalent: 0.6,
+              silica: 0.8,
+              boron: 1.4,
+              co2: 999
+            }
+          }
+        };
       }
       return m;
     }));

@@ -1104,9 +1104,9 @@ const SystemDesign = ({
                       {row.concPressure}
                     </td>
                     <td style={{ border: '1px solid #ccc' }}>
-                      {row.feedFlow}
+                      {row.feedFlowVessel}
                     </td>
-                    <td style={{ border: '1px solid #ccc' }}>{row.concFlow}</td>
+                    <td style={{ border: '1px solid #ccc' }}>{row.concFlowVessel}</td>
                     <td style={{ border: '1px solid #ccc' }}>{row.flux}</td>
                     <td style={{ border: '1px solid #ccc', background: Number(row.highestFlux) > (isGpm ? 20 : 34) ? '#f8d7da' : 'transparent' }}>
                       {row.highestFlux}
@@ -1123,24 +1123,24 @@ const SystemDesign = ({
           <div style={{ marginTop: '12px', background: 'white', padding: '8px', border: '1px solid #c2d1df' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Permeate Concentration (mg/L)</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
-              <div>Ca: {projection.permeateConcentration?.ca ?? '0.00'}</div>
-              <div>Mg: {projection.permeateConcentration?.mg ?? '0.00'}</div>
-              <div>Na: {projection.permeateConcentration?.na ?? '0.00'}</div>
-              <div>K: {projection.permeateConcentration?.k ?? '0.00'}</div>
-              <div>Sr: {projection.permeateConcentration?.sr ?? '0.00'}</div>
-              <div>Ba: {projection.permeateConcentration?.ba ?? '0.00'}</div>
-              <div>HCO3: {projection.permeateConcentration?.hco3 ?? '0.00'}</div>
-              <div>SO4: {projection.permeateConcentration?.so4 ?? '0.00'}</div>
-              <div>Cl: {projection.permeateConcentration?.cl ?? '0.00'}</div>
-              <div>NO3: {projection.permeateConcentration?.no3 ?? '0.00'}</div>
-              <div>SiO2: {projection.permeateConcentration?.sio2 ?? '0.00'}</div>
-              <div>PO4: {projection.permeateConcentration?.po4 ?? '0.00'}</div>
-              <div>F: {projection.permeateConcentration?.f ?? '0.00'}</div>
-              <div>B: {projection.permeateConcentration?.b ?? '0.00'}</div>
-              <div>CO2: {'0.00'}</div>
-              <div>CO3: {projection.permeateConcentration?.co3 ?? '0.00'}</div>
-              <div>pH: {projection.permeateParameters?.ph ?? '0.00'}</div>
-              <div>TDS: {projection.permeateParameters?.tds ?? '0.00'} mg/L</div>
+              <div>Ca: {(projection.permeateParameters?.ions?.ca ?? 0).toFixed(3)}</div>
+              <div>Mg: {(projection.permeateParameters?.ions?.mg ?? 0).toFixed(3)}</div>
+              <div>Na: {(projection.permeateParameters?.ions?.na ?? 0).toFixed(3)}</div>
+              <div>K: {(projection.permeateParameters?.ions?.k ?? 0).toFixed(3)}</div>
+              <div>Sr: {(projection.permeateParameters?.ions?.sr ?? 0).toFixed(3)}</div>
+              <div>Ba: {(projection.permeateParameters?.ions?.ba ?? 0).toFixed(3)}</div>
+              <div>HCO3: {(projection.permeateParameters?.ions?.hco3 ?? 0).toFixed(3)}</div>
+              <div>SO4: {(projection.permeateParameters?.ions?.so4 ?? 0).toFixed(3)}</div>
+              <div>Cl: {(projection.permeateParameters?.ions?.cl ?? 0).toFixed(3)}</div>
+              <div>NO3: {(projection.permeateParameters?.ions?.no3 ?? 0).toFixed(3)}</div>
+              <div>SiO2: {(projection.permeateParameters?.ions?.sio2 ?? 0).toFixed(3)}</div>
+              <div>PO4: {(projection.permeateParameters?.ions?.po4 ?? 0).toFixed(3)}</div>
+              <div>F: {(projection.permeateParameters?.ions?.f ?? 0).toFixed(3)}</div>
+              <div>B: {(projection.permeateParameters?.ions?.b ?? 0).toFixed(3)}</div>
+              <div>CO2: {(projection.permeateParameters?.ions?.co2 ?? 0).toFixed(3)}</div>
+              <div>CO3: {(projection.permeateParameters?.ions?.co3 ?? 0).toFixed(3)}</div>
+              <div>pH: {Number(projection.permeateParameters?.ph || 7).toFixed(2)}</div>
+              <div>TDS: {Number(projection.permeateParameters?.tds || 0).toFixed(2)} mg/l</div>
             </div>
           </div>
 
