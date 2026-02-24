@@ -169,10 +169,10 @@ const App = () => {
         concentrateParameters: results.concentrateParameters,
         permeateParameters: results.permeateParameters,
         feedParameters: results.feedParameters,
-        permeateFlow: results.flowDiagramPoints[2].flow,
+        permeateFlow: results.flowDiagramPoints[3].flow,
         feedFlow: results.flowDiagramPoints[0].flow,
-        concentrateFlow: results.flowDiagramPoints[3].flow,
-        totalPlantProductFlowDisplay: results.flowDiagramPoints[2].flow,
+        concentrateFlow: results.flowDiagramPoints[2].flow,
+        totalPlantProductFlowDisplay: results.flowDiagramPoints[3].flow,
         pumpPressure: results.results.feedPressure,
       });
     } catch (error) {
