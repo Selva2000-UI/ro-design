@@ -11,7 +11,10 @@ import {
   MEMBRANES, 
   getAValue, 
   getMembraneB, 
-  getIonBFactor 
+  getIonBFactor,
+  getKdp,
+  getKmt,
+  getOsmoticCoefficient
 } from '../engines/membraneEngine';
 
 export const BAR_TO_PSI = PRESSURE_CONVERSION.bar_to_psi;
@@ -173,8 +176,12 @@ export const calculateSystem = (inputs) => {
       elementsPerVessel: elements,
       vesselsPerStage: vessels,
       waterType: waterType,
+      feedPh: inputs.feedPh || 7.0,
       feedIons: stageFeedIons,
-      soluteBFactors: membrane.transport?.soluteBFactors || {}
+      soluteBFactors: membrane.transport?.soluteBFactors || {},
+      k_dp: getKdp(membrane),
+      k_mt: getKmt(membrane),
+      osmoticCoeff: getOsmoticCoefficient(membrane)
     };
 
     let stageRes;
@@ -195,6 +202,7 @@ export const calculateSystem = (inputs) => {
 
     stageResults.push({
       stage: idx + 1,
+      array: `${idx + 1} - ${idx + 1}`,
       vessels: vessels,
       elements: elements,
       membrane: membrane.name,
@@ -323,6 +331,18 @@ export const calculateSystem = (inputs) => {
   ];
 
   return {
+    system: {
+      trainFlow: trainFeedM3h.toFixed(2),
+      numTrains: trains,
+      totalProductFlow: (totalPermeateM3h * trains).toFixed(2),
+      flowUnit: isImperial ? 'gpm' : 'm3/h',
+      stages: activeStages.map((s, idx) => ({
+        stage: idx + 1,
+        membrane: MEMBRANES[s.membraneModel]?.name || s.membraneModel,
+        elementsPerVessel: s.elementsPerVessel,
+        vessels: s.vessels
+      }))
+    },
     results: {
       avgFluxLMH,
       avgFlux: isImperial ? avgFluxLMH * LMH_TO_GFD : avgFluxLMH,
@@ -342,6 +362,7 @@ export const calculateSystem = (inputs) => {
       ions: permeateIons,
       saturation: permSaturations
     },
+    permeateConcentration: permeateIons,
     concentrateParameters: {
       tds: currentFeedTds,
       osmoticPressure: concentrateOsmotic * (isImperial ? BAR_TO_PSI : 1),
@@ -349,6 +370,8 @@ export const calculateSystem = (inputs) => {
       ions: concIons,
       saturation: concSaturations
     },
+    concentrateConcentration: concIons,
+    concentrateSaturations: concSaturations,
     feedParameters: {
       tds: rawFeedTds,
       ph: inputs.feedPh || 7.0,

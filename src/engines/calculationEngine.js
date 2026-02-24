@@ -275,12 +275,12 @@ export const calculateWaterSaturations = (ions, temp, ph) => {
     ccpp: Number(ccpp.toFixed(2)),
     osmoticPressureBar: Number((tds * (tds > 15000 ? 0.0007936 : 0.00074)).toFixed(3)),
     saturations: {
-      caSo4: Number(((ca * so4) / 1000).toFixed(2)),
-      baSo4: Number(((ba * so4) / 50).toFixed(2)),
-      srSo4: Number(((sr * so4) / 2000).toFixed(2)),
-      sio2: Number(((sio2 / 120) * 100).toFixed(2)),
-      ca3po42: Number(((ca * po4) / 100).toFixed(2)),
-      caF2: Number(((ca * f) / 500).toFixed(2))
+      caSo4: Number(((ca * so4) / 10).toFixed(2)), // as %
+      baSo4: Number(((ba * so4) / 0.5).toFixed(2)), // as %
+      srSo4: Number(((sr * so4) / 20).toFixed(2)), // as %
+      sio2: Number(((sio2 / 120) * 100).toFixed(2)), // as %
+      ca3po42: Number(((ca * po4) / 100).toFixed(2)), // SI
+      caF2: Number(((ca * f) / 5).toFixed(2)) // as %
     }
   };
 };
@@ -819,7 +819,10 @@ export const calculateROStage = (inputs) => {
     Area,               // Membrane Area per element (m2)
     elementsPerVessel = 6,
     vesselsPerStage = 1,
-    feedIons = {}       // Feed Ion composition (optional)
+    feedIons = {},       // Feed Ion composition (optional)
+    k_mt: kMtInput,      // Mass transfer coefficient (optional)
+    k_dp: kDpInput,      // Pressure drop coefficient (optional)
+    osmoticCoeff: osmoticCoeffInput // Osmotic coefficient (optional)
   } = inputs;
 
   // STEP 2 — MASS BALANCE (ONLY ONCE)
@@ -837,9 +840,9 @@ export const calculateROStage = (inputs) => {
 
   // STEP 4 — OSMOTIC PRESSURE (LOG-MEAN)
   const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 10000;
-  const coeff = isSeawater ? 0.0008 : 0.00074;
   
   const getOsmotic = (tds) => {
+    if (osmoticCoeffInput) return osmoticCoeffInput * tds;
     if (isSeawater) {
         // Seawater linear factor to match user examples: approx 0.7936 bar per 1000 mg/l
         return 0.0007936 * tds;
@@ -862,7 +865,7 @@ export const calculateROStage = (inputs) => {
   const A = A_ref * TCF;
 
   // STEP 6 — PRESSURE DROP (ONLY ONCE)
-  const k_dp = isSeawater ? 0.0082 : 0.0042; 
+  const k_dp = kDpInput || (isSeawater ? 0.0082 : 0.0042); 
   const Q_vessel = Qf / vesselsPerStage;
   const deltaP_element = k_dp * Math.pow(Math.max(Q_vessel, 0.01), 1.22);
   const deltaP_vessel = deltaP_element * elementsPerVessel;
@@ -873,7 +876,8 @@ export const calculateROStage = (inputs) => {
   const J = totalArea > 0 ? (Qp * 1000) / totalArea : 0;
 
   // STEP 9 — SALT TRANSPORT (Move up for beta usage)
-  const k_mt = 650; 
+  // Refined k_mt for brackish (160) vs seawater (650) to match industrial benchmarks
+  const k_mt = kMtInput || (isSeawater ? 650 : 160); 
   let beta = Math.exp(J / k_mt);
   beta = Math.max(1.0, Math.min(1.4, beta)); 
   
@@ -887,7 +891,12 @@ export const calculateROStage = (inputs) => {
   // STEP 7 — NET DRIVING PRESSURE (NDP)
   const NDP = Pfeed - pi_surface - (0.5 * deltaP_system);
 
-  const Cp = J > 0 ? (B_ref / J) * Csurface : 0;
+  // TDS-dependent B-factor correction for brackish water
+  // Matches industrial benchmarks: ~0.19 at 2k TDS, ~0.36 at 5k TDS
+  const bFactorTds = isSeawater ? 1.0 : (0.6 + 0.2 * (Cf / 1000));
+  const B_actual = B_ref * bFactorTds;
+
+  const Cp = J > 0 ? (B_actual / J) * Csurface : 0;
   
   const rejection = Cf > 0 ? (1 - (Cp / Cf)) : 1.0;
 
@@ -899,9 +908,9 @@ export const calculateROStage = (inputs) => {
   const highestBeta = Math.exp(highestFlux / k_mt);
 
   // Permeate pH estimation based on CO2/HCO3 ratio
-  // Simplified: Permeate pH drops in seawater due to high bicarbonate rejection vs CO2 passage
-  // In user examples: 20k TDS -> 5.06, 25k TDS -> 5.08
-  const permPh = inputs.feedPh ? Math.max(inputs.feedPh - 2.02 + (Cf / 250000), 5.0) : 7.0;
+  // Refined for brackish vs seawater
+  const phDrop = isSeawater ? 2.02 : 1.4;
+  const permPh = inputs.feedPh ? Math.max(inputs.feedPh - phDrop + (Cf / 25000), 5.0) : 7.0;
 
   // ION REJECTION (If feedIons provided)
   const permeateIons = {};
@@ -913,20 +922,16 @@ export const calculateROStage = (inputs) => {
         const i = ion.toLowerCase();
         const factors = inputs.soluteBFactors || {};
         
+        // Dissolved gases pass 100%
         if (i === 'co2') return factors.co2 || 1000;
         
-        // Use factors from membrane if available, otherwise fallback to defaults
-        if (['ca', 'mg', 'so4', 'ba', 'sr', 'po4'].includes(i)) {
-            return baseB * (factors.divalent || 0.4);
-        }
-        if (['na', 'cl', 'k', 'hco3'].includes(i)) {
-            return baseB * (factors.monovalent || 1.0);
-        }
-        if (['no3', 'f', 'b', 'sio2'].includes(i)) {
-            const factor = i === 'b' ? (factors.boron || 1.6) : (factors.silica || 1.6);
-            return baseB * factor;
-        }
-        return baseB;
+        const bIonBase = baseB * (
+            ['ca', 'mg', 'so4', 'ba', 'sr', 'po4'].includes(i) ? (factors.divalent || 0.4) :
+            ['na', 'cl', 'k', 'hco3'].includes(i) ? (factors.monovalent || 1.0) :
+            (i === 'b' ? (factors.boron || 1.6) : (factors.silica || 1.6))
+        );
+
+        return bIonBase * bFactorTds;
     };
 
     Object.entries(feedIons).forEach(([ion, val]) => {

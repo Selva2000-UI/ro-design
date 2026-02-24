@@ -52,6 +52,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 4.35,
       membraneBRef: 0.14,
+      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -89,7 +90,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.0008 × TDS',
+      coefficient: 0.00074,
+      formula: 'π(bar) = 0.00074 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -113,6 +115,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 3.21,
       membraneBRef: 0.136,
+      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -150,7 +153,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.0008 × TDS',
+      coefficient: 0.00074,
+      formula: 'π(bar) = 0.00074 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -174,6 +178,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 3.35,
       membraneBRef: 0.134,
+      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -211,7 +216,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.0008 × TDS',
+      coefficient: 0.00074,
+      formula: 'π(bar) = 0.00074 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -235,6 +241,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 4.25,
       membraneBRef: 0.139,
+      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -272,7 +279,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.0008 × TDS',
+      coefficient: 0.00074,
+      formula: 'π(bar) = 0.00074 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -296,6 +304,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 4.40,
       membraneBRef: 0.142,
+      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -333,7 +342,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.0008 × TDS',
+      coefficient: 0.00074,
+      formula: 'π(bar) = 0.00074 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -357,8 +367,9 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
     transport: {
-      aValueRef: 3.2,
-      membraneBRef: 0.148,
+      aValueRef: 4.45,
+      membraneBRef: 0.22,
+      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -382,7 +393,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0042,
+      coefficient: 0.0082,
       exponent: 1.22
     },
     designFlux: {
@@ -396,7 +407,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.0008 × TDS',
+      coefficient: 0.0007936,
+      formula: 'π(bar) = 0.0007936 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -417,8 +429,9 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
     transport: {
-      aValueRef: 3.15,
-      membraneBRef: 0.150,
+      aValueRef: 4.45,
+      membraneBRef: 0.22,
+      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -442,7 +455,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0042,
+      coefficient: 0.0082,
       exponent: 1.22
     },
     designFlux: {
@@ -456,7 +469,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.0008 × TDS',
+      coefficient: 0.0007936,
+      formula: 'π(bar) = 0.0007936 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -477,8 +491,9 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.FOULING_RESISTANT,
     areaM2: 37.16,
     transport: {
-      aValueRef: 3.15,
-      membraneBRef: 0.150,
+      aValueRef: 4.85,
+      membraneBRef: 0.20,
+      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -502,7 +517,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0042,
+      coefficient: 0.0082,
       exponent: 1.22
     },
     designFlux: {
@@ -516,7 +531,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      formula: 'π(bar) = 0.0008 × TDS',
+      coefficient: 0.0007936,
+      formula: 'π(bar) = 0.0007936 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -541,6 +557,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 1.05,
       membraneBRef: 0.0547,
+      kMtRef: 650,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -602,6 +619,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 1.005,
       membraneBRef: 0.0547,
+      kMtRef: 650,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -984,6 +1002,33 @@ export const compareMembranes = (mem1, mem2) => {
       winner: mem1.limits?.maxTds > mem2.limits?.maxTds ? 'mem1' : 'mem2' 
     }
   };
+};
+
+/**
+ * Get membrane-specific pressure drop coefficient
+ * @param {object} membrane - Membrane object
+ * @returns {number} Pressure drop coefficient
+ */
+export const getKdp = (membrane) => {
+  return membrane?.pressureDropModel?.coefficient || 0.0042;
+};
+
+/**
+ * Get membrane-specific mass transfer coefficient
+ * @param {object} membrane - Membrane object
+ * @returns {number} Mass transfer coefficient
+ */
+export const getKmt = (membrane) => {
+  return membrane?.transport?.kMtRef || 160;
+};
+
+/**
+ * Get membrane-specific osmotic pressure coefficient
+ * @param {object} membrane - Membrane object
+ * @returns {number} Osmotic coefficient
+ */
+export const getOsmoticCoefficient = (membrane) => {
+  return membrane?.osmoticModel?.coefficient || 0.00074;
 };
 
 /**
