@@ -7,7 +7,12 @@ import {
   FLOW_CONVERSION,
   FLUX_CONVERSION
 } from '../engines/calculationEngine';
-import { MEMBRANES } from '../engines/membraneEngine';
+import { 
+  MEMBRANES, 
+  getAValue, 
+  getMembraneB, 
+  getIonBFactor 
+} from '../engines/membraneEngine';
 
 export const BAR_TO_PSI = PRESSURE_CONVERSION.bar_to_psi;
 export const M3H_TO_GPM = 1 / FLOW_CONVERSION.gpm;
@@ -58,10 +63,12 @@ export const applyTdsProfile = (tdsValue, existingWaterData) => {
  */
 export const calculateEC = (tds) => {
   const t = Number(tds) || 0;
+  if (t >= 30000) return t * 1.54;
+  if (t >= 10000) return t * 1.59;
   if (t >= 2500) return t * 1.83;
   if (t >= 1000) return t * 1.95;
   if (t >= 300) return t * 2.28;
-  if (t >= 50) return t * 2.4;
+  if (t >= 50) return t * 2.2;
   return t * 2.52;
 };
 
@@ -160,13 +167,14 @@ export const calculateSystem = (inputs) => {
       Cf: currentFeedTds,
       R: stageTargetRecovery,
       T: Number(temp) || 25,
-      A_ref: (membrane.transport?.aValueRef || 3.2) * (Number(foulingFactor) || 1.0),
-      B_ref: (membrane.transport?.membraneBRef || 0.14) * spFactor,
+      A_ref: getAValue(membrane) * (Number(foulingFactor) || 1.0),
+      B_ref: getMembraneB(membrane) * spFactor,
       Area: membrane.areaM2 || 37.16,
       elementsPerVessel: elements,
       vesselsPerStage: vessels,
       waterType: waterType,
-      feedIons: stageFeedIons
+      feedIons: stageFeedIons,
+      soluteBFactors: membrane.transport?.soluteBFactors || {}
     };
 
     let stageRes;
@@ -193,20 +201,21 @@ export const calculateSystem = (inputs) => {
       feedFlow: isImperial ? (currentFeedM3h * M3H_TO_GPM).toFixed(2) : currentFeedM3h.toFixed(2),
       permeateFlow: isImperial ? (stageRes.Qp * M3H_TO_GPM).toFixed(2) : stageRes.Qp.toFixed(2),
       concFlow: isImperial ? (stageRes.Qc * M3H_TO_GPM).toFixed(2) : stageRes.Qc.toFixed(2),
-      feedFlowVessel: vessels > 0 ? (isImperial ? (currentFeedM3h * M3H_TO_GPM / vessels).toFixed(2) : (currentFeedM3h / vessels).toFixed(2)) : '0.00',
-      concFlowVessel: vessels > 0 ? (isImperial ? (stageRes.Qc * M3H_TO_GPM / vessels).toFixed(2) : (stageRes.Qc / vessels).toFixed(2)) : '0.00',
+      feedFlowVessel: vessels > 0 ?  (currentFeedM3h / vessels).toFixed(2) : '0.00',
+      concFlowVessel: vessels > 0 ? (stageRes.Qc / vessels).toFixed(2) : '0.00',
       feedPressure: isImperial ? (stageRes.Pfeed * BAR_TO_PSI).toFixed(2) : stageRes.Pfeed.toFixed(2),
       concPressure: isImperial ? ((stageRes.Pfeed - stageRes.deltaP_system) * BAR_TO_PSI).toFixed(2) : (stageRes.Pfeed - stageRes.deltaP_system).toFixed(2),
       flux: isImperial ? (stageRes.J * LMH_TO_GFD).toFixed(2) : stageRes.J.toFixed(2),
       avgFluxGFD: isImperial ? (stageRes.J * LMH_TO_GFD).toFixed(2) : (stageRes.J / 1.6976).toFixed(2),
-      highestFlux: isImperial ? (stageRes.J * 1.1 * LMH_TO_GFD).toFixed(2) : (stageRes.J * 1.1).toFixed(2), // Estimated
-      highestBeta: stageRes.beta.toFixed(2),
+      highestFlux: isImperial ? (stageRes.highestFlux * LMH_TO_GFD).toFixed(2) : stageRes.highestFlux.toFixed(2),
+      highestBeta: stageRes.highestBeta.toFixed(2),
       recovery: (stageRes.Qp / currentFeedM3h * 100).toFixed(2),
       rejection: (stageRes.rejection * 100).toFixed(2),
       stageRejection: stageRes.rejection,
       tdsFeed: currentFeedTds.toFixed(2),
       tdsPerm: stageRes.Cp.toFixed(2),
       tdsConc: stageRes.Cc.toFixed(2),
+      phPerm: stageRes.permeatePh.toFixed(2),
       pressureUnit: pUnit,
       fluxUnit: fluxUnit
     });
@@ -231,10 +240,20 @@ export const calculateSystem = (inputs) => {
         const stageQp = Number(s.permeateFlow);
         weightedSum += (stageIonsMap[idx]?.permeate[ion] || 0) * stageQp;
     });
-    permeateIons[ion] = Number((weightedSum / (totalPermeateFlowUnits || 1)).toFixed(3));
+    permeateIons[ion] = Number((weightedSum / (totalPermeateFlowUnits || 1)).toFixed(4));
   });
 
-  const permeateTds = Object.values(permeateIons).reduce((sum, val) => sum + val, 0);
+  const permeateTds = Object.entries(permeateIons).reduce((sum, [key, val]) => {
+    return sum + (key.toLowerCase() === 'co2' ? 0 : val);
+  }, 0);
+  
+  // Flow-weighted average for system permeate pH
+  let totalWeightedPh = 0;
+  stageResults.forEach(s => {
+    totalWeightedPh += Number(s.phPerm) * Number(s.permeateFlow);
+  });
+  const permeatePh = totalWeightedPh / (totalPermeateFlowUnits || 1);
+
   const concIons = stageIonsMap.length > 0 ? stageIonsMap[stageIonsMap.length - 1].concentrate : { ...feedIons };
   const cfActual = 1 / (1 - Math.min(systemRecovery, 0.99));
 
@@ -280,22 +299,23 @@ export const calculateSystem = (inputs) => {
     },
     { 
       id: 3, 
-      name: 'Permeate', 
-      flow: isImperial ? (totalPermeateM3h * trains * M3H_TO_GPM).toFixed(2) : (totalPermeateM3h * trains).toFixed(2), 
-      pressure: isImperial ? (Number(permeatePressure) * BAR_TO_PSI).toFixed(2) : Number(permeatePressure).toFixed(2), 
-      tds: permeateTds.toFixed(2), 
-      ph: '7.00', 
-      ec: calculateEC(permeateTds).toFixed(2) 
-    },
-    { 
-      id: 4, 
       name: 'Concentrate', 
       flow: isImperial ? ((trainFeedM3h - totalPermeateM3h) * trains * M3H_TO_GPM).toFixed(2) : ((trainFeedM3h - totalPermeateM3h) * trains).toFixed(2), 
       pressure: stageResults.length > 0 ? stageResults[stageResults.length - 1].concPressure : '0.00', 
       tds: currentFeedTds.toFixed(2), 
       ph: (7.0 + Math.log10(Math.max(1 / (1 - systemRecovery), 1))).toFixed(2), 
       ec: calculateEC(currentFeedTds).toFixed(2) 
+    },
+    { 
+      id: 4, 
+      name: 'Permeate', 
+      flow: isImperial ? (totalPermeateM3h * trains * M3H_TO_GPM).toFixed(2) : (totalPermeateM3h * trains).toFixed(2), 
+      pressure: isImperial ? (Number(permeatePressure) * BAR_TO_PSI).toFixed(2) : Number(permeatePressure).toFixed(2), 
+      tds: permeateTds.toFixed(2), 
+      ph: permeatePh.toFixed(2), 
+      ec: calculateEC(permeateTds).toFixed(2) 
     }
+    
   ];
 
   return {
@@ -314,7 +334,7 @@ export const calculateSystem = (inputs) => {
     },
     permeateParameters: {
       tds: permeateTds,
-      ph: 7.0,
+      ph: permeatePh,
       ions: permeateIons,
       saturation: permSaturations
     },

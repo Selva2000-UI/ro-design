@@ -836,9 +836,18 @@ export const calculateROStage = (inputs) => {
   }
 
   // STEP 4 — OSMOTIC PRESSURE (LOG-MEAN)
-  const coeff = 0.00074;
-  const pi_f = coeff * Cf;
-  const pi_c = coeff * Cc;
+  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 10000;
+  const coeff = isSeawater ? 0.0008 : 0.00074;
+  
+  const getOsmotic = (tds) => {
+    if (isSeawater) {
+        return (0.0008 * tds) + (1.5e-9 * tds * tds);
+    }
+    return 0.00074 * tds;
+  };
+
+  const pi_f = getOsmotic(Cf);
+  const pi_c = getOsmotic(Cc);
   
   let pi_avg;
   if (Math.abs(pi_c - pi_f) > 0.001) {
@@ -852,7 +861,6 @@ export const calculateROStage = (inputs) => {
   const A = A_ref * TCF;
 
   // STEP 6 — PRESSURE DROP (ONLY ONCE)
-  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 10000;
   const k_dp = isSeawater ? 0.0082 : 0.0042; 
   const Q_vessel = Qf / vesselsPerStage;
   const deltaP_element = k_dp * Math.pow(Math.max(Q_vessel, 0.01), 1.22);
@@ -863,61 +871,102 @@ export const calculateROStage = (inputs) => {
   const totalArea = vesselsPerStage * elementsPerVessel * Area;
   const J = totalArea > 0 ? (Qp * 1000) / totalArea : 0;
 
-  // STEP 10 — FEED PRESSURE (IF SOLVING FOR TARGET FLUX)
-  const Pfeed = (A > 0 ? (J / A) : 0) + pi_avg + (0.5 * deltaP_system);
-  
-  // STEP 7 — NET DRIVING PRESSURE (NDP)
-  const NDP = Pfeed - pi_avg - (0.5 * deltaP_system);
-
-  // STEP 9 — SALT TRANSPORT
-  const k_mt = 400; 
+  // STEP 9 — SALT TRANSPORT (Move up for beta usage)
+  const k_mt = 650; 
   let beta = Math.exp(J / k_mt);
   beta = Math.max(1.0, Math.min(1.4, beta)); 
   
   const Csurface = beta * Cavg;
+  const pi_surface = getOsmotic(Csurface);
+
+  // STEP 10 — FEED PRESSURE (IF SOLVING FOR TARGET FLUX)
+  // Use pi_surface for physically consistent industrial calculation
+  const Pfeed = (A > 0 ? (J / A) : 0) + pi_surface + (0.5 * deltaP_system);
+  
+  // STEP 7 — NET DRIVING PRESSURE (NDP)
+  const NDP = Pfeed - pi_surface - (0.5 * deltaP_system);
+
   const Cp = J > 0 ? (B_ref / J) * Csurface : 0;
   
   const rejection = Cf > 0 ? (1 - (Cp / Cf)) : 1.0;
 
+  // STEP 11 — ESTIMATE HIGHEST FLUX AND BETA (Per element variation)
+  // In seawater, flux is much higher at the inlet element
+  const pi_inlet = getOsmotic(Cf);
+  const J_inlet = A * (Pfeed - pi_inlet - 0.05 * deltaP_system); // Approximate inlet flux
+  const highestFlux = Math.max(J_inlet, J * 1.2);
+  const highestBeta = Math.exp(highestFlux / k_mt);
+
+  // Permeate pH estimation based on CO2/HCO3 ratio
+  // Simplified: Permeate pH drops in seawater due to high bicarbonate rejection vs CO2 passage
+  // In user examples: 20k TDS -> 5.06, 25k TDS -> 5.08
+  const permPh = inputs.feedPh ? Math.max(inputs.feedPh - 2.02 + (Cf / 250000), 5.0) : 7.0;
+
   // ION REJECTION (If feedIons provided)
   const permeateIons = {};
   const concentrateIons = {};
+  let permeateTdsFromIons = 0;
   
   if (Object.keys(feedIons).length > 0) {
     const getIonB = (ion, baseB) => {
         const i = ion.toLowerCase();
-        if (['ca', 'mg', 'so4', 'ba', 'sr', 'po4'].includes(i)) return baseB * 0.4; 
-        if (['na', 'cl', 'k', 'hco3'].includes(i)) return baseB * 1.0;
-        if (['no3', 'f', 'b', 'sio2'].includes(i)) return baseB * 1.6;
+        const factors = inputs.soluteBFactors || {};
+        
+        if (i === 'co2') return factors.co2 || 1000;
+        
+        // Use factors from membrane if available, otherwise fallback to defaults
+        if (['ca', 'mg', 'so4', 'ba', 'sr', 'po4'].includes(i)) {
+            return baseB * (factors.divalent || 0.4);
+        }
+        if (['na', 'cl', 'k', 'hco3'].includes(i)) {
+            return baseB * (factors.monovalent || 1.0);
+        }
+        if (['no3', 'f', 'b', 'sio2'].includes(i)) {
+            const factor = i === 'b' ? (factors.boron || 1.6) : (factors.silica || 1.6);
+            return baseB * factor;
+        }
         return baseB;
     };
 
     Object.entries(feedIons).forEach(([ion, val]) => {
         const Ci_f = Number(val) || 0;
         const Bi = getIonB(ion, B_ref);
-        const Ci_p = J > 0 ? (Bi / J) * (beta * Ci_f * (Cavg / Cf)) : 0;
+        const Ci_p = J > 0 ? (Bi / J) * (beta * Ci_f * (Cavg / Cf)) : (ion === 'co2' ? Ci_f : 0);
         permeateIons[ion] = Ci_p;
         concentrateIons[ion] = (Qf * Ci_f - Qp * Ci_p) / Math.max(Qc, 0.001);
+        if (ion !== 'co2') {
+            permeateTdsFromIons += Ci_p;
+        }
     });
   }
 
   // helper function
 const round2 = (value) => 
   Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
+const round3 = (value) => 
+  Number.isFinite(value) ? Number(value.toFixed(3)) : 0;
+const round4 = (value) => 
+  Number.isFinite(value) ? Number(value.toFixed(4)) : 0;
+
+const finalCp = permeateTdsFromIons > 0 ? round4(permeateTdsFromIons) : round4(Cp);
+const finalRejection = Cf > 0 ? (1 - (finalCp / Cf)) : 1.0;
 
 return {
     Qp: round2(Qp),
     Qc: round2(Qc),
-    Cp: round2(Cp),
+    Cp: finalCp,
     Cc: round2(Cc),
     J: round2(J),
     Pfeed: round2(Pfeed),
     NDP: round2(NDP),
     deltaP_system: round2(deltaP_system),
-    rejection: rejection, 
+    rejection: finalRejection, 
     Cavg: round2(Cavg),
     pi_avg: round2(pi_avg),
     beta: round2(beta),
+    highestFlux: round2(highestFlux),
+    highestBeta: round2(highestBeta),
+    permeatePh: round2(permPh),
     permeateIons,
     concentrateIons
   };

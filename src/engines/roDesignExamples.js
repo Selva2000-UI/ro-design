@@ -100,11 +100,11 @@ export const MEMBRANE_RECOMMENDATIONS = {
     description: 'BW-TDS-10K-FR for very high TDS'
   },
   seawater: {
-    membraneId: 'swtds32k8040',
+    membraneId: 'swtds32k8080',
     minTds: 30000,
     maxTds: 40000,
     optimalRecovery: 0.45,
-    description: 'SW-TDS-32K for seawater'
+    description: 'SW-TDS-32K-8080 for seawater'
   }
 };
 
@@ -171,7 +171,7 @@ export const designSeawaterSystem = (params) => {
     targetRecovery = 0.45,
     numStages = 3,
     feedIons = {},
-    membraneId = 'swtds32k8040'
+    membraneId = 'swtds32k8080'
   } = params;
 
   const membrane = getMembrane(membraneId);
@@ -358,7 +358,7 @@ export const quickDesignSeawater = (feedFlowGpm, feedTemp = 20) => {
     targetRecovery: 0.45,
     numStages: 3,
     feedIons: seawaterIons,
-    membraneId: 'swtds32k8040'
+    membraneId: 'swtds32k8080'
   });
 };
 

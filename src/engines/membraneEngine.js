@@ -539,10 +539,8 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.SEAWATER,
     areaM2: 37.16,
     transport: {
-      // aValueRef: 0.98,
-      // membraneBRef: 0.165,
-      aValueRef: 2.75,
-      membraneBRef: 0.11,
+      aValueRef: 1.05,
+      membraneBRef: 0.0547,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -582,6 +580,67 @@ export const MEMBRANES = {
       type: 'seawater-polynomial',
       formula: 'π(bar) = 0.0008 × TDS + 1.5×10^-9 × TDS²',
       note: 'Industrial seawater polynomial model. Linear base (0.0008×TDS) matches van\'t Hoff. Small polynomial term for nonlinearity in concentrated brine. Mandatory for TDS > 10,000. Use calculateOsmoticPressure(tds, "bar", true)'
+    },
+    limits: {
+      maxTds: 40000,
+      maxTemp: 45,
+      maxPressure: 1200
+    },
+    compatibleWaterTypes: [
+      'Seawater',
+      'Sea Well',
+      'Sea Surface'
+    ]
+  },
+
+  swtds32k8080: {
+    id: 'swtds32k8080',
+    name: 'SW-TDS32k-8080',
+    category: '8080',
+    type: MEMBRANE_TYPES.SEAWATER,
+    areaM2: 37.16,
+    transport: {
+      aValueRef: 1.16,
+      membraneBRef: 0.0547,
+      soluteBFactors: {
+        monovalent: 1.0,
+        divalent: 0.6,
+        silica: 0.8,
+        boron: 1.4,
+        co2: 999
+      }
+    },
+    testConditions: {
+      pressureBar: 55,
+      temperatureC: 25,
+      tds: 32000,
+      recovery: 0.08,
+      fluxLMH: 18
+    },
+    hydraulics: {
+      maxFeedFlowM3H: 16,
+      minConcentrateFlowM3H: 3,
+      maxElementRecovery: 0.10,
+      maxPressureDropBar: 1.0,
+      spacerMil: 34
+    },
+    pressureDropModel: {
+      coefficient: 0.0042,
+      exponent: 1.22
+    },
+    designFlux: {
+      min: 8,
+      max: 12,
+      recommended: 10
+    },
+    agingModel: {
+      annualFluxDecline: 0.05,
+      foulingFactorDefault: 0.95
+    },
+    osmoticModel: {
+      type: 'seawater-polynomial',
+      formula: 'π(bar) = 0.0008 × TDS + 1.5×10^-9 × TDS²',
+      note: 'Industrial seawater polynomial model.'
     },
     limits: {
       maxTds: 40000,
