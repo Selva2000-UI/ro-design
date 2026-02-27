@@ -221,7 +221,7 @@ export const calculateSystem = (inputs) => {
 
   // Iterate startPfeed to hit target recovery (Bisection method)
   let lowP = 0.1;
-  let highP = isSeawaterSystem ? 80 : 40;
+  let highP = isSeawaterSystem ? 80 : 150; // Increased highP range for high-flux brackish cases
   let finalSystemRun = null;
   
   for (let i = 0; i < 40; i++) {
