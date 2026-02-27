@@ -4,7 +4,8 @@ import {
   calculateWaterSaturations,
   PRESSURE_CONVERSION,
   FLOW_CONVERSION,
-  FLUX_CONVERSION
+  FLUX_CONVERSION,
+  calculateStageByStageHydraulics
 } from '../engines/calculationEngine';
 import { 
   MEMBRANES, 
@@ -100,8 +101,8 @@ export const calculateEC = (tds, temp = 25, ph = 7.0) => {
  * @returns {boolean}
  */
 export const isGpmInput = (flowUnit) => {
-  const unit = (flowUnit || '').toLowerCase().trim();
-  return ['gpm', 'gpd', 'mgd', 'migd'].includes(unit.replace('/', ''));
+  const unit = (flowUnit || '').toLowerCase().trim().replace('/', '');
+  return ['gpm', 'gpd', 'mgd', 'migd'].includes(unit);
 };
 
 /**
@@ -139,7 +140,7 @@ export const calculateSystem = (inputs) => {
   
   const isImperial = isGpmInput(flowUnit);
   const pUnit = inputPUnit || (isImperial ? 'psi' : 'bar');
-  const fluxUnit = inputFluxUnit || (isImperial ? 'gfd' : 'lmh');
+  const fluxUnit = isImperial ? 'gfd' : 'lmh';
   const usePsi = pUnit.toLowerCase() === 'psi';
   const useGfd = fluxUnit.toLowerCase() === 'gfd';
 
@@ -221,18 +222,26 @@ export const calculateSystem = (inputs) => {
 
   // Iterate startPfeed to hit target recovery (Bisection method)
   let lowP = 0.1;
-  let highP = isSeawaterSystem ? 80 : 150; // Increased highP range for high-flux brackish cases
+  let highP = isSeawaterSystem ? 120 : 150; 
   let finalSystemRun = null;
   
-  for (let i = 0; i < 40; i++) {
+  for (let i = 0; i < 50; i++) {
     let midP = (lowP + highP) / 2;
     let run = runSystemAtPressure(midP);
     finalSystemRun = run;
-    console.log(`Bisection iteration ${i}: P=${midP.toFixed(4)}, Qp=${run.sysQp.toFixed(4)}, target=${targetQp.toFixed(4)}`);
-    if (Math.abs(run.sysQp - targetQp) < 0.00001 * Math.max(targetQp, 1)) break;
+    if (Math.abs(run.sysQp - targetQp) < 0.000001 * Math.max(targetQp, 1)) break;
     if (run.sysQp < targetQp) lowP = midP;
     else highP = midP;
   }
+
+  // REFINED HYDRAULIC DISTRIBUTION (Optional: Can be used to override if needed)
+  const hydraulics = calculateStageByStageHydraulics({
+    feedFlow: trainFeedM3h,
+    totalRecovery: Number(recovery) / 100,
+    numStages: activeStages.length,
+    vesselsPerStage: activeStages.map(s => Number(s.vessels)),
+    feedConc: rawFeedTds
+  });
 
   const stageResults = [];
   const stageIonsMap = [];
@@ -249,6 +258,9 @@ export const calculateSystem = (inputs) => {
         concentrate: stageRes.concentrateIons || {} 
     });
 
+    // Use display unit factor for per-vessel flows
+    const flowDisplayFactor = isImperial ? M3H_TO_GPM : 1.0;
+
     stageResults.push({
       stage: idx + 1,
       array: `1 - ${idx + 1}`,
@@ -258,8 +270,8 @@ export const calculateSystem = (inputs) => {
       feedFlow: isImperial ? (stageRes.Qf * M3H_TO_GPM).toFixed(2) : stageRes.Qf.toFixed(2),
       permeateFlow: isImperial ? (stageRes.Qp * M3H_TO_GPM).toFixed(2) : stageRes.Qp.toFixed(2),
       concFlow: isImperial ? (stageRes.Qc * M3H_TO_GPM).toFixed(2) : stageRes.Qc.toFixed(2),
-      feedFlowVessel: vessels > 0 ?  (stageRes.Qf / vessels).toFixed(2) : '0.00',
-      concFlowVessel: vessels > 0 ? (stageRes.Qc / vessels).toFixed(2) : '0.00',
+      feedFlowVessel: vessels > 0 ? (stageRes.Qf / vessels * flowDisplayFactor).toFixed(2) : '0.00',
+      concFlowVessel: vessels > 0 ? (stageRes.Qc / vessels * flowDisplayFactor).toFixed(2) : '0.00',
       feedPressure: usePsi ? (stageRes.Pfeed * BAR_TO_PSI).toFixed(2) : stageRes.Pfeed.toFixed(2),
       concPressure: usePsi ? ((stageRes.Pfeed - stageRes.deltaP_system) * BAR_TO_PSI).toFixed(2) : (stageRes.Pfeed - stageRes.deltaP_system).toFixed(2),
       flux: useGfd ? (stageRes.J * LMH_TO_GFD).toFixed(2) : stageRes.J.toFixed(2),

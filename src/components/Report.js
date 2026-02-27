@@ -28,8 +28,9 @@ const Report = ({
   const headerStyle = { backgroundColor: '#004a80', color: '#fff', padding: '12px 15px', fontWeight: 'bold' };
 
   const flowUnitLabel = systemConfig.flowUnit || 'gpm';
-  const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(flowUnitLabel);
+  const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(flowUnitLabel.toLowerCase().trim().replace('/', ''));
   const pUnit = isGpm ? 'psi' : 'bar';
+  const fluxUnit = isGpm ? 'gfd' : 'lmh';
 
   return (
     <div id="printable-report" style={{ maxWidth: '1100px', margin: '0 auto', padding: '40px', fontFamily: 'Arial' }}>
@@ -79,10 +80,10 @@ const Report = ({
                 </thead>
                 <tbody>
                   <tr>
-                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Flux (GFD)</td>
+                    <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Flux (${fluxUnit.toUpperCase()})</td>
                     {safeSnapshots.map((s, i) => (
                       <td key={i} style={{ textAlign: 'center', borderBottom: '1px solid #eee' }}>
-                        {s.results?.fluxGFD || 'N/A'}
+                        {Number(s.results?.avgFlux || 0).toFixed(2)}
                       </td>
                     ))}
                   </tr>

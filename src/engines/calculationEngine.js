@@ -1342,4 +1342,82 @@ export const calculateFluxImproved = (params) => {
   return aValueActual * (feedPressure - avgFeedOsmotic - permeateOsmotic - 0.5 * systemDP);
 };
 
+/**
+ * PHYSICALLY CONSISTENT MULTI-STAGE HYDRAULIC ENGINE
+ * Calculates flow distribution across stages (1 to 6 stages).
+ * 
+ * @param {object} inputs - { feedFlow, totalRecovery, numStages, vesselsPerStage, stageRecoveries, membrane, tempCelsius, feedConc }
+ * @returns {object} Full stage-by-stage hydraulic results
+ */
+export const calculateStageByStageHydraulics = (inputs) => {
+  const {
+    feedFlow,           // Total system feed flow (m³/h)
+    totalRecovery,      // Total system recovery (0-1)
+    numStages = 1,
+    vesselsPerStage = [1],
+    stageRecoveries = null, // Optional fixed stage recoveries [R1, R2, ...]
+    membrane = {},
+    tempCelsius = 25,
+    feedConc = 500
+  } = inputs;
+
+  if (numStages < 1 || numStages > 6) throw new Error("Number of stages must be 1 to 6");
+
+  // Determine recovery per stage if not provided
+  // Standard dynamic distribution: 1 - (1-TotalR)^(1/n)
+  const defaultR = 1 - Math.pow(1 - totalRecovery, 1 / numStages);
+  const recoveries = stageRecoveries || Array(numStages).fill(defaultR);
+
+  const results = [];
+  let currentFeedFlow = feedFlow;
+  let currentFeedConc = feedConc;
+  let totalPermeateFlow = 0;
+
+  for (let i = 0; i < numStages; i++) {
+    const vessels = vesselsPerStage[i] || 1;
+    const recovery = recoveries[i];
+    
+    const Qp = currentFeedFlow * recovery;
+    const Qc = currentFeedFlow - Qp;
+    
+    // Element-level calculations
+    const Qf_vessel = vessels > 0 ? currentFeedFlow / vessels : 0;
+    const Qc_vessel = vessels > 0 ? Qc / vessels : 0;
+    
+    results.push({
+      stage: i + 1,
+      vessels: vessels,
+      recovery: recovery,
+      feedFlow: currentFeedFlow,
+      permeateFlow: Qp,
+      concentrateFlow: Qc,
+      feedFlowVessel: Qf_vessel,
+      concentrateFlowVessel: Qc_vessel,
+      feedConc: currentFeedConc,
+      // Cc refined by mass balance assuming 100% salt rejection for hydraulic step
+      concentrateConc: currentFeedConc / (1 - recovery)
+    });
+
+    totalPermeateFlow += Qp;
+    currentFeedFlow = Qc;
+    currentFeedConc = currentFeedConc / (1 - recovery);
+  }
+
+  // Validate Qf_total = Qp_total + Qc_final
+  const finalConcFlow = results[numStages - 1].concentrateFlow;
+  const validationError = Math.abs(feedFlow - (totalPermeateFlow + finalConcFlow));
+
+  return {
+    stageResults: results,
+    totalFeedFlow: feedFlow,
+    totalPermeateFlow,
+    totalConcentrateFlow: finalConcFlow,
+    actualRecovery: totalPermeateFlow / feedFlow,
+    validation: {
+      isValid: validationError < 0.001,
+      error: validationError
+    }
+  };
+};
+
 export const calculateSaltPassageAdvanced = (b, c) => b * c;
