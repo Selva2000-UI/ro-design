@@ -47,7 +47,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     category: MEMBRANE_CATEGORIES.SEAWATER,
     description: 'Seawater from subsurface wells, relatively stable composition',
     sdiMax: 3,
-    tdsRange: { min: 30000, max: 42000 },
+    tdsRange: { min: 15000, max: 42000 },
     pretreatmentRequired: ['Multi-Media Filter', 'Ultra Filtration', 'Cartridge Filter']
   },
   [WATER_TYPES.SEA_SURFACE]: {
@@ -55,7 +55,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     category: MEMBRANE_CATEGORIES.SEAWATER,
     description: 'Surface seawater with high variability and organic content',
     sdiMax: 2,
-    tdsRange: { min: 30000, max: 42000 },
+    tdsRange: { min: 15000, max: 42000 },
     pretreatmentRequired: ['Coagulation', 'Multi-Media Filter', 'Ultra Filtration']
   },
   [WATER_TYPES.MUNICIPAL_WASTE]: {
@@ -222,7 +222,7 @@ export const MEMBRANE_SPECIFICATIONS = {
     areaM2: 37.16,
     ratedFlow: 1.81,
     ratedFlowM3h: 6.86,
-    saltRejection: 99.35,
+    saltRejection: 99.7,
     classification: MEMBRANE_CATEGORIES.SEAWATER,
     suitableFor: [WATER_TYPES.SEA_WELL, WATER_TYPES.SEA_SURFACE],
     constraints: {

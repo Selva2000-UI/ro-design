@@ -290,7 +290,7 @@ const SystemDesign = ({
 
     const stageRows = (projection.stageResults || []).map((row) => `
       <tr>
-        <td style="border: 1px solid #ccc; padding: 6px;">1 - ${row.stage}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">${row.array}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.vessels}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.feedPressure}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.concPressure}</td>
@@ -1074,7 +1074,7 @@ const SystemDesign = ({
       {systemConfig.designCalculated && projection && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <div style={{ ...panelStyle, background: '#d9e4f0' }}>
-            <div style={headerStyle}>Calculation Result</div>
+            <div style={headerStyle}>Calculation Results(All flows are per vessel)</div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'center', background: 'white' }}>
               <thead style={{ background: '#eee' }}>
                 <tr>
@@ -1086,16 +1086,13 @@ const SystemDesign = ({
                   <th style={{ border: '1px solid #ccc' }}>Conc ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Flux ({fluxUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Highest flux ({fluxUnit})</th>
-                  <th style={{ border: '1px solid #ccc' }}>
-                    Highest beta <br/>
-                  </th>
-                  <th style={{ border: '1px solid #ccc' }}>Final rejection (%)</th>
+                  <th style={{ border: '1px solid #ccc' }}>Highest beta</th>
                 </tr>
               </thead>
               <tbody>
                 {(projection.stageResults && projection.stageResults.length > 0 ? projection.stageResults : []).map((row, idx) => (
-                  <tr key={`stage-${row.index}`}>
-                    <td style={{ border: '1px solid #ccc' }}>1 - {row.index}</td>
+                  <tr key={`stage-${row.stage}`}>
+                    <td style={{ border: '1px solid #ccc' }}>{row.array}</td>
                     <td style={{ border: '1px solid #ccc' }}>{row.vessels}</td>
                     <td style={{ border: '1px solid #ccc', background: Number(row.feedPressure) < 0 ? '#f8d7da' : 'transparent' }}>
                       {row.feedPressure}
@@ -1112,7 +1109,6 @@ const SystemDesign = ({
                       {row.highestFlux}
                     </td>
                     <td style={{ border: '1px solid #ccc' }}>{row.highestBeta}</td>
-                    <td style={{ border: '1px solid #ccc' }}>{row.rejection}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1156,11 +1152,9 @@ const SystemDesign = ({
               <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.00'}%</div>
               <div>Osmotic pressure: {Number(projection.concentrateParameters?.osmoticPressure || 0).toFixed(1)} {pUnit}</div>
               <div>CCPP: {projection.concentrateParameters?.ccpp ?? '0.00'} mg/L</div>
-              {/* <div>Langelier: {projection.concentrateParameters?.langelier ?? '0.00'}</div> */}
-              <div>Langelier: { '0.00'}</div>
+              <div>Langelier: {projection.concentrateParameters?.lsi ?? '0.00'}</div>
               <div>pH: {projection.concentrateParameters?.ph ?? '0.00'}</div>
-              <div>TDS: {projection.concentrateParameters?.tds ?? '0.00'} mg/L</div>
-              <div>Osmotic: {projection.concentrateParameters?.osmoticPressure ?? '0.00'} {pUnit}</div>
+              <div>TDS: {Number(projection.concentrateParameters?.tds || 0).toFixed(1)} mg/L</div>
             </div>
           </div>
 

@@ -532,7 +532,27 @@ const App = () => {
           </div>
 
           <div class="section">
-            <div class="section-title">Calculation Result</div>
+            <div class="section-title">Train Information</div>
+            <div class="meta">
+              <div><strong>Feed pH:</strong> ${feedPh.toFixed(2)}</div>
+              <div><strong>Chemical:</strong> ${systemConfig.chemical || 'None'}</div>
+              <div><strong>Permeate recovery%:</strong> ${Number(systemConfig.recovery || 0).toFixed(2)}</div>
+              <div><strong>Chemical concentration:</strong> ${systemConfig.chemicalConcentration || 100}</div>
+              <div><strong>Permeate flow ${unit}:</strong> ${projection.permeateFlow || '0.00'}</div>
+              <div><strong>Chemical dose ${systemConfig.doseUnit || 'mg/l'}:</strong> ${systemConfig.chemicalDose || 0}</div>
+              <div><strong>Average flux ${fluxUnit}:</strong> ${Number(projection.avgFlux).toFixed(2)}</div>
+              <div><strong>Membrane age years:</strong> ${Number(systemConfig.membraneAge || 0).toFixed(1)}</div>
+              <div><strong>Feed flow ${unit}:</strong> ${projection.feedFlow || '0.00'}</div>
+              <div><strong>Flux decline%, per year:</strong> ${Number(systemConfig.fluxDeclinePerYear || 0).toFixed(2)}</div>
+              <div><strong>Concentrate flow ${unit}:</strong> ${projection.concentrateFlow || '0.00'}</div>
+              <div><strong>Fouling factor:</strong> ${Number(systemConfig.foulingFactor || 1).toFixed(2)}</div>
+              <div><strong>SSP increase% per year:</strong> ${Number(systemConfig.spIncreasePerYear || 0).toFixed(1)}</div>
+              <div><strong>Total plant product flow ${unit}:</strong> ${(Number(projection.permeateFlow) * Number(systemConfig.numTrains || 1)).toFixed(1)}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Calculation Results(All flows are per vessel)</div>
             <table>
               <thead>
                 <tr>
@@ -540,8 +560,8 @@ const App = () => {
                   <th>Vessels</th>
                   <th>Feed (${pUnit})</th>
                   <th>Conc (${pUnit})</th>
-                  <th>Feed per vessel (${fUnit})</th>
-                  <th>Conc per vessel (${fUnit})</th>
+                  <th>Feed (${fUnit})</th>
+                  <th>Conc (${fUnit})</th>
                   <th>Flux (${fluxUnit})</th>
                   <th>Highest flux (${fluxUnit})</th>
                   <th>Highest beta</th>
@@ -549,57 +569,79 @@ const App = () => {
                 </tr>
               </thead>
               <tbody>
-                ${stageRows || '<tr><td colspan="10">No calculation results</td></tr>'}
+                ${(projection.stageResults || []).map((row) => `
+                  <tr>
+                    <td>${row.array}</td>
+                    <td>${row.vessels}</td>
+                    <td>${row.feedPressure}</td>
+                    <td>${row.concPressure}</td>
+                    <td>${row.feedFlowVessel}</td>
+                    <td>${row.concFlowVessel}</td>
+                    <td>${row.flux}</td>
+                    <td>${row.highestFlux}</td>
+                    <td>${row.highestBeta}</td>
+                    <td>${row.rejection}</td>
+                  </tr>
+                `).join('') || '<tr><td colspan="10">No calculation results</td></tr>'}
               </tbody>
             </table>
           </div>
 
           <div class="section">
-            <div class="section-title">Ion (mg/L)</div>
+            <div class="section-title">Permeate Concentration</div>
             <table>
               <thead>
                 <tr>
                   <th>Ion</th>
-                  <th>Raw Water</th>
-                  <th>Feed Water</th>
-                  <th>Permeate Water</th>
-                  <th>Concentrate</th>
+                  <th>Value (mg/l)</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>Na</td><td>${ionFeed.na.toFixed(2)}</td><td>${ionFeed.na.toFixed(2)}</td><td>${Number(permIons.na || 0).toFixed(2)}</td><td>${Number(concIons.na || 0).toFixed(2)}</td></tr>
-                <tr><td>HCO3</td><td>${ionFeed.hco3.toFixed(2)}</td><td>${ionFeed.hco3.toFixed(2)}</td><td>${Number(permIons.hco3 || 0).toFixed(2)}</td><td>${Number(concIons.hco3 || 0).toFixed(2)}</td></tr>
-                <tr><td>Cl</td><td>${ionFeed.cl.toFixed(2)}</td><td>${ionFeed.cl.toFixed(2)}</td><td>${Number(permIons.cl || 0).toFixed(2)}</td><td>${Number(concIons.cl || 0).toFixed(2)}</td></tr>
-                <tr><td>CO2</td><td>${ionFeed.co2.toFixed(2)}</td><td>${ionFeed.co2.toFixed(2)}</td><td>${Number(permIons.co2 || 0).toFixed(2)}</td><td>${Number(concIons.co2 || 0).toFixed(2)}</td></tr>
-                <tr><td>NH3</td><td>${ionFeed.nh4.toFixed(2)}</td><td>${ionFeed.nh4.toFixed(2)}</td><td>${Number(permIons.nh4 || 0).toFixed(2)}</td><td>${Number(concIons.nh4 || 0).toFixed(2)}</td></tr>
-                <tr><td>TDS</td><td>${rawTds.toFixed(2)}</td><td>${rawTds.toFixed(2)}</td><td>${permTds.toFixed(2)}</td><td>${concTds.toFixed(2)}</td></tr>
-                <tr><td>pH</td><td>${Number(waterData.ph || 7).toFixed(2)}</td><td>${feedPh.toFixed(2)}</td><td>${permPh.toFixed(2)}</td><td>${concPh.toFixed(2)}</td></tr>
+                ${['ca', 'k', 'sr', 'cl', 'po4', 'co2', 'mg', 'nh4', 'hco3', 'no3', 'sio2', 'co3', 'na', 'ba', 'so4', 'f', 'b'].map(key => {
+                  const ionName = key === 'nh4' ? 'NH4' : 
+                                key === 'hco3' ? 'HCO3' :
+                                key === 'so4' ? 'SO4' :
+                                key === 'po4' ? 'PO4' :
+                                key === 'no3' ? 'NO3' :
+                                key === 'co3' ? 'CO3' :
+                                key === 'sio2' ? 'SiO2' :
+                                key === 'co2' ? 'CO2' :
+                                key.charAt(0).toUpperCase() + key.slice(1);
+                  return `
+                    <tr>
+                      <td>${ionName}</td>
+                      <td>${Number(permIons[key] || 0).toFixed(3)}</td>
+                    </tr>
+                  `;
+                }).join('')}
+                <tr><td><strong>TDS</strong></td><td><strong>${permTds.toFixed(2)}</strong></td></tr>
+                <tr><td><strong>pH</strong></td><td><strong>${permPh.toFixed(1)}</strong></td></tr>
               </tbody>
             </table>
           </div>
 
           <div class="section">
-            <div class="section-title">Saturations</div>
+            <div class="section-title">Concentrate Saturations and Parameters</div>
             <table>
               <thead>
                 <tr>
                   <th>Parameter</th>
-                  <th>Raw Water</th>
-                  <th>Feed Water</th>
-                  <th>Permeate Water</th>
-                  <th>Concentrate</th>
+                  <th>Value</th>
+                  <th>Unit</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>CaSO4 / Ksp * 100, %</td><td>0</td><td>0</td><td>0</td><td>${projection.concentrateSaturation?.caSo4 ?? '0.0'}</td></tr>
-                <tr><td>SrSO4 / Ksp * 100, %</td><td>0</td><td>0</td><td>0</td><td>${projection.concentrateSaturation?.srSo4 ?? '0.0'}</td></tr>
-                <tr><td>BaSO4 / Ksp * 100, %</td><td>0</td><td>0</td><td>0</td><td>${projection.concentrateSaturation?.baSo4 ?? '0.0'}</td></tr>
-                <tr><td>SiO2 Saturation, %</td><td>0</td><td>0</td><td>0</td><td>${projection.concentrateSaturation?.sio2 ?? '0.0'}</td></tr>
-                <tr><td>CaF2 / Ksp * 100, %</td><td>0</td><td>0</td><td>0</td><td>${projection.concentrateSaturation?.caF2 ?? '0.0'}</td></tr>
-                <tr><td>Ca3(PO4)2</td><td>0.0</td><td>0.0</td><td>0.0</td><td>${projection.concentrateSaturation?.ca3po42 ?? '0.00'}</td></tr>
-                <tr><td>CCPP, mg/L</td><td>0.00</td><td>0.00</td><td>0.00</td><td>${projection.concentrateParameters?.ccpp ?? '0.0'}</td></tr>
-                <tr><td>Langelier index</td><td>0.00</td><td>0.00</td><td>0.00</td><td>${projection.concentrateParameters?.langelier ?? '0.00'}</td></tr>
-                <tr><td>Osmotic pressure, psi</td><td>${projection.concentrateParameters?.osmoticPressure ?? '0.0'}</td><td>${projection.concentrateParameters?.osmoticPressure ?? '0.0'}</td><td>0.5</td><td>${projection.concentrateParameters?.osmoticPressure ?? '0.0'}</td></tr>
+                <tr><td>CaSO4, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.caSo4 ?? '0'}</td><td>%</td></tr>
+                <tr><td>SrSO4, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.srSo4 ?? '0'}</td><td>%</td></tr>
+                <tr><td>Osmotic pressure</td><td>${projection.concentrateParameters?.osmoticPressure?.toFixed(1) ?? '0.0'}</td><td>bar</td></tr>
+                <tr><td>pH</td><td>${projection.concentrateParameters?.ph ?? '0.0'}</td><td></td></tr>
+                <tr><td>BaSO4, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.baSo4 ?? '0'}</td><td>%</td></tr>
+                <tr><td>SiO2, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.sio2 ?? '0'}</td><td>%</td></tr>
+                <tr><td>CCPP</td><td>${projection.concentrateParameters?.saturation?.ccpp ?? '0'}</td><td>mg/l CaCO3</td></tr>
+                <tr><td>TDS</td><td>${projection.concentrateParameters?.tds?.toFixed(1) ?? '0.0'}</td><td>mg/l</td></tr>
+                <tr><td>Ca3(PO4)2 SI</td><td>${projection.concentrateParameters?.saturation?.saturations?.ca3po42 ?? '0.00'}</td><td></td></tr>
+                <tr><td>CaF2, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.caF2 ?? '0'}</td><td>%</td></tr>
+                <tr><td>Langelier</td><td>${projection.concentrateParameters?.saturation?.lsi ?? '0.00'}</td><td></td></tr>
               </tbody>
             </table>
           </div>

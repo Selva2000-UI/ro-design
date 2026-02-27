@@ -59,6 +59,23 @@ export const RO_DESIGN_EXAMPLES = {
     feedTemperature: 20,
     feedPressure: 60
   },
+  
+  seawaterHighTds20k: {
+    name: 'Seawater High TDS (20000 TDS)',
+    ions: {
+      na: 7870,
+      k: 0,
+      ca: 0,
+      mg: 0,
+      cl: 12130,
+      so4: 0,
+      hco3: 0.5,
+      co3: 0.001
+    },
+    targetRecovery: 0.40,
+    feedTemperature: 25,
+    feedPressure: 42.28 // 613.2 psi
+  },
 
   lowSalinityBrackish: {
     name: 'Low Salinity Brackish (800 TDS)',
@@ -99,10 +116,17 @@ export const MEMBRANE_RECOMMENDATIONS = {
     optimalRecovery: 0.65,
     description: 'BW-TDS-10K-FR for very high TDS'
   },
+  seawater20k: {
+    membraneId: 'swtds32k8040',
+    minTds: 10000,
+    maxTds: 25000,
+    optimalRecovery: 0.40,
+    description: 'SW-TDS-32K-8040 for 20000 TDS seawater/high-brackish'
+  },
   seawater: {
     membraneId: 'swtds32k8080',
-    minTds: 30000,
-    maxTds: 40000,
+    minTds: 25000,
+    maxTds: 45000,
     optimalRecovery: 0.45,
     description: 'SW-TDS-32K-8080 for seawater'
   }
