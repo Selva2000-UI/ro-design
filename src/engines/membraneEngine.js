@@ -367,8 +367,8 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
     transport: {
-      aValueRef: 4.45,
-      membraneBRef: 0.22,
+      aValueRef: 6.42, // Calibrated for 36 m3/day at 150 psi (10.3 bar) and 15% recovery
+      membraneBRef: 0.203, // Calibrated for 99.5% rejection
       kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
@@ -383,7 +383,7 @@ export const MEMBRANES = {
       temperatureC: 25,
       tds: 1500,
       recovery: 0.15,
-      fluxLMH: 24
+      fluxLMH: 40.4
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
@@ -393,13 +393,13 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0082,
+      coefficient: 0.0042,
       exponent: 1.22
     },
     designFlux: {
       min: 12,
-      max: 18,
-      recommended: 15
+      max: 25,
+      recommended: 18
     },
     agingModel: {
       annualFluxDecline: 0.05,
@@ -407,8 +407,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.0007936,
-      formula: 'π(bar) = 0.0007936 × TDS',
+      coefficient: 0.00074,
+      formula: 'π(bar) = 0.00074 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -429,8 +429,8 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
     transport: {
-      aValueRef: 4.45,
-      membraneBRef: 0.22,
+      aValueRef: 3.49, // Calibrated for 36 m3/day at 225 psi (15.5 bar)
+      membraneBRef: 0.202, // Calibrated for 99.5% rejection
       kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
@@ -445,7 +445,7 @@ export const MEMBRANES = {
       temperatureC: 25,
       tds: 2000,
       recovery: 0.15,
-      fluxLMH: 24
+      fluxLMH: 40.4
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
@@ -455,13 +455,13 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0082,
+      coefficient: 0.0042,
       exponent: 1.22
     },
     designFlux: {
       min: 10,
-      max: 15,
-      recommended: 12
+      max: 18,
+      recommended: 14
     },
     agingModel: {
       annualFluxDecline: 0.05,
@@ -469,8 +469,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.0007936,
-      formula: 'π(bar) = 0.0007936 × TDS',
+      coefficient: 0.00077,
+      formula: 'π(bar) = 0.00077 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -491,15 +491,15 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.FOULING_RESISTANT,
     areaM2: 37.16,
     transport: {
-      aValueRef: 1.41, // Re-calibrated for pCorr model (matches 104.2 bar at 288 LMH)
-      membraneBRef: 0.169, // Re-calibrated for 8.26 mg/L permeate TDS
-      kMtRef: 350,       // Reference mass transfer at 16 m3/h
+      aValueRef: 1.37, // Calibrated for 104.2 bar at 288 LMH with pCorr
+      membraneBRef: 0.169,
+      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
-        alkalinity: 2.1, // Calibrated for HCO3 passage
+        alkalinity: 2.1,
         co2: 999
       }
     },
@@ -518,7 +518,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0101, // Calibrated for 61 bar drop in Case 1 (at 750 m3/h)
+      coefficient: 0.0100, // Calibrated for 61 bar drop
       exponent: 1.35
     },
     designFlux: {
@@ -555,8 +555,8 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.SEAWATER,
     areaM2: 37.16,
     transport: {
-      aValueRef: 0.725,   // Calibrated for 613 psi at 12.9 GFD (Case 1)
-      membraneBRef: 0.054, // Calibrated for ~66 mg/L permeate TDS (Case 1)
+      aValueRef: 0.717,   // Calibrated for 613.2 psi at 12.9 GFD
+      membraneBRef: 0.0546, // Calibrated for ~66 mg/L permeate TDS
       kMtRef: 720,
       soluteBFactors: {
         monovalent: 1.0,
@@ -582,7 +582,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0135, // Calibrated for 24 psi drop in Case 1 (at 250 GPM)
+      coefficient: 0.060, // Calibrated for 24.2 psi drop
       exponent: 1.20
     },
     designFlux: {

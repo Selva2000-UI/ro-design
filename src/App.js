@@ -53,7 +53,7 @@ const App = () => {
     ],
 
     // Flux display
-    fluxUnit: 'gfd', // gfd | lmh
+    fluxUnit: 'lmh', // gfd | lmh
 
     // Hydranautics behavior: flux stays 0 until "Recalculate array"
     designCalculated: false,
@@ -154,7 +154,8 @@ const App = () => {
     try {
       const results = calculateSystem(calculationInputs);
       
-      const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes(systemConfig.flowUnit);
+      const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes((systemConfig.flowUnit || '').toLowerCase().trim().replace('/', ''));
+      const fluxUnitLabel = isImperial ? 'gfd' : 'lmh';
       
       setProjection({
         ...results.results,
@@ -174,6 +175,7 @@ const App = () => {
         concentrateFlow: results.flowDiagramPoints[2].flow,
         totalPlantProductFlowDisplay: results.flowDiagramPoints[3].flow,
         pumpPressure: results.results.feedPressure,
+        fluxUnit: fluxUnitLabel
       });
     } catch (error) {
       console.warn('Calculation failed:', error.message);
@@ -334,7 +336,7 @@ const App = () => {
     const tempF = ((Number(waterData.temp) || 25) * 9) / 5 + 32;
     const reportDate = new Date().toLocaleDateString();
     
-    const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes(unit);
+    const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes((unit || '').toLowerCase().trim().replace('/', ''));
     const pUnit = isImperial ? 'psi' : 'bar';
     const fluxUnit = isImperial ? 'gfd' : 'lmh';
     const fUnit = isImperial ? 'gpm' : 'm3/h';
@@ -427,7 +429,7 @@ const App = () => {
             <div><strong>SP increase, per year:</strong> ${Number(systemConfig.spIncreasePerYear || 0).toFixed(2)} %</div>
             <div><strong>Feed type:</strong> ${waterData.waterType || ''}</div>
             <div><strong>Pretreatment:</strong> ${waterData.pretreatment || 'Conventional'}</div>
-            <div><strong>Average flux:</strong> ${projection.calcFluxGfd || '0.00'} gfd</div>
+            <div><strong>Average flux:</strong> ${Number(projection.avgFlux).toFixed(2)} ${fluxUnit}</div>
           </div>
 
           <div class="section">

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 
 const ROCalculator = () => {
   const [inputs, setInputs] = useState({
-    permeateFlow: 100, // gpm
+    feedFlow: 200, // gpm
     recovery: 50, // %
     feedPressure: 200, // psi
     feedTDS: 1000, // mg/L
@@ -12,10 +12,10 @@ const ROCalculator = () => {
   });
 
   const calculateROPerformance = useMemo(() => {
-    const { permeateFlow, recovery, feedPressure, feedTDS, temperature, membraneArea, numElements } = inputs;
+    const { feedFlow, recovery, feedPressure, feedTDS, temperature, membraneArea, numElements } = inputs;
     
     // Basic mass balance
-    const feedFlow = permeateFlow / (recovery / 100);
+    const permeateFlow = feedFlow * (recovery / 100);
     const concentrateFlow = feedFlow - permeateFlow;
     
     // Osmotic pressure calculation (simplified)
@@ -36,7 +36,7 @@ const ROCalculator = () => {
     const highestFlux = fluxGFD * 1.18;
     
     return {
-      feedFlow: feedFlow.toFixed(2),
+      permeateFlow: permeateFlow.toFixed(2),
       concentrateFlow: concentrateFlow.toFixed(2),
       fluxGFD: fluxGFD.toFixed(2),
       highestFlux: highestFlux.toFixed(2),

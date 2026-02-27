@@ -235,9 +235,11 @@ const SystemDesign = ({
       return (num * (prevFactor / nextFactor)).toFixed(getFlowDecimals(nextUnit));
     };
 
+    const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes(nextUnit);
     setSystemConfig({
       ...systemConfig,
       flowUnit: nextUnit,
+      fluxUnit: isImperial ? 'gfd' : 'lmh',
       feedFlow: convertValue(systemConfig.feedFlow),
       permeateFlow: convertValue(systemConfig.permeateFlow),
       designCalculated: false
@@ -260,7 +262,7 @@ const SystemDesign = ({
   const inputStyle = { width: '70px', textAlign: 'right', border: '1px solid #999' };
 
   const flowUnitLabel = systemConfig.flowUnit || 'gpm';
-  const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(flowUnitLabel);
+  const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(flowUnitLabel.toLowerCase().trim().replace('/', ''));
   const pUnit = isGpm ? 'psi' : 'bar';
   // Use m3/h for metric result tables even if input is m3/d, as per industry standard/IMSDesign
   const fUnit = isGpm ? 'gpm' : 'm3/h';
@@ -481,7 +483,7 @@ const SystemDesign = ({
             <span title={`Flux Calculation Logic (Standard: 400 ft² element):\n\n🔹 CASE 1: PERMEATE FLOW IN GPM → FLUX IN GFD\nFormula: Average Flux (GFD) = Permeate Flow (gpm) / (No. of Vessels × Nm × 0.2778)\n\n🔹 CASE 2: PERMEATE FLOW IN m³/h → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/h) / (No. of Vessels × Nm × 0.0372)\n\n🔹 CASE 3: PERMEATE FLOW IN m³/d → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/d) / (No. of Vessels × Nm × 0.893)\n\n⚠️ Note: Constants are valid for 400 ft² membranes. If membrane area changes, the constant is automatically recalculated.`}>Average flux</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
               <div style={{...inputStyle, background: '#eee'}}>{Number(projection?.avgFlux || 0).toFixed(2)}</div>
-              <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.fluxUnit || (isGpm ? 'GFD' : 'LMH')}</span>
+              <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.fluxUnit || fluxUnit}</span>
             </div>
           </div>
 
