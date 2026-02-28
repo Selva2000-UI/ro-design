@@ -952,7 +952,14 @@ export const compareMembranes = (mem1, mem2) => {
  * @returns {number} Pressure drop coefficient
  */
 export const getKdp = (membrane) => {
-  return membrane?.pressureDropModel?.coefficient || 0.0042;
+  if (!membrane) return 0.0042;
+  if (membrane.pressureDropModel?.coefficient) return membrane.pressureDropModel.coefficient;
+  if (membrane.nominalFlowDP) {
+    // If user provided a nominal DP (at 16 m3/h reference)
+    const exp = getPExp(membrane);
+    return membrane.nominalFlowDP / Math.pow(16.0, exp);
+  }
+  return 0.0042;
 };
 
 /**
@@ -978,7 +985,7 @@ export const getOsmoticCoefficient = (membrane) => {
  * @param {object} m - Membrane object
  * @returns {number} exponent
  */
-export const getPExp = (m) => m?.pressureDropModel?.exponent || 1.22;
+export const getPExp = (m) => m?.pressureDropModel?.exponent || m?.dpExponent || 1.22;
 
 /**
  * Calculate ion rejection and permeate concentration

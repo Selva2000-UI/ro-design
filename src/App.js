@@ -153,7 +153,7 @@ const App = () => {
     };
 
     try {
-      const results = calculateSystem(calculationInputs);
+      const results = calculateSystem(calculationInputs, membranes);
       
       const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes((systemConfig.flowUnit || '').toLowerCase().trim().replace('/', ''));
       const fluxUnitLabel = isImperial ? 'gfd' : 'lmh';
