@@ -491,9 +491,9 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.FOULING_RESISTANT,
     areaM2: 37.16,
     transport: {
-      aValueRef: 4.30, // Calibrated for 104.2 bar at 288 LMH (NDP ~ 67 bar)
+      aValueRef: 4.21, // Calibrated for 104.2 bar at 288 LMH (NDP ~ 67 bar)
       membraneBRef: 0.175,
-      kMtRef: 350,
+      kMtRef: 600,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -518,8 +518,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.00099, // Calibrated for 61 bar drop (1.81 exponent)
-      exponent: 1.81
+      coefficient: 0.0099, // Calibrated for 61 bar drop (1.35 exponent)
+      exponent: 1.35
     },
     designFlux: {
       min: 10,
@@ -548,74 +548,10 @@ export const MEMBRANES = {
     ]
   },
 
-  // swtds32k8040: {
-  //   id: 'swtds32k8040',
-  //   name: 'SW-TDS-32K-8040',
-  //   category: '8040',
-  //   type: MEMBRANE_TYPES.SEAWATER,
-  //   areaM2: 37.16,
-  //   transport: {
-  //     aValueRef: 0.717,   // Calibrated for 613.2 psi at 12.9 GFD
-  //     membraneBRef: 0.0546, // Calibrated for ~66 mg/L permeate TDS
-  //     kMtRef: 720,
-  //     soluteBFactors: {
-  //       monovalent: 1.0,
-  //       divalent: 0.6,
-  //       silica: 0.8,
-  //       boron: 1.4,
-  //       alkalinity: 1.8,
-  //       co2: 999
-  //     }
-  //   },
-  //   testConditions: {
-  //     pressureBar: 55,
-  //     temperatureC: 25,
-  //     tds: 32000,
-  //     recovery: 0.08,
-  //     fluxLMH: 18
-  //   },
-  //   hydraulics: {
-  //     maxFeedFlowM3H: 16,
-  //     minConcentrateFlowM3H: 3,
-  //     maxElementRecovery: 0.10,
-  //     maxPressureDropBar: 1.0,
-  //     spacerMil: 34
-  //   },
-  //   pressureDropModel: {
-  //     coefficient: 0.060, // Calibrated for 24.2 psi drop
-  //     exponent: 1.20
-  //   },
-  //   designFlux: {
-  //     min: 8,
-  //     max: 12,
-  //     recommended: 10
-  //   },
-  //   agingModel: {
-  //     annualFluxDecline: 0.05,
-  //     foulingFactorDefault: 0.95
-  //   },
-  //   osmoticModel: {
-  //     type: 'seawater-polynomial',
-  //     coefficient: 0.0007925, // Calibrated to match 229.9 psi at 20000 TDS
-  //     formula: 'π(bar) = 0.0007925 × TDS',
-  //     note: 'Industrial seawater model. Calibrated for 20k-40k TDS range.'
-  //   },
-  //   limits: {
-  //     maxTds: 40000,
-  //     maxTemp: 45,
-  //     maxPressure: 1200
-  //   },
-  //   compatibleWaterTypes: [
-  //     'Seawater',
-  //     'Sea Well',
-  //     'Sea Surface'
-  //   ]
-  // },
-
-  swtds32k8080: {
-    id: 'swtds32k8080',
-    name: 'SW-TDS32k-8080',
-    category: '8080',
+  swtds32k8040: {
+    id: 'swtds32k8040',
+    name: 'SW-TDS-32K-8040',
+    category: '8040',
     type: MEMBRANE_TYPES.SEAWATER,
     areaM2: 37.16,
     transport: {
@@ -627,6 +563,7 @@ export const MEMBRANES = {
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
+        alkalinity: 1.8,
         co2: 999
       }
     },
@@ -645,8 +582,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0042,
-      exponent: 1.22
+      coefficient: 0.000255, // Calibrated for 24.2 psi drop across 7 elements @ 62.5 m3/h
+      exponent: 1.75
     },
     designFlux: {
       min: 8,
@@ -658,9 +595,10 @@ export const MEMBRANES = {
       foulingFactorDefault: 0.95
     },
     osmoticModel: {
-      type: 'seawater-polynomial',
-      formula: 'π(bar) = 0.0008 × TDS + 1.5×10^-9 × TDS²',
-      note: 'Industrial seawater polynomial model.'
+      type: 'seawater-linear',
+      coefficient: 0.0007925, // Calibrated to match 229.9 psi at 20000 TDS
+      formula: 'π(bar) = 0.0007925 × TDS',
+      note: 'Industrial seawater model. Calibrated for 20k-40k TDS range.'
     },
     limits: {
       maxTds: 40000,
