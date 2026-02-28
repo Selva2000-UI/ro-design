@@ -193,6 +193,7 @@ export const calculateSystem = (inputs) => {
         A_ref: getAValue(membrane) * (Number(foulingFactor) || 1.0),
         B_ref: getMembraneB(membrane) * spFactor,
         Area: membrane.areaM2 || 37.16,
+        membrane: membrane,
         elementsPerVessel: elements,
         vesselsPerStage: vessels,
         waterType: waterType,
@@ -223,7 +224,7 @@ export const calculateSystem = (inputs) => {
 
   // Iterate startPfeed to hit target recovery (Bisection method)
   let lowP = 0.1;
-  let highP = isSeawaterSystem ? 120 : 150; 
+  let highP = isSeawaterSystem ? 300 : 150; 
   let finalSystemRun = null;
   
   for (let i = 0; i < 50; i++) {

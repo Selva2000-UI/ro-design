@@ -876,6 +876,7 @@ export const calculateROStage = (inputs) => {
     A_ref,              // Membrane A-value at 25°C (LMH/bar)
     B_ref,              // Membrane B-value (LMH)
     Area,               // Membrane Area per element (m2)
+    membrane,           // Membrane object (optional)
     Pfeed: inputPfeed,  // Forced input feed pressure (optional)
     elementsPerVessel = 6,
     vesselsPerStage = 1,
@@ -911,10 +912,10 @@ export const calculateROStage = (inputs) => {
     if (osmoticCoeffInput) return osmoticCoeffInput * tds;
     if (isSeawater) {
         // Seawater linear factor to match user examples (matches ~0.0007925)
-        return 0.0007925 * tds;
+        return (membrane?.osmoticModel?.coefficient || 0.0007925) * tds;
     }
     // High-precision brackish factor matching industrial standards
-    return 0.00077 * tds;
+    return (membrane?.osmoticModel?.coefficient || 0.00077) * tds;
   };
 
   const pi_f = getOsmotic(Cf, feedIons);
@@ -943,17 +944,19 @@ export const calculateROStage = (inputs) => {
   const TCF = calculateTCF(T, 'A');
   const TCF_B = calculateTCF(T, 'B');
   
-  // STEP 6 — PRESSURE DROP (REFINED FOR SW-TDS-32K)
-  const k_dp = kDpInput || (isSeawater ? 0.0135 : 0.0042); 
-  const p_exp = pExpInput || 1.20;
+  // STEP 6 — PRESSURE DROP (REFINED FOR MEMBRANE-SPECIFIC MODELS)
+  const k_dp = kDpInput !== undefined ? kDpInput : (membrane?.pressureDropModel?.coefficient || (isSeawater ? 0.0135 : 0.0042)); 
+  const p_exp = pExpInput !== undefined ? pExpInput : (membrane?.pressureDropModel?.exponent || 1.20);
   const Q_vessel_avg = (Qf + Qc) / (2 * vesselsPerStage);
   const deltaP_element = k_dp * Math.pow(Math.max(Q_vessel_avg, 0.01), p_exp);
   const deltaP_vessel = deltaP_element * elementsPerVessel;
   // Account for inter-stage plumbing drop
   const deltaP_system = deltaP_vessel;
 
-  // Use 1.0 for brackish/standard membranes, or membrane-specific pCorr if added later
-  const pCorr = 1.0; 
+  // Compaction correction: A-value decreases at high pressure (Brackish only)
+  // Seawater membranes are typically pre-compacted or use higher pressure baseline
+  const P_avg_est = inputs.Pfeed !== undefined ? (inputs.Pfeed - 0.5 * deltaP_vessel) : 15.0;
+  const pCorr = isSeawater ? 1.0 : (1.18 - 0.0025 * Math.max(P_avg_est, 0)); 
   const A = A_ref * TCF * pCorr;
 
   // STEP 8 — FLUX
@@ -987,6 +990,7 @@ export const calculateROStage = (inputs) => {
   // STEP 10 — FEED PRESSURE (IF SOLVING FOR TARGET FLUX)
   // Use pi_surface for physically consistent industrial calculation
   const Pfeed = inputPfeed !== undefined ? inputPfeed : ((A > 0 ? (J / A) : 0) + pi_surface + (0.5 * deltaP_vessel) + Number(permeatePressure));
+  // console.log(`DEBUG STAGE: inputPfeed=${inputPfeed}, J=${J.toFixed(2)}, A=${A.toFixed(3)}, pi_surf=${pi_surface.toFixed(2)}, calcPfeed=${Pfeed.toFixed(2)}`);
   
   // STEP 7 — NET DRIVING PRESSURE (NDP)
   const NDP = Pfeed - Number(permeatePressure) - pi_surface - (0.5 * deltaP_vessel);
@@ -1060,8 +1064,6 @@ export const calculateROStage = (inputs) => {
   }
 
   // helper function
-const round2 = (value) => 
-  Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
 const round4 = (value) => 
   Number.isFinite(value) ? Number(value.toFixed(4)) : 0;
 
@@ -1128,8 +1130,8 @@ export const calculateROStageGivenPressure = (inputs) => {
   const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 10000;
   const base_k_mt = kMtInput || (isSeawater ? 650 : 160);
   const Q_ref_k = 16.0;
-  const k_dp = kDpInput || (isSeawater ? 0.0082 : 0.0042);
-  const p_exp = pExpInput || 1.22;
+  const k_dp = kDpInput !== undefined ? kDpInput : (isSeawater ? 0.0082 : 0.0042);
+  const p_exp = pExpInput !== undefined ? pExpInput : 1.22;
   const osmoticFactor = osmoticCoeffInput || (isSeawater ? 0.0007925 : 0.00077);
 
   // Iterative solution for R
@@ -1161,7 +1163,7 @@ export const calculateROStageGivenPressure = (inputs) => {
 
     // New J based on pressure (with P_avg for pCorr)
     const P_avg = Pfeed - 0.5 * deltaP_system;
-    const pCorr = 1.0; // Standardized to 1.0 for brackish membranes
+    const pCorr = isSeawater ? 1.0 : (1.18 - 0.0025 * Math.max(P_avg, 0)); 
     const A = A_ref * TCF * pCorr;
 
     const J_new = A * Math.max(Pfeed - Number(permeatePressure) - pi_surface - 0.5 * deltaP_system, 0);
@@ -1250,7 +1252,7 @@ export const calculateRejectionPercent = (feedConc, permeateConc) => {
  * β = exp(J / k_mt)
  */
 export const calculateConcentrationPolarization = (params) => {
-  const { fluxLmh, spacerMil = 34, simplified = true } = params;
+  const { fluxLmh, simplified = true } = params;
   if (simplified) {
     // Industrial heuristic for brackish water
     return Math.exp(0.7 * (fluxLmh / 40));
@@ -1265,7 +1267,6 @@ export const calculateStageHydraulics = (params) => {
   const {
     feedFlow,
     feedPressure,
-    feedOsmotic,
     feedConc,
     recovery,
     membrane,
@@ -1415,8 +1416,6 @@ export const calculateStageByStageHydraulics = (inputs) => {
     numStages = 1,
     vesselsPerStage = [1],
     stageRecoveries = null, // Optional fixed stage recoveries [R1, R2, ...]
-    membrane = {},
-    tempCelsius = 25,
     feedConc = 500
   } = inputs;
 
