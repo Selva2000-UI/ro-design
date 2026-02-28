@@ -116,13 +116,13 @@ export const MEMBRANE_RECOMMENDATIONS = {
     optimalRecovery: 0.65,
     description: 'BW-TDS-10K-FR for very high TDS'
   },
-  seawater20k: {
-    membraneId: 'swtds32k8040',
-    minTds: 10000,
-    maxTds: 25000,
-    optimalRecovery: 0.40,
-    description: 'SW-TDS-32K-8040 for 20000 TDS seawater/high-brackish'
-  },
+  // seawater20k: {
+  //   membraneId: 'swtds32k8040',
+  //   minTds: 10000,
+  //   maxTds: 25000,
+  //   optimalRecovery: 0.40,
+  //   description: 'SW-TDS-32K-8040 for 20000 TDS seawater/high-brackish'
+  // },
   seawater: {
     membraneId: 'swtds32k8080',
     minTds: 25000,

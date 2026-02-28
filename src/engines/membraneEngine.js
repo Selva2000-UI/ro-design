@@ -548,69 +548,69 @@ export const MEMBRANES = {
     ]
   },
 
-  swtds32k8040: {
-    id: 'swtds32k8040',
-    name: 'SW-TDS-32K-8040',
-    category: '8040',
-    type: MEMBRANE_TYPES.SEAWATER,
-    areaM2: 37.16,
-    transport: {
-      aValueRef: 0.717,   // Calibrated for 613.2 psi at 12.9 GFD
-      membraneBRef: 0.0546, // Calibrated for ~66 mg/L permeate TDS
-      kMtRef: 720,
-      soluteBFactors: {
-        monovalent: 1.0,
-        divalent: 0.6,
-        silica: 0.8,
-        boron: 1.4,
-        alkalinity: 1.8,
-        co2: 999
-      }
-    },
-    testConditions: {
-      pressureBar: 55,
-      temperatureC: 25,
-      tds: 32000,
-      recovery: 0.08,
-      fluxLMH: 18
-    },
-    hydraulics: {
-      maxFeedFlowM3H: 16,
-      minConcentrateFlowM3H: 3,
-      maxElementRecovery: 0.10,
-      maxPressureDropBar: 1.0,
-      spacerMil: 34
-    },
-    pressureDropModel: {
-      coefficient: 0.060, // Calibrated for 24.2 psi drop
-      exponent: 1.20
-    },
-    designFlux: {
-      min: 8,
-      max: 12,
-      recommended: 10
-    },
-    agingModel: {
-      annualFluxDecline: 0.05,
-      foulingFactorDefault: 0.95
-    },
-    osmoticModel: {
-      type: 'seawater-polynomial',
-      coefficient: 0.0007925, // Calibrated to match 229.9 psi at 20000 TDS
-      formula: 'π(bar) = 0.0007925 × TDS',
-      note: 'Industrial seawater model. Calibrated for 20k-40k TDS range.'
-    },
-    limits: {
-      maxTds: 40000,
-      maxTemp: 45,
-      maxPressure: 1200
-    },
-    compatibleWaterTypes: [
-      'Seawater',
-      'Sea Well',
-      'Sea Surface'
-    ]
-  },
+  // swtds32k8040: {
+  //   id: 'swtds32k8040',
+  //   name: 'SW-TDS-32K-8040',
+  //   category: '8040',
+  //   type: MEMBRANE_TYPES.SEAWATER,
+  //   areaM2: 37.16,
+  //   transport: {
+  //     aValueRef: 0.717,   // Calibrated for 613.2 psi at 12.9 GFD
+  //     membraneBRef: 0.0546, // Calibrated for ~66 mg/L permeate TDS
+  //     kMtRef: 720,
+  //     soluteBFactors: {
+  //       monovalent: 1.0,
+  //       divalent: 0.6,
+  //       silica: 0.8,
+  //       boron: 1.4,
+  //       alkalinity: 1.8,
+  //       co2: 999
+  //     }
+  //   },
+  //   testConditions: {
+  //     pressureBar: 55,
+  //     temperatureC: 25,
+  //     tds: 32000,
+  //     recovery: 0.08,
+  //     fluxLMH: 18
+  //   },
+  //   hydraulics: {
+  //     maxFeedFlowM3H: 16,
+  //     minConcentrateFlowM3H: 3,
+  //     maxElementRecovery: 0.10,
+  //     maxPressureDropBar: 1.0,
+  //     spacerMil: 34
+  //   },
+  //   pressureDropModel: {
+  //     coefficient: 0.060, // Calibrated for 24.2 psi drop
+  //     exponent: 1.20
+  //   },
+  //   designFlux: {
+  //     min: 8,
+  //     max: 12,
+  //     recommended: 10
+  //   },
+  //   agingModel: {
+  //     annualFluxDecline: 0.05,
+  //     foulingFactorDefault: 0.95
+  //   },
+  //   osmoticModel: {
+  //     type: 'seawater-polynomial',
+  //     coefficient: 0.0007925, // Calibrated to match 229.9 psi at 20000 TDS
+  //     formula: 'π(bar) = 0.0007925 × TDS',
+  //     note: 'Industrial seawater model. Calibrated for 20k-40k TDS range.'
+  //   },
+  //   limits: {
+  //     maxTds: 40000,
+  //     maxTemp: 45,
+  //     maxPressure: 1200
+  //   },
+  //   compatibleWaterTypes: [
+  //     'Seawater',
+  //     'Sea Well',
+  //     'Sea Surface'
+  //   ]
+  // },
 
   swtds32k8080: {
     id: 'swtds32k8080',
