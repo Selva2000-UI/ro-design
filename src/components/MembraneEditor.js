@@ -27,7 +27,32 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
       return;
     }
 
-    setMembranes([...membranes, newMembrane]);
+    const membraneToAdd = {
+      ...newMembrane,
+      areaM2: newMembrane.area * 0.092903,
+      transport: {
+        aValueRef: newMembrane.aValue,
+        membraneBRef: newMembrane.membraneB,
+        kMtRef: 160,
+        soluteBFactors: {
+          monovalent: 1.0,
+          divalent: 0.6,
+          silica: 0.8,
+          boron: 1.4,
+          co2: 999
+        }
+      },
+      pressureDropModel: {
+        coefficient: newMembrane.nominalFlowDP / 1000, // Approximate
+        exponent: newMembrane.dpExponent
+      },
+      osmoticModel: {
+        type: 'industrial-linear',
+        coefficient: 0.00074
+      }
+    };
+
+    setMembranes([...membranes, membraneToAdd]);
     setNewMembrane({ id: '', name: '', area: 400, type: 'Brackish', aValue: 0.12, rejection: 99.7, maxFlux: 48.5, membraneB: 0.14, dpExponent: 1.22, nominalFlowDP: 15.5 });
   };
 

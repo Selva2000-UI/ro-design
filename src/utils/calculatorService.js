@@ -109,9 +109,10 @@ export const isGpmInput = (flowUnit) => {
  * Main System Calculation Orchestrator
  * Handles multi-stage logic, units, ion rejection, aging, and chemical dosing.
  * @param {object} inputs - System configuration and water data
+ * @param {array} allMembranes - Optional membrane database (for custom models)
  * @returns {object} Full calculation results
  */
-export const calculateSystem = (inputs) => {
+export const calculateSystem = (inputs, allMembranes = []) => {
   const {
     feedFlow = 100,
     flowUnit = 'gpm',
@@ -181,7 +182,9 @@ export const calculateSystem = (inputs) => {
     let sysArea = 0;
     
     activeStages.forEach((stage, idx) => {
-      const membrane = MEMBRANES[stage.membraneModel] || MEMBRANES['bwtds10kfr8040'] || MEMBRANES['cpa3'];
+      const membrane = (allMembranes && allMembranes.length > 0)
+        ? allMembranes.find(m => m.id === stage.membraneModel) || MEMBRANES[stage.membraneModel] || MEMBRANES['cpa3']
+        : MEMBRANES[stage.membraneModel] || MEMBRANES['cpa3'];
       const vessels = Number(stage.vessels) || 0;
       const elements = Number(stage.elementsPerVessel) || 7;
       
@@ -209,7 +212,12 @@ export const calculateSystem = (inputs) => {
       
       results.push(stageRes);
       sysQp += stageRes.Qp;
-      sysArea += vessels * elements * (membrane.areaM2 || 37.16);
+      
+      const currentMembraneObj = (allMembranes && allMembranes.length > 0)
+        ? allMembranes.find(m => m.id === stage.membraneModel) || MEMBRANES[stage.membraneModel] || MEMBRANES['cpa3']
+        : MEMBRANES[stage.membraneModel] || MEMBRANES['cpa3'];
+      const mArea = currentMembraneObj.areaM2 || (Number(currentMembraneObj.area) * 0.092903) || 37.16;
+      sysArea += vessels * elements * mArea;
       
       // Next stage
       currentFeedM3h = stageRes.Qc;
@@ -253,7 +261,9 @@ export const calculateSystem = (inputs) => {
   finalSystemRun.results.forEach((stageRes, idx) => {
     const vessels = Number(activeStages[idx].vessels) || 0;
     const elements = Number(activeStages[idx].elementsPerVessel) || 6;
-    const membrane = MEMBRANES[activeStages[idx].membraneModel] || MEMBRANES['cpa3'];
+    const membrane = (allMembranes && allMembranes.length > 0)
+      ? allMembranes.find(m => m.id === activeStages[idx].membraneModel) || MEMBRANES[activeStages[idx].membraneModel] || MEMBRANES['cpa3']
+      : MEMBRANES[activeStages[idx].membraneModel] || MEMBRANES['cpa3'];
 
     stageIonsMap.push({ 
         permeate: stageRes.permeateIons || {}, 
@@ -427,12 +437,17 @@ export const calculateSystem = (inputs) => {
       numTrains: trains,
       totalProductFlow: (totalPermeateM3hFullSystem).toFixed(2),
       flowUnit: isImperial ? 'gpm' : 'm3/h',
-      stages: activeStages.map((s, idx) => ({
-        stage: idx + 1,
-        membrane: MEMBRANES[s.membraneModel]?.name || s.membraneModel,
-        elementsPerVessel: s.elementsPerVessel,
-        vessels: s.vessels
-      }))
+      stages: activeStages.map((s, idx) => {
+        const membrane = (allMembranes && allMembranes.length > 0)
+          ? allMembranes.find(m => m.id === s.membraneModel) || MEMBRANES[s.membraneModel] || MEMBRANES['cpa3']
+          : MEMBRANES[s.membraneModel] || MEMBRANES['cpa3'];
+        return {
+          stage: idx + 1,
+          membrane: membrane?.name || s.membraneModel,
+          elementsPerVessel: s.elementsPerVessel,
+          vessels: s.vessels
+        };
+      })
     },
     results: {
       avgFluxLMH,
