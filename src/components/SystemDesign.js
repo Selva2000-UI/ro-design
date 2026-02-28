@@ -1137,12 +1137,14 @@ const SystemDesign = ({
 
                       // Permeate branch
                       elements.push(<line key={`p-b-${i}`} x1={sX + stageWidth} y1={sY - 15} x2={sX + stageWidth} y2={permY} stroke="#3cc7f4" strokeWidth="4" />);
-                      const pLabelId = numStages + i + 3;
-                      const pY = i === 0 ? permY : (sY + permY) / 2 - 10;
-                      const pX = i === 0 ? sX + stageWidth + 40 : sX + stageWidth;
-                      
-                      elements.push(<polygon key={`pp-${i}`} points={`${pX - 15},${pY - 12} ${pX + 15},${pY - 12} ${pX + 25},${pY} ${pX + 15},${pY + 12} ${pX - 15},${pY + 12} ${pX - 25},${pY}`} fill="white" stroke="#222" strokeWidth="1.5" />);
-                      elements.push(<text key={`pt-${i}`} x={pX} y={pY + 4} textAnchor="middle" fontSize="11" fontWeight="bold">{pLabelId}</text>);
+                      if (numStages > 1) {
+                        const pLabelId = numStages + i + 3;
+                        const pY = i === 0 ? permY : (sY + permY) / 2 - 10;
+                        const pX = i === 0 ? sX + stageWidth + 40 : sX + stageWidth;
+                        
+                        elements.push(<polygon key={`pp-${i}`} points={`${pX - 15},${pY - 12} ${pX + 15},${pY - 12} ${pX + 25},${pY} ${pX + 15},${pY + 12} ${pX - 15},${pY + 12} ${pX - 25},${pY}`} fill="white" stroke="#222" strokeWidth="1.5" />);
+                        elements.push(<text key={`pt-${i}`} x={pX} y={pY + 4} textAnchor="middle" fontSize="11" fontWeight="bold">{pLabelId}</text>);
+                      }
 
                       // Reject / Next Feed
                       if (i < numStages - 1) {
@@ -1163,7 +1165,7 @@ const SystemDesign = ({
                     }
 
                     // Final Permeate Label
-                    const finalPLab = 2 * numStages + 3;
+                    const finalPLab = 3 + (numStages > 1 ? 2 * numStages : numStages);
                     elements.push(<polygon key="fpl" points={`${finalX + 45 - 15},${permY - 12} ${finalX + 45 + 15},${permY - 12} ${finalX + 45 + 25},${permY} ${finalX + 45 + 15},${permY + 12} ${finalX + 45 - 15},${permY + 12} ${finalX + 45 - 25},${permY}`} fill="white" stroke="#222" strokeWidth="1.5" />);
                     elements.push(<text key="fpt" x={finalX + 45} y={permY + 4} textAnchor="middle" fontSize="11" fontWeight="bold">{finalPLab}</text>);
 
