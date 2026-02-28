@@ -202,7 +202,8 @@ export const calculateSystem = (inputs) => {
         k_dp: getKdp(membrane),
         k_mt: getKmt(membrane),
         p_exp: getPExp(membrane),
-        osmoticCoeff: getOsmoticCoefficient(membrane)
+        osmoticCoeff: getOsmoticCoefficient(membrane),
+        permeatePressure: Number(permeatePressure) || 0
       });
       
       results.push(stageRes);

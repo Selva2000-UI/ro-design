@@ -883,7 +883,8 @@ export const calculateROStage = (inputs) => {
     k_mt: kMtInput,      // Mass transfer coefficient (optional)
     k_dp: kDpInput,      // Pressure drop coefficient (optional)
     p_exp: pExpInput,    // Pressure drop exponent (optional)
-    osmoticCoeff: osmoticCoeffInput // Osmotic coefficient (optional)
+    osmoticCoeff: osmoticCoeffInput, // Osmotic coefficient (optional)
+    permeatePressure = 0 // Permeate back pressure (bar)
   } = inputs;
 
   // STEP 2 — MASS BALANCE
@@ -942,10 +943,6 @@ export const calculateROStage = (inputs) => {
   const TCF = calculateTCF(T, 'A');
   const TCF_B = calculateTCF(T, 'B');
   
-  // Dynamic A-value with pressure-dependent permeability factor
-  const pCorr = inputs.Pfeed !== undefined ? (0.45 + 0.025 * inputs.Pfeed) : 1.0;
-  const A = A_ref * TCF * pCorr;
-
   // STEP 6 — PRESSURE DROP (REFINED FOR SW-TDS-32K)
   const k_dp = kDpInput || (isSeawater ? 0.0135 : 0.0042); 
   const p_exp = pExpInput || 1.20;
@@ -954,6 +951,10 @@ export const calculateROStage = (inputs) => {
   const deltaP_vessel = deltaP_element * elementsPerVessel;
   // Account for inter-stage plumbing drop
   const deltaP_system = deltaP_vessel;
+
+  // Use 1.0 for brackish/standard membranes, or membrane-specific pCorr if added later
+  const pCorr = 1.0; 
+  const A = A_ref * TCF * pCorr;
 
   // STEP 8 — FLUX
   const totalArea = vesselsPerStage * elementsPerVessel * Area;
@@ -985,10 +986,10 @@ export const calculateROStage = (inputs) => {
 
   // STEP 10 — FEED PRESSURE (IF SOLVING FOR TARGET FLUX)
   // Use pi_surface for physically consistent industrial calculation
-  const Pfeed = inputPfeed !== undefined ? inputPfeed : ((A > 0 ? (J / A) : 0) + pi_surface + (0.5 * deltaP_vessel));
+  const Pfeed = inputPfeed !== undefined ? inputPfeed : ((A > 0 ? (J / A) : 0) + pi_surface + (0.5 * deltaP_vessel) + Number(permeatePressure));
   
   // STEP 7 — NET DRIVING PRESSURE (NDP)
-  const NDP = Pfeed - pi_surface - (0.5 * deltaP_vessel);
+  const NDP = Pfeed - Number(permeatePressure) - pi_surface - (0.5 * deltaP_vessel);
 
   // TDS-dependent B-factor correction for brackish water
   const bFactorTds = isSeawater ? 1.0 : (0.5 + 0.3 * (Cf / 1000));
@@ -1118,13 +1119,12 @@ export const calculateROStageGivenPressure = (inputs) => {
     k_mt: kMtInput,      // Mass transfer coefficient (optional)
     k_dp: kDpInput,      // Pressure drop coefficient (optional)
     p_exp: pExpInput,    // Pressure drop exponent (optional)
-    osmoticCoeff: osmoticCoeffInput // Osmotic coefficient (optional)
+    osmoticCoeff: osmoticCoeffInput, // Osmotic coefficient (optional)
+    permeatePressure = 0 // Permeate back pressure (bar)
   } = inputs;
 
   const totalArea = vesselsPerStage * elementsPerVessel * Area;
   const TCF = Math.exp(2640 * (1 / 298.15 - 1 / (T + 273.15)));
-  const pCorr = 0.45 + 0.025 * Pfeed;
-  const A = A_ref * TCF * pCorr;
   const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 10000;
   const base_k_mt = kMtInput || (isSeawater ? 650 : 160);
   const Q_ref_k = 16.0;
@@ -1159,8 +1159,12 @@ export const calculateROStageGivenPressure = (inputs) => {
     const beta = Math.max(1.0, Math.min(1.4, Math.exp(J / Math.max(k_mt, 1))));
     const pi_surface = beta * pi_avg;
 
-    // New J based on pressure
-    const J_new = A * Math.max(Pfeed - pi_surface - 0.5 * deltaP_system, 0);
+    // New J based on pressure (with P_avg for pCorr)
+    const P_avg = Pfeed - 0.5 * deltaP_system;
+    const pCorr = 1.0; // Standardized to 1.0 for brackish membranes
+    const A = A_ref * TCF * pCorr;
+
+    const J_new = A * Math.max(Pfeed - Number(permeatePressure) - pi_surface - 0.5 * deltaP_system, 0);
     const R_new = (J_new * totalArea / 1000) / Qf;
 
     if (Math.abs(R_new - R) < 0.00001) {
