@@ -6,7 +6,7 @@ import {
   FLOW_CONVERSION,
   FLUX_CONVERSION,
   calculateStageByStageHydraulics
-} from '../engines/calculationEngine';
+} from '../engines/calculationEngine.js';
 import { 
   MEMBRANES, 
   getAValue, 
@@ -15,7 +15,7 @@ import {
   getKmt,
   getPExp,
   getOsmoticCoefficient
-} from '../engines/membraneEngine';
+} from '../engines/membraneEngine.js';
 
 export const BAR_TO_PSI = PRESSURE_CONVERSION.bar_to_psi;
 export const M3H_TO_GPM = 1 / FLOW_CONVERSION.gpm;
@@ -271,6 +271,7 @@ export const calculateSystem = (inputs) => {
       permeateFlow: isImperial ? (stageRes.Qp * M3H_TO_GPM).toFixed(2) : stageRes.Qp.toFixed(2),
       concFlow: isImperial ? (stageRes.Qc * M3H_TO_GPM).toFixed(2) : stageRes.Qc.toFixed(2),
       feedFlowVessel: vessels > 0 ? (stageRes.Qf / vessels * flowDisplayFactor).toFixed(2) : '0.00',
+      permeateFlowVessel: vessels > 0 ? (stageRes.Qp / vessels * flowDisplayFactor).toFixed(2) : '0.00',
       concFlowVessel: vessels > 0 ? (stageRes.Qc / vessels * flowDisplayFactor).toFixed(2) : '0.00',
       feedPressure: usePsi ? (stageRes.Pfeed * BAR_TO_PSI).toFixed(2) : stageRes.Pfeed.toFixed(2),
       concPressure: usePsi ? ((stageRes.Pfeed - stageRes.deltaP_system) * BAR_TO_PSI).toFixed(2) : (stageRes.Pfeed - stageRes.deltaP_system).toFixed(2),
@@ -444,7 +445,15 @@ export const calculateSystem = (inputs) => {
       monthlyEnergyCost: ((firstStagePfeed * totalFeedM3h) / (36.7 * 0.75)) * (Number(inputs.energyCostPerKwh) || 0.12) * 24 * 30,
       recovery: systemRecovery * 100,
       totalAreaM2,
-      chemicalUsage: chemicalSolution_kg_hr
+      chemicalUsage: chemicalSolution_kg_hr,
+      // Single Train Flows (for Train Information panel)
+      trainPermeateFlow: (totalPermeateM3h * displayFactor).toFixed(2),
+      trainConcentrateFlow: (finalSystemRun.results[finalSystemRun.results.length - 1].Qc * displayFactor).toFixed(2),
+      trainFeedFlow: (trainFeedM3h * displayFactor).toFixed(2),
+      // Total System Flows
+      totalPermeateFlow: (totalPermeateM3h * trains * displayFactor).toFixed(2),
+      totalConcentrateFlow: (finalSystemRun.results[finalSystemRun.results.length - 1].Qc * trains * displayFactor).toFixed(2),
+      totalFeedFlow: (totalFeedM3h * displayFactor).toFixed(2)
     },
     permeateParameters: {
       tds: permeateTds,

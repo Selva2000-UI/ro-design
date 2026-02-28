@@ -35,6 +35,7 @@ const App = () => {
     feedFlow: 35,
     averageFlux: 15.7,
     permeateFlow: 14, // train permeate flow in selected unit
+    concentrateFlow: 21,
     numTrains: 1,
 
     // Array specification
@@ -170,10 +171,11 @@ const App = () => {
         concentrateParameters: results.concentrateParameters,
         permeateParameters: results.permeateParameters,
         feedParameters: results.feedParameters,
-        permeateFlow: results.flowDiagramPoints[3].flow,
-        feedFlow: results.flowDiagramPoints[0].flow,
-        concentrateFlow: results.flowDiagramPoints[2].flow,
-        totalPlantProductFlowDisplay: results.flowDiagramPoints[3].flow,
+        permeateFlow: results.results.trainPermeateFlow,
+        feedFlow: results.results.trainFeedFlow,
+        totalFeedFlowM3h: results.results.totalFeedFlow,
+        concentrateFlow: results.results.trainConcentrateFlow,
+        totalPlantProductFlowDisplay: results.results.totalPermeateFlow,
         pumpPressure: results.results.feedPressure,
         fluxUnit: fluxUnitLabel
       });
@@ -377,6 +379,7 @@ const App = () => {
           <td>${row.feedPressure ?? ''}</td>
           <td>${row.concPressure ?? ''}</td>
           <td>${row.feedFlowVessel ?? ''}</td>
+          <td>${row.permeateFlowVessel ?? ''}</td>
           <td>${row.concFlowVessel ?? ''}</td>
           <td>${row.flux ?? ''}</td>
           <td>${row.highestFlux ?? ''}</td>
@@ -563,6 +566,7 @@ const App = () => {
                   <th>Feed (${pUnit})</th>
                   <th>Conc (${pUnit})</th>
                   <th>Feed (${fUnit})</th>
+                  <th>Perm (${fUnit})</th>
                   <th>Conc (${fUnit})</th>
                   <th>Flux (${fluxUnit})</th>
                   <th>Highest flux (${fluxUnit})</th>

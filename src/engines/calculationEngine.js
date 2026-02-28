@@ -80,6 +80,61 @@ export const convertPressure = (value, fromUnit = 'bar') => {
 };
 
 // ============================================
+// FLOW & RECOVERY CALCULATION
+// ============================================
+
+/**
+ * Calculate Feed Flow (Qf)
+ * @param {number} qp - Permeate Flow (Qp)
+ * @param {number} qcOrRecovery - Concentrate Flow (Qc) OR Recovery (decimal)
+ * @param {boolean} isRecovery - Whether second param is recovery
+ * @returns {number} Feed Flow (Qf)
+ */
+export const calculateFeedFlow = (qp, qcOrRecovery, isRecovery = false) => {
+  if (isRecovery) {
+    return qcOrRecovery > 0 ? qp / qcOrRecovery : 0;
+  }
+  return qp + qcOrRecovery;
+};
+
+/**
+ * Calculate Permeate Flow (Qp)
+ * @param {number} qf - Feed Flow (Qf)
+ * @param {number} recoveryOrQc - Recovery (decimal) OR Concentrate Flow (Qc)
+ * @param {boolean} isQc - Whether second param is Qc
+ * @returns {number} Permeate Flow (Qp)
+ */
+export const calculatePermeateFlow = (qf, recoveryOrQc, isQc = false) => {
+  if (isQc) return qf - recoveryOrQc;
+  return qf * recoveryOrQc;
+};
+
+/**
+ * Calculate Concentrate Flow (Qc)
+ * @param {number} qf - Feed Flow (Qf)
+ * @param {number} qpOrRecovery - Permeate Flow (Qp) OR Recovery (decimal)
+ * @param {boolean} isRecovery - Whether second param is recovery
+ * @returns {number} Concentrate Flow (Qc)
+ */
+export const calculateConcentrateFlow = (qf, qpOrRecovery, isRecovery = false) => {
+  if (isRecovery) return qf * (1 - qpOrRecovery);
+  return qf - qpOrRecovery;
+};
+
+/**
+ * Calculate Recovery
+ * @param {number} qp - Permeate Flow (Qp)
+ * @param {number} qf - Feed Flow (Qf)
+ * @param {boolean} asPercentage - Return as percentage (0-100)
+ * @returns {number} Recovery
+ */
+export const calculateRecovery = (qp, qf, asPercentage = false) => {
+  if (!qf || qf === 0) return 0;
+  const recovery = qp / qf;
+  return asPercentage ? recovery * 100 : recovery;
+};
+
+// ============================================
 // MEMBRANE AREA CALCULATION
 // ============================================
 
@@ -1380,8 +1435,9 @@ export const calculateStageByStageHydraulics = (inputs) => {
     const Qp = currentFeedFlow * recovery;
     const Qc = currentFeedFlow - Qp;
     
-    // Element-level calculations
+    // Element-level calculations (Per Vessel)
     const Qf_vessel = vessels > 0 ? currentFeedFlow / vessels : 0;
+    const Qp_vessel = vessels > 0 ? Qp / vessels : 0;
     const Qc_vessel = vessels > 0 ? Qc / vessels : 0;
     
     results.push({
@@ -1392,10 +1448,11 @@ export const calculateStageByStageHydraulics = (inputs) => {
       permeateFlow: Qp,
       concentrateFlow: Qc,
       feedFlowVessel: Qf_vessel,
+      permeateFlowVessel: Qp_vessel,
       concentrateFlowVessel: Qc_vessel,
       feedConc: currentFeedConc,
       // Cc refined by mass balance assuming 100% salt rejection for hydraulic step
-      concentrateConc: currentFeedConc / (1 - recovery)
+      concentrateConc: currentFeedConc / (1 - Math.min(recovery, 0.999))
     });
 
     totalPermeateFlow += Qp;
