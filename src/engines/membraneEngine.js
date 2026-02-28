@@ -491,9 +491,9 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.FOULING_RESISTANT,
     areaM2: 37.16,
     transport: {
-      aValueRef: 1.37, // Calibrated for 104.2 bar at 288 LMH with pCorr
-      membraneBRef: 0.169,
-      kMtRef: 160,
+      aValueRef: 4.30, // Calibrated for 104.2 bar at 288 LMH (NDP ~ 67 bar)
+      membraneBRef: 0.175,
+      kMtRef: 350,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -518,8 +518,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0100, // Calibrated for 61 bar drop
-      exponent: 1.35
+      coefficient: 0.00099, // Calibrated for 61 bar drop (1.81 exponent)
+      exponent: 1.81
     },
     designFlux: {
       min: 10,
