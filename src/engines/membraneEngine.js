@@ -43,12 +43,13 @@ export const MEMBRANE_TYPES = {
  * Format: id → complete specification with test conditions, transport properties, and safety limits
  */
 export const MEMBRANES = {
-  espa2ld: {
-    id: 'espa2ld',
+  espa2ld4040: {
+    id: 'espa2ld4040',
     name: 'ESPA2-LD-4040',
     category: '4040',
     type: MEMBRANE_TYPES.BRACKISH,
-    areaM2: 7.43,
+    areaM2: 7.432,
+    maxFlux: 50.0,
     transport: {
       aValueRef: 4.35,
       membraneBRef: 0.14,
@@ -76,8 +77,72 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0045,
+      coefficient: 0.0158,
       exponent: 1.75
+    },
+    designFlux: {
+      min: 20,
+      max: 40,
+      recommended: 28
+    },
+    agingModel: {
+      annualFluxDecline: 0.05,
+      foulingFactorDefault: 1.0
+    },
+    osmoticModel: {
+      type: 'industrial-linear',
+      coefficient: 0.00074,
+      formula: 'π(bar) = 0.00074 × TDS',
+      note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
+    },
+    limits: {
+      maxTds: 2000,
+      maxTemp: 45,
+      maxPressure: 600
+    },
+    compatibleWaterTypes: [
+      'Brackish Well Non-Fouling',
+      'Brackish Surface',
+      'Municipal'
+    ]
+  },
+
+  espa2ld: {
+    id: 'espa2ld',
+    name: 'ESPA2-LD-8040',
+    category: '8040',
+    type: MEMBRANE_TYPES.BRACKISH,
+    areaM2: 37.16,
+    maxFlux: 50.0,
+    transport: {
+      aValueRef: 4.35,
+      membraneBRef: 0.14,
+      kMtRef: 160,
+      soluteBFactors: {
+        monovalent: 1.0,
+        divalent: 0.6,
+        silica: 0.8,
+        boron: 1.4,
+        co2: 999
+      }
+    },
+    testConditions: {
+      pressureBar: 10.3,
+      temperatureC: 25,
+      tds: 1500,
+      recovery: 0.15,
+      fluxLMH: 28
+    },
+    hydraulics: {
+      maxFeedFlowM3H: 16,
+      minConcentrateFlowM3H: 3,
+      maxElementRecovery: 0.15,
+      maxPressureDropBar: 1.0,
+      spacerMil: 34
+    },
+    pressureDropModel: {
+      coefficient: 0.0042,
+      exponent: 1.22
     },
     designFlux: {
       min: 20,
@@ -111,9 +176,10 @@ export const MEMBRANES = {
     name: 'CPA3-8040',
     category: '8040',
     type: MEMBRANE_TYPES.BRACKISH,
-    areaM2: 37.17,
+    areaM2: 37.16,
+    maxFlux: 51.8,
     transport: {
-      aValueRef: 3.21,
+      aValueRef: 3.14,
       membraneBRef: 0.136,
       kMtRef: 160,
       soluteBFactors: {
@@ -139,8 +205,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0035,
-      exponent: 1.18
+      coefficient: 0.012,
+      exponent: 1.3
     },
     designFlux: {
       min: 18,
@@ -169,15 +235,17 @@ export const MEMBRANES = {
     ]
   },
 
-  cpa5max8040: {
-    id: 'cpa5max8040',
-    name: 'CPA5-MAX-8040',
+  cpa5ld8040: {
+    id: 'cpa5ld8040',
+    name: 'CPA5-LD-8040',
     category: '8040',
     type: MEMBRANE_TYPES.BRACKISH,
-    areaM2: 40.9,
+    // areaM2: 40.9,
+    areaM2: 37.16,
+    maxFlux: 53.0,
     transport: {
-      aValueRef: 3.35,
-      membraneBRef: 0.134,
+      aValueRef: 2.72,
+      membraneBRef: 0.165,
       kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
@@ -202,8 +270,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0035,
-      exponent: 1.18
+      coefficient: 0.012,
+      exponent: 1.3
     },
     designFlux: {
       min: 20,
@@ -216,8 +284,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.00074,
-      formula: 'π(bar) = 0.00074 × TDS',
+      coefficient: 0.000792,
+      formula: 'π(bar) = 0.000792 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -232,77 +300,16 @@ export const MEMBRANES = {
     ]
   },
 
-  cpa5ld4040: {
-    id: 'cpa5ld4040',
-    name: 'CPA5LD-4040',
-    category: '4040',
-    type: MEMBRANE_TYPES.LOW_FOULING,
-    areaM2: 7.43,
-    transport: {
-      aValueRef: 4.25,
-      membraneBRef: 0.139,
-      kMtRef: 160,
-      soluteBFactors: {
-        monovalent: 1.0,
-        divalent: 0.6,
-        silica: 0.8,
-        boron: 1.4,
-        co2: 999
-      }
-    },
-    testConditions: {
-      pressureBar: 10.3,
-      temperatureC: 25,
-      tds: 1500,
-      recovery: 0.15,
-      fluxLMH: 28
-    },
-    hydraulics: {
-      maxFeedFlowM3H: 3.6,
-      minConcentrateFlowM3H: 0.7,
-      maxElementRecovery: 0.15,
-      maxPressureDropBar: 1.0,
-      spacerMil: 34
-    },
-    pressureDropModel: {
-      coefficient: 0.0045,
-      exponent: 1.75
-    },
-    designFlux: {
-      min: 20,
-      max: 40,
-      recommended: 28
-    },
-    agingModel: {
-      annualFluxDecline: 0.05,
-      foulingFactorDefault: 0.95
-    },
-    osmoticModel: {
-      type: 'industrial-linear',
-      coefficient: 0.00074,
-      formula: 'π(bar) = 0.00074 × TDS',
-      note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
-    },
-    limits: {
-      maxTds: 1500,
-      maxTemp: 45,
-      maxPressure: 600
-    },
-    compatibleWaterTypes: [
-      'Brackish Well Non-Fouling',
-      'Brackish Well High-Fouling',
-      'Brackish Surface'
-    ]
-  },
 
   lfc3ld4040: {
     id: 'lfc3ld4040',
     name: 'LFC3-LD-4040',
     category: '4040',
     type: MEMBRANE_TYPES.LOW_FOULING,
-    areaM2: 7.43,
+    areaM2: 7.432,
+    maxFlux: 48.0,
     transport: {
-      aValueRef: 4.40,
+      aValueRef: 2.95,
       membraneBRef: 0.142,
       kMtRef: 160,
       soluteBFactors: {
@@ -328,7 +335,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0045,
+      coefficient: 0.0158,
       exponent: 1.75
     },
     designFlux: {
@@ -348,6 +355,72 @@ export const MEMBRANES = {
     },
     limits: {
       maxTds: 1500,
+      maxTemp: 45,
+      maxPressure: 600
+    },
+    compatibleWaterTypes: [
+      'Brackish Well Non-Fouling',
+      'Brackish Well High-Fouling',
+      'Brackish Surface',
+      'Municipal Waste',
+      'Industrial Waste'
+    ]
+  },
+
+  lfc3ld8040: {
+    id: 'lfc3ld8040',
+    name: 'LFC3-LD-8040',
+    category: '8040',
+    type: MEMBRANE_TYPES.LOW_FOULING,
+    areaM2: 37.16,
+    maxFlux: 48.0,
+    transport: {
+      aValueRef: 2.73,
+      membraneBRef: 0.19,
+      kMtRef: 160,
+      soluteBFactors: {
+        monovalent: 1.0,
+        divalent: 0.6,
+        silica: 0.75,
+        boron: 1.3,
+        co2: 999
+      }
+    },
+    testConditions: {
+      pressureBar: 15.5,
+      temperatureC: 25,
+      tds: 1500,
+      recovery: 0.15,
+      fluxLMH: 28
+    },
+    hydraulics: {
+      maxFeedFlowM3H: 16,
+      minConcentrateFlowM3H: 3,
+      maxElementRecovery: 0.15,
+      maxPressureDropBar: 1.0,
+      spacerMil: 34
+    },
+    pressureDropModel: {
+      coefficient: 0.012,
+      exponent: 1.3
+    },
+    designFlux: {
+      min: 20,
+      max: 40,
+      recommended: 28
+    },
+    agingModel: {
+      annualFluxDecline: 0.03,
+      foulingFactorDefault: 0.95
+    },
+    osmoticModel: {
+      type: 'industrial-linear',
+      coefficient: 0.000792,
+      formula: 'π(bar) = 0.000792 × TDS',
+      note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
+    },
+    limits: {
+      maxTds: 2000,
       maxTemp: 45,
       maxPressure: 600
     },
@@ -554,6 +627,7 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.SEAWATER,
     areaM2: 37.16,
+    maxFlux: 42.0,
     transport: {
       aValueRef: 1.005,
       membraneBRef: 0.0547,
@@ -623,7 +697,20 @@ export const MEMBRANES = {
  * @returns {object|null} Membrane object or null if not found
  */
 export const getMembrane = (membraneId) => {
-  return MEMBRANES[membraneId] || null;
+  if (!membraneId) return null;
+  
+  // 1. Direct match
+  if (MEMBRANES[membraneId]) return MEMBRANES[membraneId];
+  
+  // 2. Normalized match (lowercase, no dashes)
+  const id = membraneId.toLowerCase().replace(/-/g, '');
+  if (MEMBRANES[id]) return MEMBRANES[id];
+  
+  // 3. Search by name or normalized ID in values
+  return Object.values(MEMBRANES).find(m => 
+    m.id.toLowerCase().replace(/-/g, '') === id || 
+    m.name.toLowerCase().replace(/-/g, '') === id
+  ) || null;
 };
 
 /**
@@ -650,6 +737,33 @@ export const getMembranesByType = (type) => {
  */
 export const getMembranesByCategory = (category) => {
   return Object.values(MEMBRANES).filter(m => m.category === category);
+};
+
+/**
+ * Get membrane area in m2 (sanitized)
+ * @param {object} membrane - Membrane object
+ * @returns {number} Area in m2
+ */
+export const getArea = (membrane) => {
+  if (!membrane) return 37.16;
+  
+  const is4040 = 
+    (membrane.id && membrane.id.toLowerCase().includes('4040')) || 
+    (membrane.name && membrane.name.toLowerCase().includes('4040')) ||
+    membrane.category === '4040';
+
+  let area = Number(membrane.areaM2);
+  if (area > 0) return area;
+
+  // Use area property (sq ft) if present
+  if (membrane.area) {
+     const areaVal = Number(membrane.area);
+     // If it's a 4040 but area is 400, it's a mismatch in the data, it should be ~80
+     if (is4040 && areaVal > 300) return 7.432; 
+     return areaVal * 0.09290304;
+  }
+  
+  return is4040 ? 7.432 : 37.16;
 };
 
 /**

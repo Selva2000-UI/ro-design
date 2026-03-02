@@ -248,7 +248,7 @@ const results = compareMembraneOptions(
   10,
   { na: 200, cl: 400, ca: 100, mg: 50, so4: 100, hco3: 150 },
   0.75,
-  ['cpa3', 'cpa5max8040', 'bwtds5k8040']
+  ['cpa3', 'cpa5ld8040', 'bwtds5k8040']
 );
 
 results.forEach(option => {
@@ -293,7 +293,7 @@ const design = designMultiStageSystem({
   feedConc: 1410,
   feedIons: ions,
   targetRecovery: 0.75,
-  membrane: getMembrane('cpa5max8040'),
+  membrane: getMembrane('cpa5ld8040'),
   tempCelsius: 28,
   numStages: 2
 });
@@ -340,7 +340,7 @@ console.log(`Total Power: ${metrics.totalPower} kW`);
 
 The engine supports all membranes in the membrane database, including:
 
-- **Brackish**: CPA3, CPA5-MAX, CPA5-LD, ESPA2-LD
+- **Brackish**: CPA3, CPA5-LD, ESPA2-LD
 - **Low Fouling**: LFC3-LD
 - **High TDS**: BW-TDS-5K, BW-TDS-10K-FR
 - **Seawater**: SW-TDS-32K

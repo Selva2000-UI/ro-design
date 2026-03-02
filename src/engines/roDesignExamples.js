@@ -77,6 +77,30 @@ export const RO_DESIGN_EXAMPLES = {
     feedPressure: 42.28 // 613.2 psi
   },
 
+  cpa5ldBrackish: {
+    name: 'CPA5-LD Brackish (2500 TDS)',
+    ions: {
+      na: 983.73,
+      cl: 1516.17,
+      hco3: 0.50
+    },
+    targetRecovery: 0.40,
+    feedTemperature: 25,
+    feedPressure: 43.7
+  },
+
+  lfc3ldLowFouling: {
+    name: 'LFC3-LD Low Fouling (2500 TDS)',
+    ions: {
+      na: 983.73,
+      cl: 1516.17,
+      hco3: 0.50
+    },
+    targetRecovery: 0.40,
+    feedTemperature: 25,
+    feedPressure: 43.6
+  },
+
   lowSalinityBrackish: {
     name: 'Low Salinity Brackish (800 TDS)',
     ions: {
@@ -116,13 +140,13 @@ export const MEMBRANE_RECOMMENDATIONS = {
     optimalRecovery: 0.65,
     description: 'BW-TDS-10K-FR for very high TDS'
   },
-  // seawater20k: {
-  //   membraneId: 'swtds32k8040',
-  //   minTds: 10000,
-  //   maxTds: 25000,
-  //   optimalRecovery: 0.40,
-  //   description: 'SW-TDS-32K-8040 for 20000 TDS seawater/high-brackish'
-  // },
+  seawater20k: {
+    membraneId: 'swtds32k8040',
+    minTds: 10000,
+    maxTds: 25000,
+    optimalRecovery: 0.40,
+    description: 'SW-TDS-32K-8040 for 20000 TDS seawater/high-brackish'
+  },
   seawater: {
     membraneId: 'swtds32k8080',
     minTds: 25000,
