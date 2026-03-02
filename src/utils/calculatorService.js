@@ -4,18 +4,20 @@ import {
   calculateWaterSaturations,
   PRESSURE_CONVERSION,
   FLOW_CONVERSION,
-  FLUX_CONVERSION,
-  calculateStageByStageHydraulics
+  FLUX_CONVERSION
 } from '../engines/calculationEngine.js';
-import { 
-  MEMBRANES, 
+import * as MembraneEngine from '../engines/membraneEngine.js';
+
+const { 
+  getMembrane,
+  getArea,
   getAValue, 
   getMembraneB, 
   getKdp,
   getKmt,
   getPExp,
   getOsmoticCoefficient
-} from '../engines/membraneEngine.js';
+} = MembraneEngine;
 
 export const BAR_TO_PSI = PRESSURE_CONVERSION.bar_to_psi;
 export const M3H_TO_GPM = 1 / FLOW_CONVERSION.gpm;
@@ -131,8 +133,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     doseUnit = 'mg/l',
     permeatePressure = 0,
     waterType = 'Well Water',
-    pressureUnit: inputPUnit,
-    fluxUnit: inputFluxUnit
+    pressureUnit: inputPUnit
   } = inputs;
 
   // 1. UNIT NORMALIZATION
@@ -168,7 +169,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     }];
   }
 
-  const isSeawaterSystem = (waterType && waterType.toLowerCase().includes('sea')) || rawFeedTds >= 10000;
+  const isSeawaterSystem = (waterType && waterType.toLowerCase().includes('sea')) || rawFeedTds >= 2000;
   const targetQp = trainFeedM3h * (Number(recovery) / 100);
 
   // Helper to calculate whole system for a given first-stage feed pressure
@@ -184,11 +185,15 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     let sysArea = 0;
     
     activeStages.forEach((stage, idx) => {
+      const getModelId = (model) => (model || '').toLowerCase().replace(/-/g, '').trim();
+      const targetId = getModelId(stage.membraneModel);
       const membrane = (allMembranes && allMembranes.length > 0)
-        ? allMembranes.find(m => m.id === stage.membraneModel) || MEMBRANES[stage.membraneModel] || MEMBRANES['cpa3']
-        : MEMBRANES[stage.membraneModel] || MEMBRANES['cpa3'];
+        ? allMembranes.find(m => getModelId(m.id) === targetId || getModelId(m.name) === targetId) || getMembrane(stage.membraneModel) || getMembrane('cpa3')
+        : getMembrane(stage.membraneModel) || getMembrane('cpa3');
       const vessels = Number(stage.vessels) || 0;
-      const elements = Number(stage.elementsPerVessel) || 7;
+      const elements = Number(stage.elementsPerVessel) || Number(inputs.elementsPerVessel) || 6;
+      
+      const actualArea = getArea(membrane);
       
       const stageRes = calculateROStageGivenPressure({
         Qf: currentFeedM3h,
@@ -197,14 +202,14 @@ export const calculateSystem = (inputs, allMembranes = []) => {
         T: Number(temp) || 25,
         A_ref: getAValue(membrane) * (Number(foulingFactor) || 1.0),
         B_ref: getMembraneB(membrane) * spFactor,
-        Area: membrane.areaM2 || 37.16,
+        Area: actualArea,
         membrane: membrane,
         elementsPerVessel: elements,
         vesselsPerStage: vessels,
         waterType: waterType,
         feedPh: currentStagePh,
         feedIons: stageFeedIons,
-        soluteBFactors: membrane.transport?.soluteBFactors || {},
+        soluteBFactors: membrane?.transport?.soluteBFactors || {},
         k_dp: getKdp(membrane),
         k_mt: getKmt(membrane),
         p_exp: getPExp(membrane),
@@ -216,10 +221,11 @@ export const calculateSystem = (inputs, allMembranes = []) => {
       sysQp += stageRes.Qp;
       
       const currentMembraneObj = (allMembranes && allMembranes.length > 0)
-        ? allMembranes.find(m => m.id === stage.membraneModel) || MEMBRANES[stage.membraneModel] || MEMBRANES['cpa3']
-        : MEMBRANES[stage.membraneModel] || MEMBRANES['cpa3'];
-      const mArea = currentMembraneObj.areaM2 || (Number(currentMembraneObj.area) * 0.092903) || 37.16;
-      sysArea += vessels * elements * mArea;
+        ? allMembranes.find(m => m.id === stage.membraneModel) || getMembrane(stage.membraneModel) || getMembrane('cpa3')
+        : getMembrane(stage.membraneModel) || getMembrane('cpa3');
+      const mArea = getArea(currentMembraneObj);
+      const mElements = Number(stage.elementsPerVessel) || Number(inputs.elementsPerVessel) || 6;
+      sysArea += vessels * mElements * mArea;
       
       // Next stage
       currentFeedM3h = stageRes.Qc;
@@ -234,7 +240,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
 
   // Iterate startPfeed to hit target recovery (Bisection method)
   let lowP = 0.1;
-  let highP = isSeawaterSystem ? 300 : 150; 
+  let highP = 1500; // Increased to handle extreme designs (e.g. 532 bar in user benchmark)
   let finalSystemRun = null;
   
   for (let i = 0; i < 50; i++) {
@@ -246,15 +252,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     else highP = midP;
   }
 
-  // REFINED HYDRAULIC DISTRIBUTION (Optional: Can be used to override if needed)
-  const hydraulics = calculateStageByStageHydraulics({
-    feedFlow: trainFeedM3h,
-    totalRecovery: Number(recovery) / 100,
-    numStages: activeStages.length,
-    vesselsPerStage: activeStages.map(s => Number(s.vessels)),
-    feedConc: rawFeedTds
-  });
-
+  // 4. MULTI-STAGE ITERATION
   const stageResults = [];
   const stageIonsMap = [];
   const totalPermeateM3h = finalSystemRun.sysQp;
@@ -262,10 +260,10 @@ export const calculateSystem = (inputs, allMembranes = []) => {
 
   finalSystemRun.results.forEach((stageRes, idx) => {
     const vessels = Number(activeStages[idx].vessels) || 0;
-    const elements = Number(activeStages[idx].elementsPerVessel) || 6;
+    const elements = Number(activeStages[idx].elementsPerVessel) || Number(inputs.elementsPerVessel) || 6;
     const membrane = (allMembranes && allMembranes.length > 0)
-      ? allMembranes.find(m => m.id === activeStages[idx].membraneModel) || MEMBRANES[activeStages[idx].membraneModel] || MEMBRANES['cpa3']
-      : MEMBRANES[activeStages[idx].membraneModel] || MEMBRANES['cpa3'];
+      ? allMembranes.find(m => m.id === activeStages[idx].membraneModel) || getMembrane(activeStages[idx].membraneModel) || getMembrane('cpa3')
+      : getMembrane(activeStages[idx].membraneModel) || getMembrane('cpa3');
 
     stageIonsMap.push({ 
         permeate: stageRes.permeateIons || {}, 
@@ -281,12 +279,15 @@ export const calculateSystem = (inputs, allMembranes = []) => {
       vessels: vessels,
       elements: elements,
       membrane: membrane.name,
-      feedFlow: isImperial ? (stageRes.Qf * M3H_TO_GPM).toFixed(2) : stageRes.Qf.toFixed(2),
-      permeateFlow: isImperial ? (stageRes.Qp * M3H_TO_GPM).toFixed(2) : stageRes.Qp.toFixed(2),
-      concFlow: isImperial ? (stageRes.Qc * M3H_TO_GPM).toFixed(2) : stageRes.Qc.toFixed(2),
+      feedFlow: vessels > 0 ? (stageRes.Qf / vessels * flowDisplayFactor).toFixed(2) : '0.00',
+      permeateFlow: vessels > 0 ? (stageRes.Qp / vessels * flowDisplayFactor).toFixed(2) : '0.00',
+      concFlow: vessels > 0 ? (stageRes.Qc / vessels * flowDisplayFactor).toFixed(2) : '0.00',
       feedFlowVessel: vessels > 0 ? (stageRes.Qf / vessels * flowDisplayFactor).toFixed(2) : '0.00',
       permeateFlowVessel: vessels > 0 ? (stageRes.Qp / vessels * flowDisplayFactor).toFixed(2) : '0.00',
       concFlowVessel: vessels > 0 ? (stageRes.Qc / vessels * flowDisplayFactor).toFixed(2) : '0.00',
+      totalFeedFlow: isImperial ? (stageRes.Qf * M3H_TO_GPM).toFixed(2) : stageRes.Qf.toFixed(2),
+      totalPermeateFlow: isImperial ? (stageRes.Qp * M3H_TO_GPM).toFixed(2) : stageRes.Qp.toFixed(2),
+      totalConcFlow: isImperial ? (stageRes.Qc * M3H_TO_GPM).toFixed(2) : stageRes.Qc.toFixed(2),
       feedPressure: usePsi ? (stageRes.Pfeed * BAR_TO_PSI).toFixed(2) : stageRes.Pfeed.toFixed(2),
       concPressure: usePsi ? ((stageRes.Pfeed - stageRes.deltaP_system) * BAR_TO_PSI).toFixed(2) : (stageRes.Pfeed - stageRes.deltaP_system).toFixed(2),
       flux: useGfd ? (stageRes.J * LMH_TO_GFD).toFixed(2) : stageRes.J.toFixed(2),
@@ -327,11 +328,14 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     permeateIons[ion] = Number((weightedSum / (totalPermeateM3h || 1)).toFixed(4));
   });
 
-  const permeateTds = Number(allIonKeys.reduce((sum, key) => {
-    return sum + (key.toLowerCase() === 'co2' ? 0 : permeateIons[key] || 0);
-  }, 0).toFixed(2));
+  // Calculate flow-weighted average for system bulk permeate TDS
+  let totalWeightedTds = 0;
+  finalSystemRun.results.forEach(res => {
+    totalWeightedTds += Number(res.Cp) * res.Qp;
+  });
+  const permeateTds = Number((totalWeightedTds / (totalPermeateM3h || 1)).toFixed(2));
   
-  // Flow-weighted average for system permeate pH
+  // Calculate flow-weighted average for system permeate pH
   let totalWeightedPh = 0;
   finalSystemRun.results.forEach(stageRes => {
     totalWeightedPh += Number(stageRes.permeatePh) * stageRes.Qp;
@@ -339,9 +343,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
   const permeatePh = Number((totalWeightedPh / (totalPermeateM3h || 1)).toFixed(2));
 
   const concIons = finalSystemRun.lastIons || { ...feedIons };
-  const currentFeedTds = Number(Object.entries(concIons).reduce((sum, [key, val]) => {
-    return sum + (key.toLowerCase() === 'co2' ? 0 : Number(val) || 0);
-  }, 0).toFixed(2));
+  const systemConcentrateTds = Number((finalSystemRun.lastTds || 0).toFixed(2));
   const lastStageRes = stageResults.length > 0 ? stageResults[stageResults.length - 1] : null;
   const concentrateOsmotic = lastStageRes ? lastStageRes.pi_c : 0;
   
@@ -379,7 +381,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     pressure: '0.00', 
     tds: rawFeedTds.toFixed(2), 
     ph: (Number(inputs.feedPh) || 7.00).toFixed(2), 
-    ec: calculateEC(rawFeedTds, temp, inputs.feedPh).toFixed(2) 
+    ec: calculateEC(rawFeedTds, temp, inputs.feedPh).toFixed(0) 
   });
 
   // Point 2: After High Pressure Pump
@@ -390,10 +392,10 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     pressure: usePsi ? (firstStagePfeed * BAR_TO_PSI).toFixed(2) : firstStagePfeed.toFixed(2), 
     tds: rawFeedTds.toFixed(2), 
     ph: (Number(inputs.feedPh) || 7.00).toFixed(2), 
-    ec: calculateEC(rawFeedTds, temp, inputs.feedPh).toFixed(2) 
+    ec: calculateEC(rawFeedTds, temp, inputs.feedPh).toFixed(0) 
   });
 
-  // Stage-wise Concentrate/Feed points
+  // Stage-wise Concentrate points (Points 3, 4, ...)
   finalSystemRun.results.forEach((stageRes, idx) => {
     const isLast = idx === finalSystemRun.results.length - 1;
     flowDiagramPoints.push({
@@ -403,34 +405,35 @@ export const calculateSystem = (inputs, allMembranes = []) => {
       pressure: usePsi ? ((stageRes.Pfeed - stageRes.deltaP_system) * BAR_TO_PSI).toFixed(2) : (stageRes.Pfeed - stageRes.deltaP_system).toFixed(2),
       tds: stageRes.Cc.toFixed(2),
       ph: stageRes.concentratePh.toFixed(2),
-      ec: calculateEC(stageRes.Cc, temp, stageRes.concentratePh).toFixed(2)
+      ec: calculateEC(stageRes.Cc, temp, stageRes.concentratePh).toFixed(0)
     });
   });
 
-  // Stage-wise Permeate points (Only for multi-stage)
-  if (finalSystemRun.results.length > 1) {
-    finalSystemRun.results.forEach((stageRes, idx) => {
-      flowDiagramPoints.push({
-        id: 3 + finalSystemRun.results.length + idx,
-        name: `Stage ${idx + 1} Permeate`,
-        flow: (stageRes.Qp * trains * displayFactor).toFixed(2),
-        pressure: '0.00',
-        tds: stageRes.Cp.toFixed(2),
-        ph: stageRes.permeatePh.toFixed(2),
-        ec: calculateEC(stageRes.Cp, temp, stageRes.permeatePh).toFixed(2)
-      });
-    });
-  }
+  const nextId = 3 + finalSystemRun.results.length;
 
-  // Total Permeate point
-  flowDiagramPoints.push({ 
-    id: 3 + (finalSystemRun.results.length > 1 ? 2 * finalSystemRun.results.length : finalSystemRun.results.length), 
-    name: 'Total Permeate', 
-    flow: (totalPermeateM3h * trains * displayFactor).toFixed(2), 
-    pressure: usePsi ? (Number(permeatePressure) * BAR_TO_PSI).toFixed(2) : Number(permeatePressure).toFixed(2), 
-    tds: permeateTds.toFixed(2), 
-    ph: permeatePh.toFixed(2), 
-    ec: calculateEC(permeateTds, temp, permeatePh).toFixed(2) 
+  // Stage-wise Permeate points
+  finalSystemRun.results.forEach((stageRes, idx) => {
+    flowDiagramPoints.push({
+      id: nextId + idx,
+      name: `Stage ${idx + 1} Permeate`,
+      flow: (stageRes.Qp * trains * displayFactor).toFixed(2),
+      pressure: '0.00',
+      tds: stageRes.Cp.toFixed(2),
+      ph: stageRes.permeatePh.toFixed(2),
+      ec: calculateEC(stageRes.Cp, temp, stageRes.permeatePh).toFixed(1)
+    });
+  });
+
+  // Final Total Permeate point
+  const totalId = nextId + finalSystemRun.results.length;
+  flowDiagramPoints.push({
+    id: totalId,
+    name: 'Total Permeate',
+    flow: (totalPermeateM3h * trains * displayFactor).toFixed(2),
+    pressure: '0.00',
+    tds: permeateTds.toFixed(2),
+    ph: permeatePh.toFixed(2),
+    ec: calculateEC(permeateTds, temp, permeatePh).toFixed(1)
   });
 
   return {
@@ -441,8 +444,8 @@ export const calculateSystem = (inputs, allMembranes = []) => {
       flowUnit: isImperial ? 'gpm' : 'm3/h',
       stages: activeStages.map((s, idx) => {
         const membrane = (allMembranes && allMembranes.length > 0)
-          ? allMembranes.find(m => m.id === s.membraneModel) || MEMBRANES[s.membraneModel] || MEMBRANES['cpa3']
-          : MEMBRANES[s.membraneModel] || MEMBRANES['cpa3'];
+          ? allMembranes.find(m => m.id === s.membraneModel) || getMembrane(s.membraneModel) || getMembrane('cpa3')
+          : getMembrane(s.membraneModel) || getMembrane('cpa3');
         return {
           stage: idx + 1,
           membrane: membrane?.name || s.membraneModel,
@@ -482,7 +485,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     },
     permeateConcentration: permeateIons,
     concentrateParameters: {
-      tds: currentFeedTds,
+      tds: systemConcentrateTds,
       osmoticPressure: concentrateOsmotic * (isImperial ? BAR_TO_PSI : 1),
       ph: concPh.toFixed(2),
       ions: concIons,
