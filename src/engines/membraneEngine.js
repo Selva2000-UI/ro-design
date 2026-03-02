@@ -349,8 +349,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.00074,
-      formula: 'π(bar) = 0.00074 × TDS',
+      coefficient: 0.0007925,
+      formula: 'π(bar) = 0.0007925 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -752,6 +752,11 @@ export const getArea = (membrane) => {
     (membrane.name && membrane.name.toLowerCase().includes('4040')) ||
     membrane.category === '4040';
 
+  const is8080Or8040 = 
+    (membrane.id && (membrane.id.toLowerCase().includes('8040') || membrane.id.toLowerCase().includes('8080'))) || 
+    (membrane.name && (membrane.name.toLowerCase().includes('8040') || membrane.name.toLowerCase().includes('8080'))) ||
+    membrane.category === '8040' || membrane.category === '8080';
+
   let area = Number(membrane.areaM2);
   if (area > 0) return area;
 
@@ -760,10 +765,12 @@ export const getArea = (membrane) => {
      const areaVal = Number(membrane.area);
      // If it's a 4040 but area is 400, it's a mismatch in the data, it should be ~80
      if (is4040 && areaVal > 300) return 7.432; 
+     if (is8080Or8040 && areaVal < 300) return 37.16;
      return areaVal * 0.09290304;
   }
   
-  return is4040 ? 7.432 : 37.16;
+  if (is4040) return 7.432;
+  return 37.16;
 };
 
 /**
@@ -1091,7 +1098,7 @@ export const getKmt = (membrane) => {
  * @returns {number} Osmotic coefficient
  */
 export const getOsmoticCoefficient = (membrane) => {
-  return membrane?.osmoticModel?.coefficient || 0.00074;
+  return membrane?.osmoticModel?.coefficient || 0.0007925;
 };
 
 /**

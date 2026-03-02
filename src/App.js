@@ -19,12 +19,7 @@ const App = () => {
   const fileInputRef = useRef(null);
 
   const DEFAULT_MEMBRANES = useMemo(() => {
-    return getAllMembranes().map(m => ({
-      id: m.id,
-      name: m.name,
-      areaM2: m.areaM2,
-      type: m.type
-    }));
+    return getAllMembranes();
   }, []);
 
   const DEFAULT_SYSTEM_CONFIG = useMemo(() => ({
@@ -42,15 +37,15 @@ const App = () => {
     stage1Vessels: 4,
     stage2Vessels: 0,
     elementsPerVessel: 6,
-    membraneModel: 'swtds32k8080',
+    membraneModel: 'swtds32k8040',
     pass1Stages: 1, // Initially only 1 stage is active
     stages: [
-      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 4 },
-      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 0 },
-      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 0 },
-      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 0 },
-      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 0 },
-      { membraneModel: 'swtds32k8080', elementsPerVessel: 6, vessels: 0 }
+      { membraneModel: 'swtds32k8040', elementsPerVessel: 6, vessels: 4 },
+      { membraneModel: 'swtds32k8040', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'swtds32k8040', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'swtds32k8040', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'swtds32k8040', elementsPerVessel: 6, vessels: 0 },
+      { membraneModel: 'swtds32k8040', elementsPerVessel: 6, vessels: 0 }
     ],
 
     // Flux display
@@ -85,7 +80,22 @@ const App = () => {
   const mergeMembranes = (savedMembranes) => {
     if (!savedMembranes || !Array.isArray(savedMembranes)) return DEFAULT_MEMBRANES;
     const savedMap = new Map(savedMembranes.map(m => [m.id, m]));
-    const merged = DEFAULT_MEMBRANES.map(defaultMem => savedMap.get(defaultMem.id) || defaultMem);
+    const merged = DEFAULT_MEMBRANES.map(defaultMem => {
+      const saved = savedMap.get(defaultMem.id);
+      if (!saved) return defaultMem;
+      // Deep merge for standard membranes to ensure new model properties (like pressureDropModel) 
+      // are available even in old saves
+      return {
+        ...defaultMem,
+        ...saved,
+        transport: { ...(defaultMem.transport || {}), ...(saved.transport || {}) },
+        hydraulics: { ...(defaultMem.hydraulics || {}), ...(saved.hydraulics || {}) },
+        pressureDropModel: { ...(defaultMem.pressureDropModel || {}), ...(saved.pressureDropModel || {}) },
+        designFlux: { ...(defaultMem.designFlux || {}), ...(saved.designFlux || {}) },
+        osmoticModel: { ...(defaultMem.osmoticModel || {}), ...(saved.osmoticModel || {}) },
+        limits: { ...(defaultMem.limits || {}), ...(saved.limits || {}) }
+      };
+    });
     const customMembranes = savedMembranes.filter(m => !DEFAULT_MEMBRANES.some(d => d.id === m.id));
     return [...merged, ...customMembranes];
   };
@@ -229,6 +239,26 @@ const App = () => {
         };
         setWaterData(hydratedWater);
         const merged = { ...DEFAULT_SYSTEM_CONFIG, ...(p.systemConfig || {}) };
+        const normalizeMembraneModel = (model) => {
+          if (!model) return model;
+          const normalized = model.toLowerCase().replace(/-/g, '').trim();
+          // Find standard IDs that match the normalized input
+          if (normalized.includes('lfc3ld4040')) return 'lfc3ld4040';
+          if (normalized.includes('lfc3ld8040')) return 'lfc3ld8040';
+          if (normalized.includes('espa2ld4040')) return 'espa2ld4040';
+          if (normalized.includes('espa2ld8040')) return 'espa2ld';
+          if (normalized.includes('swtds32k8080') || normalized.includes('swtds32k8040')) return 'swtds32k8040';
+          return model;
+        };
+
+        // Migration: normalize model IDs
+        merged.membraneModel = normalizeMembraneModel(merged.membraneModel);
+        if (merged.stages) {
+          merged.stages = merged.stages.map(s => ({
+            ...s,
+            membraneModel: normalizeMembraneModel(s.membraneModel)
+          }));
+        }
         // Back-compat: older saves had totalPlantProductFlow instead of permeateFlow
         if ((merged.permeateFlow === undefined || merged.permeateFlow === null) && merged.totalPlantProductFlow != null) {
           const trains = Math.max(Number(merged.numTrains) || 1, 1);
@@ -255,9 +285,10 @@ const App = () => {
       if (m.id === 'cpa3' && (m.aValue !== 3.1414 || m.dpExponent !== 1.3078 || m.maxFlux !== 51.8)) {
         return { ...m, aValue: 3.1414, areaM2: 37.17, dpExponent: 1.3078, maxFlux: 51.8 };
       }
-      if (m.id === 'swtds32k8080') {
+      if (m.id === 'swtds32k8080' || m.id === 'swtds32k8040') {
         return { 
           ...m, 
+          id: 'swtds32k8040',
           aValue: 1.005, 
           membraneB: 0.0547,
           transport: {
@@ -272,6 +303,9 @@ const App = () => {
             }
           }
         };
+      }
+      if (m.id === 'lfc3ld4040' && m.areaM2 !== 7.432) {
+        return { ...m, areaM2: 7.432 };
       }
       return m;
     }));

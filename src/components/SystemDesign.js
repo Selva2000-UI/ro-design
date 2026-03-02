@@ -25,8 +25,17 @@ const SystemDesign = ({
   const flowDiagramRef = useRef(null);
   const [selectedStageForMembrane, setSelectedStageForMembrane] = useState(1);
   const [localPass1Stages, setLocalPass1Stages] = useState(null); // Local state for input while typing
+  const [localAverageFlux, setLocalAverageFlux] = useState(null); // Local state for flux input
   const [showFeedPressure, setShowFeedPressure] = useState(false);
   const [showPermeatePressure, setShowPermeatePressure] = useState(false);
+
+  // Sync localAverageFlux when systemConfig.averageFlux changes externally
+  useEffect(() => {
+    if (localAverageFlux !== null && systemConfig.averageFlux !== localAverageFlux) {
+      setLocalAverageFlux(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [systemConfig.averageFlux]);
 
 
   // Get stages from systemConfig, always ensure 6 stages exist
@@ -75,6 +84,24 @@ const SystemDesign = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [systemConfig.pass1Stages]);
 
+  // Sync systemConfig.averageFlux with calculated projection.avgFlux
+  useEffect(() => {
+    if (projection?.avgFlux && systemConfig.designCalculated) {
+      const calcFlux = Number(projection.avgFlux).toFixed(2);
+      if (systemConfig.averageFlux !== calcFlux) {
+        setSystemConfig(prev => ({
+          ...prev,
+          averageFlux: calcFlux
+        }));
+      }
+      // Also update local state to ensure immediate UI sync
+      if (localAverageFlux !== null) {
+        setLocalAverageFlux(null);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projection?.avgFlux, systemConfig.designCalculated]);
+
   const getFlowDecimals = (flowUnit) => {
     if (['gpm', 'm3/h'].includes(flowUnit)) return 2;
     if (['gpd', 'm3/d'].includes(flowUnit)) return 1;
@@ -90,11 +117,30 @@ const SystemDesign = ({
         const s = currentStages[i];
         const vessels = Number(s?.vessels) || 0;
         const elements = Number(s?.elementsPerVessel) || 0;
-        const membrane = membranes.find(m => m.id === s?.membraneModel) || membranes[0];
+        // Robust matching: check ID, then check Name (normalized)
+        const modelId = (s?.membraneModel || '').toLowerCase().replace(/-/g, '');
+        const membrane = membranes.find(m => 
+          m.id.toLowerCase().replace(/-/g, '') === modelId || 
+          m.name.toLowerCase().replace(/-/g, '') === modelId
+        ) || membranes[0];
         area += vessels * elements * (Number(membrane?.areaM2) || 37.16);
     }
     return area;
   };
+
+  const getFluxConstant = () => {
+    const currentStages = systemConfig.stages || getStages();
+    const s = currentStages[0];
+    const modelId = (s?.membraneModel || '').toLowerCase().replace(/-/g, '');
+    const membrane = membranes.find(m => 
+      m.id.toLowerCase().replace(/-/g, '') === modelId || 
+      m.name.toLowerCase().replace(/-/g, '') === modelId
+    ) || membranes[0];
+    const area = Number(membrane?.areaM2) || 37.16;
+    return (area / 1000).toFixed(5);
+  };
+
+  const fluxConst = getFluxConstant();
 
   const handleInputChange = (key, value) => {
     const resetsDesign = [
@@ -473,7 +519,6 @@ const SystemDesign = ({
         <td style="border: 1px solid #ccc; padding: 6px;">${row.feedPressure}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.concPressure}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.feedFlowVessel}</td>
-        <td style="border: 1px solid #ccc; padding: 6px;">${row.permeateFlowVessel}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.concFlowVessel}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.flux}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.highestFlux}</td>
@@ -534,7 +579,6 @@ const SystemDesign = ({
                       <th style="border: 1px solid #ccc; padding: 6px;">Feed (${pUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Conc (${pUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Feed per vessel (${fUnit})</th>
-                      <th style="border: 1px solid #ccc; padding: 6px;">Perm per vessel (${fUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Conc per vessel (${fUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Flux (${fluxUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest flux (${fluxUnit})</th>
@@ -658,12 +702,16 @@ const SystemDesign = ({
           </div>
 
           <div style={rowStyle}>
-            <span title={`Flux Calculation Logic (Standard: 400 ft² element):\n\n🔹 CASE 1: PERMEATE FLOW IN GPM → FLUX IN GFD\nFormula: Average Flux (GFD) = Permeate Flow (gpm) / (No. of Vessels × Nm × 0.2778)\n\n🔹 CASE 2: PERMEATE FLOW IN m³/h → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/h) / (No. of Vessels × Nm × 0.0372)\n\n🔹 CASE 3: PERMEATE FLOW IN m³/d → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/d) / (No. of Vessels × Nm × 0.893)\n\n⚠️ Note: Constants are valid for 400 ft² membranes. If membrane area changes, the constant is automatically recalculated.`}>Average flux</span>
+            <span title={`Flux Calculation Logic (Selected Membrane Area: ${(Number(fluxConst) * 1000).toFixed(2)} m²):\n\n🔹 CASE 1: PERMEATE FLOW IN GPM → FLUX IN GFD\nFormula: Average Flux (GFD) = Permeate Flow (gpm) / (No. of Vessels × Nm × ${(Number(fluxConst) * 1.6976 * 4.403).toFixed(4)})\n\n🔹 CASE 2: PERMEATE FLOW IN m³/h → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/h) / (No. of Vessels × Nm × ${fluxConst})\n\n🔹 CASE 3: PERMEATE FLOW IN m³/d → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/d) / (No. of Vessels × Nm × ${(Number(fluxConst) / 24).toFixed(5)})\n\n⚠️ Note: Constants are automatically updated based on selected membrane area.`}>Average flux</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
               <input 
                 style={inputStyle} 
-                value={systemConfig.averageFlux ?? ''} 
-                onChange={e => handleInputChange('averageFlux', e.target.value)}
+                value={localAverageFlux !== null ? localAverageFlux : (systemConfig.averageFlux ?? '')} 
+                onChange={e => {
+                  setLocalAverageFlux(e.target.value);
+                  handleInputChange('averageFlux', e.target.value);
+                }}
+                onBlur={() => setLocalAverageFlux(null)}
               />
               <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.fluxUnit || fluxUnit}</span>
             </div>
@@ -740,7 +788,7 @@ const SystemDesign = ({
             </div>
           </div>
           <div style={rowStyle}><span>Number of trains</span> <input style={inputStyle} value={systemConfig.numTrains} onChange={e => handleInputChange('numTrains', e.target.value)} /></div>
-          {showFeedPressure && (
+                    {showFeedPressure && (
             <div style={rowStyle}>
               <span>Feed Pressure</span>
               <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
@@ -794,7 +842,12 @@ const SystemDesign = ({
                   {Array.from({ length: pass1Stages }, (_, i) => i + 1).map(stageNum => {
                     const currentStages = systemConfig.stages || stages;
                     const stage = currentStages[stageNum - 1];
-                    const selectedMembrane = membranes.find(m => m.id === stage?.membraneModel) || membranes[0];
+                    const getModelId = (model) => (model || '').toLowerCase().replace(/-/g, '').trim();
+                    const targetId = getModelId(stage?.membraneModel);
+                    const selectedMembrane = membranes.find(m => 
+                      getModelId(m.id) === targetId || 
+                      getModelId(m.name) === targetId
+                    ) || membranes[0];
                     return (
                       <td key={stageNum} style={{ border: '1px solid #ccc', padding: '8px', textAlign: 'center' }}>
                         <input
