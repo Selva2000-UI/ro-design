@@ -35,9 +35,9 @@ const Max_flux = (activeMem?.id === 'cpa3') ? 51.8 : 48.5;
 ### **Affected Membranes:**
 | Membrane ID | Membrane Name | Current Max Flux | Recommended Max Flux | Issue |
 |---|---|---|---|---|
-| cpa3 | CPA3 | 51.8 ✓ | 51.8 | ✓ Correct |
-| cpa5max8040 | CPA5-MAX-8040 | 48.5 ❌ | ~52-54 | Uses default |
-| cpa5ld4040 | CPA5LD-4040 | 48.5 ❌ | ~50-52 | Uses default |
+| cpa3 | CPA3 | 51.8 ✓ | 51.8 | ✓ Correct ||
+ Uses default |
+| cpa5ld8040 | CPA5LD-8040 | 48.5 ❌ | ~50-52 | Uses default |
 | lfc3ld4040 | LFC3-LD-4040 | 48.5 ❌ | ~48-50 | Uses default |
 | swtds32k8040 | SW-TDS-32K-8040 | 48.5 ❌ | ~40-45 | Uses default |
 | All new membranes | Custom | 48.5 ❌ | Undefined | Uses default |
@@ -243,12 +243,7 @@ This is used only in **Feed Pressure Input Mode** for recovery calculation.
 | Feed Pressure Mode | ❌ | **Broken** | May give wrong recovery |
 | Normal Mode | ✓ | Works fine | ✓ OK |
 
-### **Example: CPA5-MAX-8040**
-```
-Input: Feed Pressure = 300 psi, Recovery = 52.5%
-Expected: maxFlux = 52 LMH (CPA5 capability)
-Actual: maxFlux = 48.5 LMH (hardcoded default)
-Result: Recovery calculation incorrect ❌
+
 ```
 
 ---
@@ -288,8 +283,8 @@ export const MEMBRANES = [
     maxFlux: 51.8  // ✓ ADD
   },
   {
-    id: 'cpa5max8040',
-    name: 'CPA5-MAX-8040',
+    id: 'cpa5ld8040',
+    name: 'CPA5-LD-8040',
     area: 440,
     areaM2: 40.9,
     aValue: 3.35,
@@ -373,8 +368,7 @@ if (!Number.isFinite(membraneMaxFlux) || membraneMaxFlux <= 0) {
 |---|---|---|---|---|---|---|---|
 | ESPA2-LD-4040 | 80 | 7.43 | 4.43 | 99.6% | 1.75 | 50.0 | 4040 |
 | CPA3 | 400 | 37.17 | 3.21 | 99.7% | 1.18 | 51.8 | 8040 |
-| CPA5-MAX | 440 | 40.9 | 3.35 | 99.7% | 1.18 | 53.0 | 8040 |
-| CPA5LD-4040 | 80 | 7.43 | 4.25 | 99.7% | 1.75 | 50.0 | 4040 |
+53.0 | 8040 |
 | LFC3-LD-4040 | 80 | 7.43 | 4.40 | 99.7% | 1.75 | 48.0 | Low Fouling |
 | BW-TDS-2K | 400 | 37.16 | 3.18 | 99.35% | 1.22 | 48.0 | Brackish |
 | BW-TDS-5K | 400 | 37.16 | 3.18 | 99.35% | 1.22 | 48.0 | Brackish |

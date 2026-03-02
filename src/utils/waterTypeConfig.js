@@ -75,7 +75,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     pretreatmentRequired: ['Ultra Filtration', 'Cartridge Filter', 'Pre-treatment specific to industry']
   },
   [WATER_TYPES.RO_PERMEATE]: {
-    recommended: ['cpa3', 'cpa5max8040', 'lfc3ld4040'],
+    recommended: ['cpa3', 'cpa5ld8040', 'lfc3ld4040'],
     category: MEMBRANE_CATEGORIES.BRACKISH,
     description: 'RO permeate reprocessing for polishing, minimal fouling risk',
     sdiMax: 5,
@@ -83,7 +83,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     pretreatmentRequired: []
   },
   [WATER_TYPES.WELL_WATER]: {
-    recommended: ['cpa3', 'bwtds2k8040', 'bwtds5k8040', 'cpa5max8040'],
+    recommended: ['cpa3', 'bwtds2k8040', 'bwtds5k8040', 'cpa5ld8040'],
     category: MEMBRANE_CATEGORIES.BRACKISH,
     description: 'Standard groundwater treatment',
     sdiMax: 5,
@@ -215,23 +215,7 @@ export const MEMBRANE_SPECIFICATIONS = {
       maxCod: 250
     }
   },
-  //  
-  //   name: 'SW-TDS-32K-8040',
-  //   size: '8"',
-  //   area: 400,
-  //   areaM2: 37.16,
-  //   ratedFlow: 1.81,
-  //   ratedFlowM3h: 6.86,
-  //   saltRejection: 99.7,
-  //   classification: MEMBRANE_CATEGORIES.SEAWATER,
-  //   suitableFor: [WATER_TYPES.SEA_WELL, WATER_TYPES.SEA_SURFACE],
-  //   constraints: {
-  //     maxTds: 40000,
-  //     maxTemp: 45,
-  //     maxPressure: 1200,
-  //     maxFlow: 80
-  //   }
-  // },
+  
   swtds32k8080: {
     name: 'SW-TDS32k-8080',
     size: '8"',
@@ -249,11 +233,11 @@ export const MEMBRANE_SPECIFICATIONS = {
       maxFlow: 80
     }
   },
-  cpa5max8040: {
-    name: 'CPA5-MAX-8040',
+  cpa5ld8040: {
+    name: 'CPA5-LD-8040',
     size: '8"',
-    area: 440,
-    areaM2: 40.9,
+    area: 400,
+    areaM2: 37.17,
     ratedFlow: 4.43,
     ratedFlowM3h: 16.8,
     saltRejection: 99.7,
@@ -266,23 +250,7 @@ export const MEMBRANE_SPECIFICATIONS = {
       maxFlow: 95
     }
   },
-  cpa5ld4040: {
-    name: 'CPA5LD-4040',
-    size: '4"',
-    area: 80,
-    areaM2: 7.43,
-    ratedFlow: 0.62,
-    ratedFlowM3h: 2.35,
-    saltRejection: 99.7,
-    classification: MEMBRANE_CATEGORIES.LOW_FOULING,
-    suitableFor: [WATER_TYPES.BRACKISH_WELL_HIGH_FOULING, WATER_TYPES.INDUSTRIAL_WASTE],
-    constraints: {
-      maxTds: 1500,
-      maxTemp: 45,
-      maxPressure: 600,
-      maxFlow: 18
-    }
-  }
+ 
 };
 
 export const getMembranesByWaterType = (waterType) => {

@@ -74,11 +74,12 @@ export const calculateEC = (tds, temp = 25, ph = 7.0) => {
   if (t >= 30000) factor = 1.539;
   else if (t >= 15000) factor = 1.587;
   else if (t >= 5000) factor = 1.75;
+  else if (t >= 4000) factor = 1.78;
   else if (t >= 2500) factor = 1.83;
   else if (t >= 1000) factor = 1.95;
   else if (t >= 300) factor = 2.28;
   else if (t >= 50) factor = 2.23;
-  else factor = 2.52;
+  else factor = 2.1;
 
   let ec = t * factor;
 
@@ -86,11 +87,12 @@ export const calculateEC = (tds, temp = 25, ph = 7.0) => {
   const tempCorrection = 1 + 0.02 * (temp - 25);
   ec *= tempCorrection;
 
-  // pH adjustment (simplified: extreme pH increases conductivity)
-  if (ph < 4 || ph > 10) {
-    const phDev = ph < 4 ? 4 - ph : ph - 10;
-    ec *= (1 + 0.05 * phDev);
-  }
+  // Add H+ and OH- contribution to EC (Significant at extreme pH)
+  // Specific conductance of H+ ~ 350 S*cm2/mol, OH- ~ 199 S*cm2/mol
+  const hConc = Math.pow(10, -ph);
+  const ohConc = Math.pow(10, -(14 - ph));
+  const ionicEC = (350 * hConc + 199 * ohConc) * 1000000;
+  ec += ionicEC;
 
   return ec;
 };

@@ -252,8 +252,8 @@ const App = () => {
 
     // Force update standard membranes to new calibrations (Persistence Migration)
     setMembranes(prev => prev.map(m => {
-      if (m.id === 'cpa3' && (m.aValue !== 3.1414 || m.dpExponent !== 1.3078)) {
-        return { ...m, aValue: 3.1414, areaM2: 37.17, dpExponent: 1.3078 };
+      if (m.id === 'cpa3' && (m.aValue !== 3.1414 || m.dpExponent !== 1.3078 || m.maxFlux !== 51.8)) {
+        return { ...m, aValue: 3.1414, areaM2: 37.17, dpExponent: 1.3078, maxFlux: 51.8 };
       }
       if (m.id === 'swtds32k8080') {
         return { 

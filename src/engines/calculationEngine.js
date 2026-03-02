@@ -397,7 +397,7 @@ export const calculatePermeatePhSimplified = (feedPh, flux, recovery) => {
   // Dampen logFluxRatio for extreme fluxes (>100 LMH) to match benchmark (4.6 at 288 LMH)
   const f = Math.max(flux, 0.1);
   const logFluxRatio = f > 50 ? Math.log10(50 / 25.2) + 0.2 * Math.log10(f / 50) : Math.log10(f / 25.2);
-  const phDrop = 1.82 + 1.08 * logFluxRatio + (recovery * 0.8);
+  const phDrop = 1.28 + 1.08 * logFluxRatio + (recovery * 0.8);
   return Math.max(Math.min(feedPh - phDrop, 9.5), 3.5);
 };
 
@@ -1079,6 +1079,9 @@ return {
     Cf: Cf,
     Qp: Qp,
     Qc: Qc,
+    Qf_vessel: vesselsPerStage > 0 ? Qf / vesselsPerStage : Qf,
+    Qp_vessel: vesselsPerStage > 0 ? Qp / vesselsPerStage : Qp,
+    Qc_vessel: vesselsPerStage > 0 ? Qc / vesselsPerStage : Qc,
     Cp: finalCp,
     Cc: finalCc,
     J: J,
@@ -1130,8 +1133,8 @@ export const calculateROStageGivenPressure = (inputs) => {
   const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 10000;
   const base_k_mt = kMtInput || (isSeawater ? 650 : 160);
   const Q_ref_k = 16.0;
-  const k_dp = kDpInput !== undefined ? kDpInput : (isSeawater ? 0.0082 : 0.0042);
-  const p_exp = pExpInput !== undefined ? pExpInput : 1.22;
+  const k_dp = kDpInput !== undefined ? kDpInput : (isSeawater ? 0.015 : 0.012);
+  const p_exp = pExpInput !== undefined ? pExpInput : 1.3;
   const osmoticFactor = osmoticCoeffInput || (isSeawater ? 0.0007925 : 0.00077);
 
   // Iterative solution for R

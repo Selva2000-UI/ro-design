@@ -1,10 +1,31 @@
 import { getWaterTypeInfo, isMembraneCompatible } from './waterTypeConfig';
-import { MEMBRANES, isGpmInput } from './calculatorService';
+import { isGpmInput } from './calculatorService';
+import * as MembraneEngine from '../engines/membraneEngine.js';
+
+const { getMembrane, MEMBRANES } = MembraneEngine;
 
 export const MEMBRANE_SPECIFIC_CONSTRAINTS = {
-  'cpa5ld4040': {
+  'espa2ld': {
     fluxMin: 15,
-    fluxMax: 52,
+    fluxMax: 50,
+    recoveryMin: 40,
+    recoveryMax: 75,
+    pressureMin: 100,
+    pressureMax: 600,
+    optimalFlux: 30
+  },
+  'lfc3ld4040': {
+    fluxMin: 12,
+    fluxMax: 25,
+    recoveryMin: 10,
+    recoveryMax: 15,
+    pressureMin: 100,
+    pressureMax: 600,
+    optimalFlux: 18
+  },
+  'cpa5ld8040': {
+    fluxMin: 15,
+    fluxMax: 53,
     recoveryMin: 40,
     recoveryMax: 75,
     pressureMin: 100,
@@ -13,12 +34,30 @@ export const MEMBRANE_SPECIFIC_CONSTRAINTS = {
   },
   'cpa3': {
     fluxMin: 12,
-    fluxMax: 52,
+    fluxMax: 51.8,
     recoveryMin: 45,
     recoveryMax: 75,
     pressureMin: 100,
     pressureMax: 600,
     optimalFlux: 40
+  },
+  'lfc3ld8040': {
+    fluxMin: 12,
+    fluxMax: 25,
+    recoveryMin: 10,
+    recoveryMax: 15,
+    pressureMin: 100,
+    pressureMax: 600,
+    optimalFlux: 18
+  },
+  'swtds32k8040': {
+    fluxMin: 8,
+    fluxMax: 42,
+    recoveryMin: 35,
+    recoveryMax: 50,
+    pressureMin: 800,
+    pressureMax: 1200,
+    optimalFlux: 10
   }
 };
 
@@ -138,13 +177,16 @@ export const validateDesignWithWaterType = (inputs, results, waterType) => {
   const feedPressure = parseFloat(results?.feedPressure) || 0;
   const displayPressure = isGpmInput(flowUnit) ? feedPressure : feedPressure * 14.5038;
 
-  const activeMembrane = MEMBRANES.find(m => (m.id || '').toLowerCase() === (membraneModel || '').toLowerCase());
-  
-  const membraneId = (membraneModel || '').toLowerCase();
+  const activeMembrane = getMembrane(membraneModel);
+  const membraneId = (activeMembrane?.id || membraneModel || '').toLowerCase();
   const membraneConstraints = MEMBRANE_SPECIFIC_CONSTRAINTS[membraneId];
   const waterTypeConstraints = DESIGN_CONSTRAINTS_BY_WATER_TYPE[waterType];
   
-  const constraints = membraneConstraints || waterTypeConstraints;
+  const constraints = {
+    ...(waterTypeConstraints || {}),
+    ...(membraneConstraints || {}),
+    ...(activeMembrane?.maxFlux ? { fluxMax: activeMembrane.maxFlux } : {})
+  };
 
   if (tds > waterInfo.tdsRange.max) {
     validation.errors.push(`TDS (${tds} mg/L) exceeds water type maximum (${waterInfo.tdsRange.max} mg/L)`);
@@ -219,7 +261,7 @@ export const getRecommendedMembraneName = (waterType) => {
   if (!waterInfo?.recommended) return 'contact supplier';
   
   return waterInfo.recommended
-    .map(id => MEMBRANES.find(m => m.id === id)?.name)
+    .map(id => getMembrane(id)?.name)
     .filter(Boolean)
     .slice(0, 3)
     .join(', ');
