@@ -53,7 +53,6 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 4.35,
       membraneBRef: 0.14,
-      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -117,7 +116,6 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 4.35,
       membraneBRef: 0.14,
-      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -181,7 +179,6 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 3.14,
       membraneBRef: 0.136,
-      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -246,7 +243,6 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 3.06, // Calibrated for 43.7 bar @ 112 LMH
       membraneBRef: 0.175, // Calibrated for 5.16 mg/l @ 2500 TDS
-      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -311,7 +307,6 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 2.94, // Calibrated for 532 bar @ 1121 LMH
       membraneBRef: 0.141, // Calibrated for 0.59 mg/l @ 2500 TDS
-      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -377,7 +372,6 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 3.20, // Calibrated for 43.6 bar @ 112 LMH
       membraneBRef: 0.144, // Calibrated for 5.97 mg/l @ 2500 TDS
-      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -442,7 +436,6 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 6.42, // Calibrated for 36 m3/day at 150 psi (10.3 bar) and 15% recovery
       membraneBRef: 0.203, // Calibrated for 99.5% rejection
-      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -504,7 +497,6 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 3.49, // Calibrated for 36 m3/day at 225 psi (15.5 bar)
       membraneBRef: 0.202, // Calibrated for 99.5% rejection
-      kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -1094,8 +1086,8 @@ export const getKdp = (membrane) => {
  */
 export const getKmt = (membrane) => {
   if (membrane?.transport?.kMtRef) return membrane.transport.kMtRef;
-  const isSeawater = (membrane?.type === MEMBRANE_TYPES.SEAWATER);
-  return isSeawater ? 650 : 160;
+  const isSeawater = (membrane?.type === MEMBRANE_TYPES.SEAWATER || membrane?.id?.toLowerCase().includes('sw'));
+  return isSeawater ? 720 : 1000;
 };
 
 /**

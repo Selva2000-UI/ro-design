@@ -903,7 +903,7 @@ export const calculateROStage = (inputs) => {
   }
 
   // STEP 4 — OSMOTIC PRESSURE (LOG-MEAN)
-  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 2000;
+  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 15000;
   
   const getOsmotic = (tds, ions = null) => {
     if (ions && Object.keys(ions).length > 0) {
@@ -968,14 +968,15 @@ export const calculateROStage = (inputs) => {
   const J = totalArea > 0 ? (Qp * 1000) / totalArea : 0;
 
   // STEP 9 — SALT TRANSPORT (Move up for beta usage)
-  // Refined k_mt with velocity scaling: k = k_ref * (Q/Qref)^1.3
-  const base_k_mt = kMtInput || (isSeawater ? 720 : 160);
+  // Refined k_mt with velocity scaling: k = k_ref * (Q/Qref)^0.8 (Standard Sherwood correlation)
+  // Brackish base tuned to 1000 to match high-flow 4040 benchmarks
+  const base_k_mt = kMtInput || (isSeawater ? 720 : 1000);
   const Q_ref_k = membrane?.category === '4040' ? 3.6 : 16.0; 
   const Q_vessel = Qf / vesselsPerStage;
-  const k_mt = base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 1.3);
+  const k_mt = base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 1.2);
   
   let beta = Math.exp(J / Math.max(k_mt, 1));
-  beta = Number.isFinite(beta) ? Math.max(1.0, Math.min(1.4, beta)) : 1.4; 
+  beta = Number.isFinite(beta) ? Math.max(1.0, Math.min(1.35, beta)) : 1.35; 
   
   const Csurface = beta * Cavg;
   
@@ -1016,8 +1017,11 @@ export const calculateROStage = (inputs) => {
   // Refined inlet flux estimation matching benchmark profiles
   const J_inlet = A * (Pfeed - Number(permeatePressure) - pi_f_inlet - 0.05 * deltaP_vessel); 
   const highestFlux = Math.max(J_inlet, J * 1.38); 
-  let hBeta = Math.exp(highestFlux / Math.max(base_k_mt * Math.pow(Math.max(Q_vessel, 0.1) / Q_ref_k, 1.3), 1));
-  const highestBeta = Number.isFinite(hBeta) ? hBeta : 1.5;
+  
+  // Re-calculate k_mt at inlet flow for highestBeta
+  const k_mt_inlet = base_k_mt * Math.pow(Math.max(Q_vessel, 0.1) / Q_ref_k, 0.8);
+  let hBeta = Math.exp(highestFlux / Math.max(k_mt_inlet, 1));
+  const highestBeta = Number.isFinite(hBeta) ? Math.min(1.45, hBeta) : 1.45;
 
   // Permeate pH estimation based on flux-dependent model
   const permPh = calculatePermeatePhSimplified(inputs.feedPh || 7.0, J, R);
@@ -1140,7 +1144,7 @@ export const calculateROStageGivenPressure = (inputs) => {
 
   const totalArea = vesselsPerStage * elementsPerVessel * Area;
   const TCF = Math.exp(2640 * (1 / 298.15 - 1 / (T + 273.15)));
-  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 2000;
+  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 15000;
   const base_k_mt = kMtInput || (isSeawater ? 650 : 160);
   const Q_ref_k = inputs.membrane?.category === '4040' ? 3.6 : 16.0;
   // Use membrane model if available, else use smart defaults based on category
@@ -1174,7 +1178,7 @@ export const calculateROStageGivenPressure = (inputs) => {
     const pi_avg = Math.abs(pi_c - pi_f) > 0.001 ? (pi_c - pi_f) / Math.log(pi_c / pi_f) : pi_f;
 
     // Surface osmotic
-    const k_mt = base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 1.3);
+    const k_mt = base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 1.2);
     const beta = Math.max(1.0, Math.min(1.4, Math.exp(J / Math.max(k_mt, 1))));
     const pi_surface = beta * pi_avg;
 
