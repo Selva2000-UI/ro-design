@@ -370,8 +370,8 @@ export const MEMBRANES = {
     areaM2: 37.16,
     maxFlux: 48.0,
     transport: {
-      aValueRef: 3.10, // Aligned with BW-TDS
-      membraneBRef: 0.42, // Adjusted for industrial salt passage benchmarks
+      aValueRef: 3.32, // Calibrated for 14.2 bar @ 26.9 LMH (38% recovery)
+      membraneBRef: 0.26, // Calibrated for 75.65 mg/l @ 5000 TDS
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -395,7 +395,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.00238, // Aligned with industrial 8040 baseline (CPA5)
+      coefficient: 0.00358, // Calibrated for 1.1 bar drop @ 10.6 m3/h avg (5 elements)
       exponent: 1.75
     },
     designFlux: {
