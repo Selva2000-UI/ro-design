@@ -84,17 +84,19 @@ const App = () => {
     const merged = DEFAULT_MEMBRANES.map(defaultMem => {
       const saved = savedMap.get(defaultMem.id);
       if (!saved) return defaultMem;
-      // Deep merge for standard membranes to ensure new model properties (like pressureDropModel) 
-      // are available even in old saves
+      // Industrial Recalibration: Always prioritize defaultMem properties for transport and hydraulics
+      // for standard membranes to ensure engine updates apply to all projects.
+      // We only preserve the name/id from saved if needed (though they should be identical).
       return {
-        ...defaultMem,
         ...saved,
-        transport: { ...(defaultMem.transport || {}), ...(saved.transport || {}) },
-        hydraulics: { ...(defaultMem.hydraulics || {}), ...(saved.hydraulics || {}) },
-        pressureDropModel: { ...(defaultMem.pressureDropModel || {}), ...(saved.pressureDropModel || {}) },
-        designFlux: { ...(defaultMem.designFlux || {}), ...(saved.designFlux || {}) },
-        osmoticModel: { ...(defaultMem.osmoticModel || {}), ...(saved.osmoticModel || {}) },
-        limits: { ...(defaultMem.limits || {}), ...(saved.limits || {}) }
+        ...defaultMem, // defaultMem (engine) properties win
+        name: defaultMem.name,
+        transport: { ...(defaultMem.transport || {}) },
+        hydraulics: { ...(defaultMem.hydraulics || {}) },
+        pressureDropModel: { ...(defaultMem.pressureDropModel || {}) },
+        designFlux: { ...(defaultMem.designFlux || {}) },
+        osmoticModel: { ...(defaultMem.osmoticModel || {}) },
+        limits: { ...(defaultMem.limits || {}) }
       };
     });
     const customMembranes = savedMembranes.filter(m => !DEFAULT_MEMBRANES.some(d => d.id === m.id));
@@ -284,95 +286,6 @@ const App = () => {
         if (Array.isArray(parsed)) setRecentProjects(parsed);
       } catch (e) { console.error("Recent projects restore failed", e); }
     }
-
-    // Force update standard membranes to new calibrations (Persistence Migration)
-    setMembranes(prev => prev.map(m => {
-      if (m.id === 'swtds32k8040') {
-        return { 
-          ...m, 
-          aValue: 1.092, 
-          membraneB: 0.0704,
-          transport: {
-            aValueRef: 1.092,
-            membraneBRef: 0.0704,
-            kMtRef: 650,
-            soluteBFactors: {
-              monovalent: 1.0,
-              divalent: 0.6,
-              silica: 0.8,
-              boron: 1.4,
-              alkalinity: 1.8,
-              co2: 999
-            }
-          },
-          pressureDropModel: {
-            coefficient: 0.000171,
-            exponent: 1.75
-          }
-        };
-      }
-      if (m.id === 'bwtds10kfr8040') {
-        return { 
-          ...m, 
-          transport: {
-            ...(m.transport || {}),
-            aValueRef: 4.21,
-            membraneBRef: 0.228,
-            kMtRef: 600
-          },
-          pressureDropModel: {
-            coefficient: 0.0099,
-            exponent: 1.30
-          }
-        };
-      }
-      if (m.id === 'lfc3ld4040') {
-        return { 
-          ...m, 
-          areaM2: 7.432,
-          transport: {
-            ...(m.transport || {}),
-            aValueRef: 2.94,
-            membraneBRef: 0.141
-          },
-          pressureDropModel: {
-            coefficient: 0.102,
-            exponent: 1.75
-          }
-        };
-      }
-      if (m.id === 'lfc3ld8040') {
-        return { 
-          ...m, 
-          areaM2: 37.16,
-          transport: {
-            ...(m.transport || {}),
-            aValueRef: 3.20,
-            membraneBRef: 0.144
-          },
-          pressureDropModel: {
-            coefficient: 0.012,
-            exponent: 1.3
-          }
-        };
-      }
-      if (m.id === 'cpa5ld8040') {
-        return { 
-          ...m, 
-          areaM2: 37.16,
-          transport: {
-            ...(m.transport || {}),
-            aValueRef: 3.06,
-            membraneBRef: 0.175
-          },
-          pressureDropModel: {
-            coefficient: 0.0164,
-            exponent: 1.75
-          }
-        };
-      }
-      return m;
-    }));
 
     setIsLoaded(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps

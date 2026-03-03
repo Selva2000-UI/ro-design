@@ -148,6 +148,9 @@ export const calculateSystem = (inputs, allMembranes = []) => {
   const usePsi = pUnit.toLowerCase() === 'psi';
   const useGfd = fluxUnit.toLowerCase() === 'gfd';
 
+  // Normalize permeate pressure to bar for calculation engine
+  const pBackBar = usePsi ? (Number(permeatePressure) || 0) / BAR_TO_PSI : (Number(permeatePressure) || 0);
+
   // 2. WATER ANALYSIS PREP
   const rawFeedTds = Object.values(feedIons).reduce((sum, v) => sum + (Number(v) || 0), 0) || Number(inputs.tds) || 500;
 
@@ -214,7 +217,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
         k_mt: getKmt(membrane),
         p_exp: getPExp(membrane),
         osmoticCoeff: getOsmoticCoefficient(membrane),
-        permeatePressure: Number(permeatePressure) || 0
+        permeatePressure: pBackBar
       });
       
       results.push(stageRes);
