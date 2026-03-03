@@ -91,8 +91,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.00074,
-      formula: 'π(bar) = 0.00074 × TDS',
+      coefficient: 0.0007925,
+      formula: 'π(bar) = 0.0007925 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -155,8 +155,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.00074,
-      formula: 'π(bar) = 0.00074 × TDS',
+      coefficient: 0.0007925,
+      formula: 'π(bar) = 0.0007925 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -219,8 +219,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.00074,
-      formula: 'π(bar) = 0.00074 × TDS',
+      coefficient: 0.0007925,
+      formula: 'π(bar) = 0.0007925 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -244,8 +244,8 @@ export const MEMBRANES = {
     areaM2: 37.16,
     maxFlux: 53.0,
     transport: {
-      aValueRef: 2.72,
-      membraneBRef: 0.165,
+      aValueRef: 3.06, // Calibrated for 43.7 bar @ 112 LMH
+      membraneBRef: 0.175, // Calibrated for 5.16 mg/l @ 2500 TDS
       kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
@@ -270,8 +270,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.012,
-      exponent: 1.3
+      coefficient: 0.0164, // Calibrated for 11.7 bar drop @ 62.5 m3/h (6 elements)
+      exponent: 1.75
     },
     designFlux: {
       min: 20,
@@ -284,12 +284,12 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.000792,
-      formula: 'π(bar) = 0.000792 × TDS',
+      coefficient: 0.0007925,
+      formula: 'π(bar) = 0.0007925 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
-      maxTds: 1500,
+      maxTds: 2000,
       maxTemp: 45,
       maxPressure: 600
     },
@@ -309,8 +309,8 @@ export const MEMBRANES = {
     areaM2: 7.432,
     maxFlux: 48.0,
     transport: {
-      aValueRef: 2.95,
-      membraneBRef: 0.142,
+      aValueRef: 2.94, // Calibrated for 532 bar @ 1121 LMH
+      membraneBRef: 0.141, // Calibrated for 0.59 mg/l @ 2500 TDS
       kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
@@ -335,7 +335,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0158,
+      coefficient: 0.102, // Calibrated for 299 bar drop @ 125 m3/h (6 elements)
       exponent: 1.75
     },
     designFlux: {
@@ -375,8 +375,8 @@ export const MEMBRANES = {
     areaM2: 37.16,
     maxFlux: 48.0,
     transport: {
-      aValueRef: 2.73,
-      membraneBRef: 0.19,
+      aValueRef: 3.20, // Calibrated for 43.6 bar @ 112 LMH
+      membraneBRef: 0.144, // Calibrated for 5.97 mg/l @ 2500 TDS
       kMtRef: 160,
       soluteBFactors: {
         monovalent: 1.0,
@@ -415,8 +415,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.000792,
-      formula: 'π(bar) = 0.000792 × TDS',
+      coefficient: 0.0007925,
+      formula: 'π(bar) = 0.0007925 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -480,8 +480,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.00074,
-      formula: 'π(bar) = 0.00074 × TDS',
+      coefficient: 0.0007925,
+      formula: 'π(bar) = 0.0007925 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -565,7 +565,7 @@ export const MEMBRANES = {
     areaM2: 37.16,
     transport: {
       aValueRef: 4.21, // Calibrated for 104.2 bar at 288 LMH (NDP ~ 67 bar)
-      membraneBRef: 0.175,
+      membraneBRef: 0.228, // Calibrated for 8.26 mg/l @ 5000 TDS
       kMtRef: 600,
       soluteBFactors: {
         monovalent: 1.0,
@@ -591,8 +591,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0099, // Calibrated for 61 bar drop (1.35 exponent)
-      exponent: 1.35
+      coefficient: 0.0099, // Calibrated for 61 bar drop @ 187 m3/h (7 elements)
+      exponent: 1.30
     },
     designFlux: {
       min: 10,
@@ -605,8 +605,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.00074,
-      formula: 'π(bar) = 0.00074 × TDS',
+      coefficient: 0.0007925,
+      formula: 'π(bar) = 0.0007925 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -629,8 +629,8 @@ export const MEMBRANES = {
     areaM2: 37.16,
     maxFlux: 42.0,
     transport: {
-      aValueRef: 1.005,
-      membraneBRef: 0.0547,
+      aValueRef: 1.092, // Calibrated for 613 psi @ 12.9 gfd (NDP ~ 20 bar)
+      membraneBRef: 0.0704, // Calibrated for 66.27 mg/l @ 20000 TDS
       kMtRef: 650,
       soluteBFactors: {
         monovalent: 1.0,
@@ -656,7 +656,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.000255, // Calibrated for 24.2 psi drop across 7 elements @ 62.5 m3/h
+      coefficient: 0.000171, // Calibrated for 24.2 psi drop @ 62.5 m3/h (7 elements)
       exponent: 1.75
     },
     designFlux: {
@@ -752,10 +752,10 @@ export const getArea = (membrane) => {
     (membrane.name && membrane.name.toLowerCase().includes('4040')) ||
     membrane.category === '4040';
 
-  const is8080Or8040 = 
-    (membrane.id && (membrane.id.toLowerCase().includes('8040') || membrane.id.toLowerCase().includes('8080'))) || 
-    (membrane.name && (membrane.name.toLowerCase().includes('8040') || membrane.name.toLowerCase().includes('8080'))) ||
-    membrane.category === '8040' || membrane.category === '8080';
+  const is8040 = 
+    (membrane.id && membrane.id.toLowerCase().includes('8040')) || 
+    (membrane.name && membrane.name.toLowerCase().includes('8040')) ||
+    membrane.category === '8040';
 
   let area = Number(membrane.areaM2);
   if (area > 0) return area;
@@ -765,7 +765,7 @@ export const getArea = (membrane) => {
      const areaVal = Number(membrane.area);
      // If it's a 4040 but area is 400, it's a mismatch in the data, it should be ~80
      if (is4040 && areaVal > 300) return 7.432; 
-     if (is8080Or8040 && areaVal < 300) return 37.16;
+     if (is8040 && areaVal < 300) return 37.16;
      return areaVal * 0.09290304;
   }
   
@@ -1075,8 +1075,12 @@ export const compareMembranes = (mem1, mem2) => {
 export const getKdp = (membrane) => {
   if (!membrane) return 0.0042;
   if (membrane.pressureDropModel?.coefficient) return membrane.pressureDropModel.coefficient;
+  
+  // High-fidelity fallback based on category
+  const category = membrane.category || '';
+  if (category === '4040') return 0.0158;
+  
   if (membrane.nominalFlowDP) {
-    // If user provided a nominal DP (at 16 m3/h reference)
     const exp = getPExp(membrane);
     return membrane.nominalFlowDP / Math.pow(16.0, exp);
   }
@@ -1089,7 +1093,9 @@ export const getKdp = (membrane) => {
  * @returns {number} Mass transfer coefficient
  */
 export const getKmt = (membrane) => {
-  return membrane?.transport?.kMtRef || 160;
+  if (membrane?.transport?.kMtRef) return membrane.transport.kMtRef;
+  const isSeawater = (membrane?.type === MEMBRANE_TYPES.SEAWATER);
+  return isSeawater ? 650 : 160;
 };
 
 /**
@@ -1098,7 +1104,9 @@ export const getKmt = (membrane) => {
  * @returns {number} Osmotic coefficient
  */
 export const getOsmoticCoefficient = (membrane) => {
-  return membrane?.osmoticModel?.coefficient || 0.0007925;
+  if (membrane?.osmoticModel?.coefficient) return membrane.osmoticModel.coefficient;
+  const isSeawater = (membrane?.type === MEMBRANE_TYPES.SEAWATER);
+  return isSeawater ? 0.0007925 : 0.00077;
 };
 
 /**
@@ -1106,7 +1114,14 @@ export const getOsmoticCoefficient = (membrane) => {
  * @param {object} m - Membrane object
  * @returns {number} exponent
  */
-export const getPExp = (m) => m?.pressureDropModel?.exponent || m?.dpExponent || 1.22;
+export const getPExp = (m) => {
+  if (m?.pressureDropModel?.exponent) return m.pressureDropModel.exponent;
+  if (m?.dpExponent) return m.dpExponent;
+  
+  const category = m?.category || '';
+  if (category === '4040') return 1.75;
+  return 1.22;
+};
 
 /**
  * Calculate ion rejection and permeate concentration

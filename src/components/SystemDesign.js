@@ -159,6 +159,13 @@ const SystemDesign = ({
 
     let updates = { ...systemConfig, [key]: value, ...(resetsDesign ? { designCalculated: false } : {}) };
 
+    if (key === 'flowUnit') {
+      const unit = (value || '').toLowerCase().trim().replace('/', '');
+      const isImperialFlow = ['gpm', 'gpd', 'mgd', 'migd'].includes(unit);
+      updates.pressureUnit = isImperialFlow ? 'psi' : 'bar';
+      updates.fluxUnit = isImperialFlow ? 'gfd' : 'lmh';
+    }
+
     // --- Apply RO Membrane Formulas ---
     const numValue = Number(value) || 0;
     const trains = Math.max(Number(updates.numTrains) || 1, 1);
@@ -251,13 +258,15 @@ const SystemDesign = ({
       }
     }
 
-    // If user enters Feed Pressure, set recovery default to 52.5 as per request
+    // If user enters Feed Pressure, we don't force recovery to 52.5 anymore
+    // This allows testing specific cases like the user benchmarks (40% recovery)
     if (key === 'feedPressure' && value !== '' && Number(value) > 0) {
-      updates.recovery = 52.5;
+      // updates.recovery = 52.5; // REMOVED: Don't force recovery
       const qf = Number(updates.feedFlow) || 0;
+      const rec = (Number(updates.recovery) || 40) / 100;
       const trainQf = qf / trains;
-      updates.permeateFlow = calculatePermeateFlow(trainQf, 0.525).toFixed(decimals);
-      updates.concentrateFlow = calculateConcentrateFlow(trainQf, 0.525, true).toFixed(decimals);
+      updates.permeateFlow = calculatePermeateFlow(trainQf, rec).toFixed(decimals);
+      updates.concentrateFlow = calculateConcentrateFlow(trainQf, rec, true).toFixed(decimals);
     }
 
     setSystemConfig(updates);
@@ -484,13 +493,13 @@ const SystemDesign = ({
   const inputStyle = { width: '70px', textAlign: 'right', border: '1px solid #999' };
 
   const flowUnitLabel = systemConfig.flowUnit || 'gpm';
-  const isGpm = ['gpm', 'gpd', 'mgd', 'migd'].includes(flowUnitLabel.toLowerCase().trim().replace('/', ''));
-  const pUnit = isGpm ? 'psi' : 'bar';
-  // Use m3/h for metric result tables even if input is m3/d, as per industry standard/IMSDesign
-  const fUnit = isGpm ? 'gpm' : 'm3/h';
-  const fluxUnit = isGpm ? 'gfd' : 'lmh';
-//   const BAR_TO_PSI = 14.5038;
-
+  const unitForCategory = (flowUnitLabel || '').toLowerCase().trim().replace('/', '');
+  const isImperialCategory = ['gpm', 'gpd', 'mgd', 'migd'].includes(unitForCategory);
+  
+  const pUnit = isImperialCategory ? 'psi' : 'bar';
+  const fUnit = isImperialCategory ? 'gpm' : 'm3/h';
+  const fluxUnit = isImperialCategory ? 'gfd' : 'lmh';
+  
   const flowDiagramReady = systemConfig.designCalculated && projection;
   const handlePrintFlowDiagram = () => {
     if (!flowDiagramRef.current) return;
@@ -788,7 +797,8 @@ const SystemDesign = ({
             </div>
           </div>
           <div style={rowStyle}><span>Number of trains</span> <input style={inputStyle} value={systemConfig.numTrains} onChange={e => handleInputChange('numTrains', e.target.value)} /></div>
-                    {showFeedPressure && (
+          
+          {showFeedPressure && (
             <div style={rowStyle}>
               <span>Feed Pressure</span>
               <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
@@ -1330,7 +1340,6 @@ const SystemDesign = ({
                   <th style={{ border: '1px solid #ccc' }}>Feed ({pUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Conc ({pUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Feed ({fUnit})</th>
-                  <th style={{ border: '1px solid #ccc' }}>Perm ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Conc ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Flux ({fluxUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Highest flux ({fluxUnit})</th>
@@ -1351,12 +1360,9 @@ const SystemDesign = ({
                     <td style={{ border: '1px solid #ccc' }}>
                       {row.feedFlowVessel}
                     </td>
-                    <td style={{ border: '1px solid #ccc' }}>
-                      {row.permeateFlowVessel}
-                    </td>
                     <td style={{ border: '1px solid #ccc' }}>{row.concFlowVessel}</td>
                     <td style={{ border: '1px solid #ccc' }}>{row.flux}</td>
-                    <td style={{ border: '1px solid #ccc', background: Number(row.highestFlux) > (isGpm ? 20 : 34) ? '#f8d7da' : 'transparent' }}>
+                    <td style={{ border: '1px solid #ccc', background: Number(row.highestFlux) > (fluxUnit === 'gfd' ? 20 : 34) ? '#f8d7da' : 'transparent' }}>
                       {row.highestFlux}
                     </td>
                     <td style={{ border: '1px solid #ccc' }}>{row.highestBeta}</td>
@@ -1402,8 +1408,8 @@ const SystemDesign = ({
               <div>Ca3(PO4)2: {projection.concentrateSaturation?.ca3po42 ?? '0.00'}%</div>
               <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.00'}%</div>
               <div>Osmotic pressure: {Number(projection.concentrateParameters?.osmoticPressure || 0).toFixed(1)} {pUnit}</div>
-              <div>CCPP: {projection.concentrateParameters?.ccpp ?? '0.00'} mg/L</div>
-              <div>Langelier: {projection.concentrateParameters?.lsi ?? '0.00'}</div>
+              <div>CCPP: {projection.concentrateParameters?.saturation?.ccpp ?? '0.00'} mg/L</div>
+              <div>Langelier: {projection.concentrateParameters?.saturation?.lsi ?? '0.00'}</div>
               <div>pH: {projection.concentrateParameters?.ph ?? '0.00'}</div>
               <div>TDS: {Number(projection.concentrateParameters?.tds || 0).toFixed(1)} mg/L</div>
             </div>

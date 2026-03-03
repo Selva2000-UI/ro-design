@@ -43,7 +43,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     pretreatmentRequired: ['Coagulation', 'Filtration', 'Ultra Filtration']
   },
   [WATER_TYPES.SEA_WELL]: {
-    recommended: ['swtds32k8080', 'swc5ld'],
+    recommended: ['swtds32k8040', 'swc5ld'],
     category: MEMBRANE_CATEGORIES.SEAWATER,
     description: 'Seawater from subsurface wells, relatively stable composition',
     sdiMax: 3,
@@ -51,7 +51,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     pretreatmentRequired: ['Multi-Media Filter', 'Ultra Filtration', 'Cartridge Filter']
   },
   [WATER_TYPES.SEA_SURFACE]: {
-    recommended: ['swtds32k8080'],
+    recommended: ['swtds32k8040'],
     category: MEMBRANE_CATEGORIES.SEAWATER,
     description: 'Surface seawater with high variability and organic content',
     sdiMax: 2,
@@ -216,23 +216,6 @@ export const MEMBRANE_SPECIFICATIONS = {
     }
   },
   
-  swtds32k8080: {
-    name: 'SW-TDS32k-8080',
-    size: '8"',
-    area: 400,
-    areaM2: 37.16,
-    ratedFlow: 2.11,
-    ratedFlowM3h: 7.99,
-    saltRejection: 99.72,
-    classification: MEMBRANE_CATEGORIES.SEAWATER,
-    suitableFor: [WATER_TYPES.SEA_WELL, WATER_TYPES.SEA_SURFACE],
-    constraints: {
-      maxTds: 40000,
-      maxTemp: 45,
-      maxPressure: 1200,
-      maxFlow: 80
-    }
-  },
   cpa5ld8040: {
     name: 'CPA5-LD-8040',
     size: '8"',

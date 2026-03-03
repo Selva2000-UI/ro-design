@@ -48,8 +48,9 @@ const App = () => {
       { membraneModel: 'swtds32k8040', elementsPerVessel: 6, vessels: 0 }
     ],
 
-    // Flux display
+    // Units
     fluxUnit: 'lmh', // gfd | lmh
+    pressureUnit: 'bar', // bar | psi
 
     // Hydranautics behavior: flux stays 0 until "Recalculate array"
     designCalculated: false,
@@ -134,8 +135,12 @@ const App = () => {
     const activePass1Stages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);
     const activeStages = systemConfig.stages?.slice(0, activePass1Stages) || [];
 
+    const isImperialFlow = ['gpm', 'gpd', 'mgd', 'migd'].includes((systemConfig.flowUnit || '').toLowerCase().trim().replace('/', ''));
+    
     const calculationInputs = {
       ...systemConfig,
+      pressureUnit: isImperialFlow ? 'psi' : 'bar',
+      fluxUnit: isImperialFlow ? 'gfd' : 'lmh',
       stages: activeStages,
       feedIons: {
         ca: Number(waterData.ca) || 0,
@@ -247,7 +252,7 @@ const App = () => {
           if (normalized.includes('lfc3ld8040')) return 'lfc3ld8040';
           if (normalized.includes('espa2ld4040')) return 'espa2ld4040';
           if (normalized.includes('espa2ld8040')) return 'espa2ld';
-          if (normalized.includes('swtds32k8080') || normalized.includes('swtds32k8040')) return 'swtds32k8040';
+          if (normalized.includes('swtds32k8040')) return 'swtds32k8040';
           return model;
         };
 
@@ -282,30 +287,88 @@ const App = () => {
 
     // Force update standard membranes to new calibrations (Persistence Migration)
     setMembranes(prev => prev.map(m => {
-      if (m.id === 'cpa3' && (m.aValue !== 3.1414 || m.dpExponent !== 1.3078 || m.maxFlux !== 51.8)) {
-        return { ...m, aValue: 3.1414, areaM2: 37.17, dpExponent: 1.3078, maxFlux: 51.8 };
-      }
-      if (m.id === 'swtds32k8080' || m.id === 'swtds32k8040') {
+      if (m.id === 'swtds32k8040') {
         return { 
           ...m, 
-          id: 'swtds32k8040',
-          aValue: 1.005, 
-          membraneB: 0.0547,
+          aValue: 0.85, 
+          membraneB: 0.055,
           transport: {
-            aValueRef: 1.005,
-            membraneBRef: 0.0547,
+            aValueRef: 0.85,
+            membraneBRef: 0.055,
+            kMtRef: 720,
             soluteBFactors: {
               monovalent: 1.0,
               divalent: 0.6,
               silica: 0.8,
               boron: 1.4,
+              alkalinity: 1.8,
               co2: 999
             }
+          },
+          pressureDropModel: {
+            coefficient: 0.0019,
+            exponent: 1.75
           }
         };
       }
-      if (m.id === 'lfc3ld4040' && m.areaM2 !== 7.432) {
-        return { ...m, areaM2: 7.432 };
+      if (m.id === 'bwtds10kfr8040') {
+        return { 
+          ...m, 
+          transport: {
+            ...(m.transport || {}),
+            aValueRef: 4.21,
+            membraneBRef: 0.185
+          },
+          pressureDropModel: {
+            coefficient: 0.0099,
+            exponent: 1.75
+          }
+        };
+      }
+      if (m.id === 'lfc3ld4040') {
+        return { 
+          ...m, 
+          areaM2: 7.432,
+          transport: {
+            ...(m.transport || {}),
+            aValueRef: 2.94,
+            membraneBRef: 0.141
+          },
+          pressureDropModel: {
+            coefficient: 0.102,
+            exponent: 1.75
+          }
+        };
+      }
+      if (m.id === 'lfc3ld8040') {
+        return { 
+          ...m, 
+          areaM2: 37.16,
+          transport: {
+            ...(m.transport || {}),
+            aValueRef: 3.20,
+            membraneBRef: 0.144
+          },
+          pressureDropModel: {
+            coefficient: 0.012,
+            exponent: 1.3
+          }
+        };
+      }
+      if (m.id === 'cpa5ld8040') {
+        return { 
+          ...m, 
+          areaM2: 37.16,
+          transport: {
+            ...(m.transport || {}),
+            aValueRef: 3.06,
+            membraneBRef: 0.175
+          },
+          pressureDropModel: {
+            coefficient: 0.0164,
+            exponent: 1.75
+          }
+        };
       }
       return m;
     }));

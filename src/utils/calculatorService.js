@@ -486,7 +486,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     permeateConcentration: permeateIons,
     concentrateParameters: {
       tds: systemConcentrateTds,
-      osmoticPressure: concentrateOsmotic * (isImperial ? BAR_TO_PSI : 1),
+      osmoticPressure: concentrateOsmotic * (usePsi ? BAR_TO_PSI : 1),
       ph: concPh.toFixed(2),
       ions: concIons,
       saturation: concSaturations
