@@ -970,7 +970,7 @@ export const calculateROStage = (inputs) => {
   // STEP 9 — SALT TRANSPORT (Move up for beta usage)
   // Refined k_mt with velocity scaling: k = k_ref * (Q/Qref)^0.8 (Standard Sherwood correlation)
   // Brackish base tuned to match industrial benchmarks (IMS/WAVE: 1.13 highestBeta @ 110 LMH)
-  const base_k_mt = kMtInput || (isSeawater ? 850 : 410);
+  const base_k_mt = kMtInput || membrane?.transport?.kMtRef || (isSeawater ? 850 : 410);
   const Q_ref_k = membrane?.category === '4040' ? 3.6 : 16.0; 
   const Q_vessel = Qf / vesselsPerStage;
   const k_mt = base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 0.8);
@@ -1148,7 +1148,7 @@ export const calculateROStageGivenPressure = (inputs) => {
   const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 15000;
   
   // Use consistent base_k_mt from calculateROStage (410/850)
-  const base_k_mt = kMtInput || (isSeawater ? 850 : 410);
+  const base_k_mt = kMtInput || inputs.membrane?.transport?.kMtRef || (isSeawater ? 850 : 410);
   const Q_ref_k = inputs.membrane?.category === '4040' ? 3.6 : 16.0;
   
   // Use membrane model if available, else use smart defaults based on category
