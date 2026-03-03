@@ -11,7 +11,8 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
     maxFlux: 48.5,
     membraneB: 0.14,
     dpExponent: 1.22,
-    nominalFlowDP: 15.5
+    nominalFlowDP: 15.5,
+    osmoticCoeff: 0.00077
   });
 
   const handleAdd = (e) => {
@@ -43,17 +44,17 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
         }
       },
       pressureDropModel: {
-        coefficient: newMembrane.nominalFlowDP / 1000, // Approximate
+        coefficient: newMembrane.nominalFlowDP || (newMembrane.category === '4040' ? 0.0158 : 0.0042),
         exponent: newMembrane.dpExponent
       },
       osmoticModel: {
-        type: 'industrial-linear',
-        coefficient: 0.00074
+        type: newMembrane.type === 'Seawater' ? 'seawater-linear' : 'industrial-linear',
+        coefficient: newMembrane.osmoticCoeff || 0.00077
       }
     };
 
     setMembranes([...membranes, membraneToAdd]);
-    setNewMembrane({ id: '', name: '', area: 400, type: 'Brackish', aValue: 0.12, rejection: 99.7, maxFlux: 48.5, membraneB: 0.14, dpExponent: 1.22, nominalFlowDP: 15.5 });
+    setNewMembrane({ id: '', name: '', area: 400, type: 'Brackish', aValue: 0.12, rejection: 99.7, maxFlux: 48.5, membraneB: 0.14, dpExponent: 1.22, nominalFlowDP: 15.5, osmoticCoeff: 0.00077 });
   };
 
   const handleDelete = (id) => {
@@ -144,6 +145,14 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
             value={newMembrane.nominalFlowDP} 
             onChange={e => setNewMembrane({...newMembrane, nominalFlowDP: parseFloat(e.target.value) || 15.5})} 
             style={{ ...inputStyle, maxWidth: '130px' }} 
+          />
+          <input 
+            type="number" 
+            step="0.00001"
+            placeholder="Osmotic Coeff" 
+            value={newMembrane.osmoticCoeff} 
+            onChange={e => setNewMembrane({...newMembrane, osmoticCoeff: parseFloat(e.target.value) || 0.00077})} 
+            style={{ ...inputStyle, maxWidth: '110px' }} 
           />
           <select 
             value={newMembrane.type} 
