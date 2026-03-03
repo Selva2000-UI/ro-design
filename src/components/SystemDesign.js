@@ -84,24 +84,6 @@ const SystemDesign = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [systemConfig.pass1Stages]);
 
-  // Sync systemConfig.averageFlux with calculated projection.avgFlux
-  useEffect(() => {
-    if (projection?.avgFlux && systemConfig.designCalculated) {
-      const calcFlux = Number(projection.avgFlux).toFixed(2);
-      if (systemConfig.averageFlux !== calcFlux) {
-        setSystemConfig(prev => ({
-          ...prev,
-          averageFlux: calcFlux
-        }));
-      }
-      // Also update local state to ensure immediate UI sync
-      if (localAverageFlux !== null) {
-        setLocalAverageFlux(null);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projection?.avgFlux, systemConfig.designCalculated]);
-
   const getFlowDecimals = (flowUnit) => {
     if (['gpm', 'm3/h'].includes(flowUnit)) return 2;
     if (['gpd', 'm3/d'].includes(flowUnit)) return 1;

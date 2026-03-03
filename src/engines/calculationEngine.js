@@ -394,10 +394,10 @@ export const calculateConcentrateTds = (feedTds, logMeanCF) => {
  */
 export const calculatePermeatePhSimplified = (feedPh, flux, recovery) => {
   // Calibrated flux-dependent pH model
-  // Use pure log-scale model to match user's extreme design benchmark (3.7 at 1121 LMH)
+  // Refined to match CPA5 benchmark: 5.0 pH at 92 LMH and 55% recovery
   const f = Math.max(flux, 0.1);
   const logFluxRatio = Math.log10(f / 25.2);
-  const phDrop = 1.28 + 1.08 * logFluxRatio + (recovery * 0.8);
+  const phDrop = 1.25 + 0.85 * logFluxRatio + (recovery * 0.5);
   return Math.max(Math.min(feedPh - phDrop, 9.5), 3.5);
 };
 
@@ -914,8 +914,8 @@ export const calculateROStage = (inputs) => {
         // Seawater linear factor to match user examples (matches ~0.0007925)
         return (membrane?.osmoticModel?.coefficient || 0.0007925) * tds;
     }
-    // High-precision brackish factor matching industrial standards
-    return (membrane?.osmoticModel?.coefficient || 0.00077) * tds;
+    // High-precision brackish factor matching industrial standards (e.g. 28.7 psi @ 2500 TDS)
+    return (membrane?.osmoticModel?.coefficient || 0.000791) * tds;
   };
 
   const pi_f = getOsmotic(Cf, feedIons);
@@ -969,11 +969,11 @@ export const calculateROStage = (inputs) => {
 
   // STEP 9 — SALT TRANSPORT (Move up for beta usage)
   // Refined k_mt with velocity scaling: k = k_ref * (Q/Qref)^0.8 (Standard Sherwood correlation)
-  // Brackish base tuned to 1000 to match high-flow 4040 benchmarks
-  const base_k_mt = kMtInput || (isSeawater ? 720 : 1000);
+  // Brackish base tuned to match industrial benchmarks (IMS/WAVE: 1.13 highestBeta @ 110 LMH)
+  const base_k_mt = kMtInput || (isSeawater ? 850 : 410);
   const Q_ref_k = membrane?.category === '4040' ? 3.6 : 16.0; 
   const Q_vessel = Qf / vesselsPerStage;
-  const k_mt = base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 1.2);
+  const k_mt = base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 0.8);
   
   let beta = Math.exp(J / Math.max(k_mt, 1));
   beta = Number.isFinite(beta) ? Math.max(1.0, Math.min(1.35, beta)) : 1.35; 
@@ -1002,10 +1002,10 @@ export const calculateROStage = (inputs) => {
 
   // TDS-dependent B-factor correction
   // Seawater membranes use fixed B-factor logic from manufacturer specs
-  // Brackish/Low-Fouling elements scale with salinity to match industrial passage curves
-  // Refined model: (1.48 + 0.09 * TDS/1000) matches Case 1 (2.5k) and Case 2 (5k) benchmarks
+  // Brackish elements scale with salinity to match industrial passage curves (IMS/WAVE)
+  // Refined model: (0.85 + 0.05 * TDS/1000) matches CPA5 (2.5k) and BW-TDS-10K (5k-10k) benchmarks
   const isActuallySeawaterMembrane = (membrane?.type === 'Seawater' || membrane?.type === 'Seawater FO' || membrane?.id?.toLowerCase().includes('sw'));
-  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.48 + 0.09 * (Cf / 1000));
+  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (0.85 + 0.05 * (Cf / 1000));
   const B_actual = B_ref * TCF_B * bFactorTds;
 
   // Salt Passage Model: Cp = Cs * B / (J + B)
@@ -1014,14 +1014,14 @@ export const calculateROStage = (inputs) => {
   // STEP 11 — ESTIMATE HIGHEST FLUX AND BETA (Per element variation)
   // In seawater, flux is much higher at the inlet element
   const pi_f_inlet = getOsmotic(Cf, feedIons);
-  // Refined inlet flux estimation matching benchmark profiles
+  // Refined inlet flux estimation matching benchmark profiles (e.g. 110.7/92.2=1.20)
   const J_inlet = A * (Pfeed - Number(permeatePressure) - pi_f_inlet - 0.05 * deltaP_vessel); 
-  const highestFlux = Math.max(J_inlet, J * 1.38); 
+  const highestFlux = Math.max(J_inlet, J * 1.20); 
   
-  // Re-calculate k_mt at inlet flow for highestBeta
+  // Re-calculate k_mt at inlet flow for highestBeta using consistent 0.8 exponent
   const k_mt_inlet = base_k_mt * Math.pow(Math.max(Q_vessel, 0.1) / Q_ref_k, 0.8);
   let hBeta = Math.exp(highestFlux / Math.max(k_mt_inlet, 1));
-  const highestBeta = Number.isFinite(hBeta) ? Math.min(1.45, hBeta) : 1.45;
+  const highestBeta = Number.isFinite(hBeta) ? Math.min(1.35, hBeta) : 1.35;
 
   // Permeate pH estimation based on flux-dependent model
   const permPh = calculatePermeatePhSimplified(inputs.feedPh || 7.0, J, R);
@@ -1143,22 +1143,28 @@ export const calculateROStageGivenPressure = (inputs) => {
   } = inputs;
 
   const totalArea = vesselsPerStage * elementsPerVessel * Area;
-  const TCF = Math.exp(2640 * (1 / 298.15 - 1 / (T + 273.15)));
+  const TCF = calculateTCF(T, 'A');
+  const TCF_B = calculateTCF(T, 'B');
   const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 15000;
-  const base_k_mt = kMtInput || (isSeawater ? 650 : 160);
+  
+  // Use consistent base_k_mt from calculateROStage (410/850)
+  const base_k_mt = kMtInput || (isSeawater ? 850 : 410);
   const Q_ref_k = inputs.membrane?.category === '4040' ? 3.6 : 16.0;
+  
   // Use membrane model if available, else use smart defaults based on category
   const k_dp = kDpInput !== undefined ? kDpInput : (inputs.membrane?.pressureDropModel?.coefficient || (inputs.membrane?.category === '4040' ? 0.0158 : (isSeawater ? 0.015 : 0.0042)));
   const p_exp = pExpInput !== undefined
   ? pExpInput
   : (inputs.membrane?.pressureDropModel?.exponent ||
      (inputs.membrane?.category === '4040' ? 1.75 : 1.22));
-  const osmoticFactor = osmoticCoeffInput || inputs.membrane?.osmoticModel?.coefficient || (isSeawater ? 0.0007925 : 0.00077);
+  
+  // Use consistent osmotic factor logic
+  const osmoticFactor = osmoticCoeffInput || inputs.membrane?.osmoticModel?.coefficient || (isSeawater ? 0.0007925 : 0.00079);
 
   // Iterative solution for R
   let R = 0.15; // Initial guess
   let iterations = 0;
-  let maxIterations = 20;
+  let maxIterations = 50; // Increased for better convergence at high recovery
   let converged = false;
 
   while (iterations < maxIterations && !converged) {
@@ -1171,36 +1177,37 @@ export const calculateROStageGivenPressure = (inputs) => {
     const deltaP_element = k_dp * Math.pow(Math.max(Q_vessel_avg, 0.01), p_exp);
     const deltaP_system = deltaP_element * elementsPerVessel;
 
-    // Osmotic pressures
+    // Osmotic pressures (log-mean approximation)
     const Cc = Cf / (1 - Math.min(R, 0.99));
     const pi_f = osmoticFactor * Cf;
     const pi_c = osmoticFactor * Cc;
     const pi_avg = Math.abs(pi_c - pi_f) > 0.001 ? (pi_c - pi_f) / Math.log(pi_c / pi_f) : pi_f;
 
-    // Surface osmotic
-    const k_mt = base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 1.2);
-    const beta = Math.max(1.0, Math.min(1.4, Math.exp(J / Math.max(k_mt, 1))));
+    // Surface osmotic - use consistent 0.8 exponent and k_mt logic
+    const k_mt = base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 0.8);
+    const beta = Math.max(1.0, Math.min(1.35, Math.exp(J / Math.max(k_mt, 1))));
     const pi_surface = beta * pi_avg;
 
-    // New J based on pressure (with P_avg for pCorr)
-    const P_avg = Pfeed - 0.5 * deltaP_system;
-    const pCorr = 1.0; // Disabled compaction for industrial benchmark alignment
+    // A-value logic
+    const pCorr = 1.0; 
     const A = A_ref * TCF * pCorr;
 
+    // New R based on NDP
     const J_new = A * Math.max(Pfeed - Number(permeatePressure) - pi_surface - 0.5 * deltaP_system, 0);
-    const R_new = (J_new * totalArea / 1000) / Qf;
+    const R_new = (J_new * totalArea / 1000) / Math.max(Qf, 0.001);
 
-    if (Math.abs(R_new - R) < 0.00001) {
+    if (Math.abs(R_new - R) < 0.000001) {
       converged = true;
     }
-    R = R + 0.3 * (R_new - R); // Smaller relaxation for better stability
+    R = R + 0.4 * (R_new - R); // Slightly higher relaxation for speed
     iterations++;
   }
 
   // Final calculation based on converged R
   return calculateROStage({
     ...inputs,
-    R: Math.min(Math.max(R, 0), 0.95)
+    R: Math.min(Math.max(R, 0), 0.95),
+    Pfeed
   });
 };
 
