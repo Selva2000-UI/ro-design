@@ -493,11 +493,11 @@ const SystemDesign = ({
   const inputStyle = { width: '70px', textAlign: 'right', border: '1px solid #999' };
 
   const flowUnitLabel = systemConfig.flowUnit || 'gpm';
+  const fUnit = flowUnitLabel; // Use exact user selected unit
   const unitForCategory = (flowUnitLabel || '').toLowerCase().trim().replace('/', '');
   const isImperialCategory = ['gpm', 'gpd', 'mgd', 'migd'].includes(unitForCategory);
   
   const pUnit = isImperialCategory ? 'psi' : 'bar';
-  const fUnit = isImperialCategory ? 'gpm' : 'm3/h';
   const fluxUnit = isImperialCategory ? 'gfd' : 'lmh';
   
   const flowDiagramReady = systemConfig.designCalculated && projection;

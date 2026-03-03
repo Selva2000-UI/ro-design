@@ -271,7 +271,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     });
 
     // Use display unit factor for per-vessel flows
-    const flowDisplayFactor = isImperial ? M3H_TO_GPM : 1.0;
+    const flowDisplayFactor = 1 / (FLOW_CONVERSION[flowUnit] || 1);
 
     stageResults.push({
       stage: idx + 1,
@@ -285,9 +285,9 @@ export const calculateSystem = (inputs, allMembranes = []) => {
       feedFlowVessel: vessels > 0 ? (stageRes.Qf / vessels * flowDisplayFactor).toFixed(2) : '0.00',
       permeateFlowVessel: vessels > 0 ? (stageRes.Qp / vessels * flowDisplayFactor).toFixed(2) : '0.00',
       concFlowVessel: vessels > 0 ? (stageRes.Qc / vessels * flowDisplayFactor).toFixed(2) : '0.00',
-      totalFeedFlow: isImperial ? (stageRes.Qf * M3H_TO_GPM).toFixed(2) : stageRes.Qf.toFixed(2),
-      totalPermeateFlow: isImperial ? (stageRes.Qp * M3H_TO_GPM).toFixed(2) : stageRes.Qp.toFixed(2),
-      totalConcFlow: isImperial ? (stageRes.Qc * M3H_TO_GPM).toFixed(2) : stageRes.Qc.toFixed(2),
+      totalFeedFlow: (stageRes.Qf * flowDisplayFactor).toFixed(2),
+      totalPermeateFlow: (stageRes.Qp * flowDisplayFactor).toFixed(2),
+      totalConcFlow: (stageRes.Qc * flowDisplayFactor).toFixed(2),
       feedPressure: usePsi ? (stageRes.Pfeed * BAR_TO_PSI).toFixed(2) : stageRes.Pfeed.toFixed(2),
       concPressure: usePsi ? ((stageRes.Pfeed - stageRes.deltaP_system) * BAR_TO_PSI).toFixed(2) : (stageRes.Pfeed - stageRes.deltaP_system).toFixed(2),
       flux: useGfd ? (stageRes.J * LMH_TO_GFD).toFixed(2) : stageRes.J.toFixed(2),

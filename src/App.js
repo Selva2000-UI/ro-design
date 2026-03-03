@@ -290,12 +290,12 @@ const App = () => {
       if (m.id === 'swtds32k8040') {
         return { 
           ...m, 
-          aValue: 0.85, 
-          membraneB: 0.055,
+          aValue: 1.092, 
+          membraneB: 0.0704,
           transport: {
-            aValueRef: 0.85,
-            membraneBRef: 0.055,
-            kMtRef: 720,
+            aValueRef: 1.092,
+            membraneBRef: 0.0704,
+            kMtRef: 650,
             soluteBFactors: {
               monovalent: 1.0,
               divalent: 0.6,
@@ -306,7 +306,7 @@ const App = () => {
             }
           },
           pressureDropModel: {
-            coefficient: 0.0019,
+            coefficient: 0.000171,
             exponent: 1.75
           }
         };
@@ -317,11 +317,12 @@ const App = () => {
           transport: {
             ...(m.transport || {}),
             aValueRef: 4.21,
-            membraneBRef: 0.185
+            membraneBRef: 0.228,
+            kMtRef: 600
           },
           pressureDropModel: {
             coefficient: 0.0099,
-            exponent: 1.75
+            exponent: 1.30
           }
         };
       }
@@ -438,7 +439,7 @@ const App = () => {
     const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes((unit || '').toLowerCase().trim().replace('/', ''));
     const pUnit = isImperial ? 'psi' : 'bar';
     const fluxUnit = isImperial ? 'gfd' : 'lmh';
-    const fUnit = isImperial ? 'gpm' : 'm3/h';
+    const fUnit = unit; // Use the actual selected unit
 
     const permTds = Number(projection?.permeateParameters?.tds ?? 0);
     const concTds = Number(projection?.concentrateParameters?.tds ?? 0);
@@ -471,7 +472,7 @@ const App = () => {
     const stageRows = (projection.stageResults || []).map((row) => {
       return `
         <tr>
-          <td>${row.stage}</td>
+          <td>${row.array}</td>
           <td>${row.vessels ?? ''}</td>
           <td>${row.feedPressure ?? ''}</td>
           <td>${row.concPressure ?? ''}</td>
@@ -519,7 +520,7 @@ const App = () => {
             <div><strong>Permeate flow/train:</strong> ${projection.permeateFlow || '0.00'} ${unit}</div>
             <div><strong>Raw water flow/train:</strong> ${projection.feedFlow || '0.00'} ${unit}</div>
             <div><strong>Permeate recovery:</strong> ${Number(systemConfig.recovery || 0).toFixed(2)} %</div>
-            <div><strong>Feed pressure:</strong> ${projection.calcFeedPressurePsi || '0.0'} psi</div>
+            <div><strong>Feed pressure:</strong> ${isImperial ? projection.calcFeedPressurePsi : projection.calcFeedPressureBar} ${pUnit}</div>
             <div><strong>Feed temperature:</strong> ${tempF.toFixed(2)} °F</div>
             <div><strong>Feed Water pH:</strong> ${feedPh.toFixed(2)}</div>
             <div><strong>Chemical dose, mg/L:</strong> ${systemConfig.chemical || 'None'}</div>
@@ -736,7 +737,7 @@ const App = () => {
               <tbody>
                 <tr><td>CaSO4, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.caSo4 ?? '0'}</td><td>%</td></tr>
                 <tr><td>SrSO4, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.srSo4 ?? '0'}</td><td>%</td></tr>
-                <tr><td>Osmotic pressure</td><td>${projection.concentrateParameters?.osmoticPressure?.toFixed(1) ?? '0.0'}</td><td>bar</td></tr>
+                <tr><td>Osmotic pressure</td><td>${projection.concentrateParameters?.osmoticPressure?.toFixed(1) ?? '0.0'}</td><td>${pUnit}</td></tr>
                 <tr><td>pH</td><td>${projection.concentrateParameters?.ph ?? '0.0'}</td><td></td></tr>
                 <tr><td>BaSO4, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.baSo4 ?? '0'}</td><td>%</td></tr>
                 <tr><td>SiO2, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.sio2 ?? '0'}</td><td>%</td></tr>
