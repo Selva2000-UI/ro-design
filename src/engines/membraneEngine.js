@@ -51,8 +51,9 @@ export const MEMBRANES = {
     areaM2: 7.432,
     maxFlux: 50.0,
     transport: {
-      aValueRef: 4.35,
-      membraneBRef: 0.14,
+      aValueRef: 4.72, // Calibrated for 12.4 bar @ 44.8 LMH (48% recovery)
+      membraneBRef: 0.176, // Calibrated for 8.44 mg/l TDS @ 1366 feed
+      kMtRef: 410,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -76,7 +77,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0158,
+      coefficient: 0.0533, // Calibrated for 2.4 bar drop @ 4.17/2.17 m3/h (6 elements)
       exponent: 1.75
     },
     designFlux: {
@@ -116,6 +117,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 4.35,
       membraneBRef: 0.14,
+      kMtRef: 410,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -139,8 +141,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0042,
-      exponent: 1.22
+      coefficient: 0.00238,
+      exponent: 1.75
     },
     designFlux: {
       min: 20,
@@ -177,8 +179,9 @@ export const MEMBRANES = {
     areaM2: 37.16,
     maxFlux: 51.8,
     transport: {
-      aValueRef: 3.14,
-      membraneBRef: 0.49,
+      aValueRef: 3.40, // Calibrated for 16.6 bar @ 33.6 LMH (5000 TDS, 48% rec)
+      membraneBRef: 0.24, // Calibrated for 58.41 mg/l TDS
+      kMtRef: 410,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -202,8 +205,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.012,
-      exponent: 1.3
+      coefficient: 0.00398, // Calibrated for 0.6 bar drop @ 7.9 m3/h avg (4 elements)
+      exponent: 1.75
     },
     designFlux: {
       min: 18,
@@ -243,6 +246,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 3.13, // Calibrated for 39.9 bar @ 92.2 LMH (55% recovery)
       membraneBRef: 0.191, // Calibrated for 19.89 mg/l @ 5000 TDS
+      kMtRef: 410,
       soluteBFactors: {
         monovalent: 1.0, // Standard industrial monovalent factor
         divalent: 0.6,
@@ -307,6 +311,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 2.95, // Calibrated for 124.9 bar @ 301.1 LMH (38% recovery)
       membraneBRef: 0.25, // Calibrated for 6.46 mg/l @ 5000 TDS
+      kMtRef: 410,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -372,6 +377,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: 3.32, // Calibrated for 14.2 bar @ 26.9 LMH (38% recovery)
       membraneBRef: 0.26, // Calibrated for 75.65 mg/l @ 5000 TDS
+      kMtRef: 410,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -434,8 +440,9 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
     transport: {
-      aValueRef: 6.42, // Calibrated for 36 m3/day at 150 psi (10.3 bar) and 15% recovery
-      membraneBRef: 0.203, // Calibrated for 99.5% rejection
+      aValueRef: 4.8, // Calibrated for Low-Pressure Brackish benchmark (e.g. ESPA2/LP-type)
+      membraneBRef: 0.25, // Standard high-rejection salt passage
+      kMtRef: 410,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -459,8 +466,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0042,
-      exponent: 1.22
+      coefficient: 0.00238,
+      exponent: 1.75
     },
     designFlux: {
       min: 12,
@@ -495,8 +502,9 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
     transport: {
-      aValueRef: 3.2, // Calibrated for 102 bar @ 252 LMH
-      membraneBRef: 0.35, // Calibrated for 30 mg/l @ 7500 TDS
+      aValueRef: 3.3, // Standard Brackish benchmark (matches CPA3-profile)
+      membraneBRef: 0.35, // Balanced salt passage for standard BW
+      kMtRef: 410,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -520,8 +528,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0042,
-      exponent: 1.22
+      coefficient: 0.00238,
+      exponent: 1.75
     },
     designFlux: {
       min: 10,
@@ -556,8 +564,8 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.FOULING_RESISTANT,
     areaM2: 37.16,
     transport: {
-      aValueRef: 3.08, // Calibrated for 47.5 bar @ 112 LMH
-      membraneBRef: 0.450, // Adjusted for industrial salt passage benchmarks
+      aValueRef: 4.83, // Calibrated for 16.1 bar @ 45.4 LMH (4 elements, 45% recovery)
+      membraneBRef: 0.31, // Calibrated for 52.87 mg/l @ 5000 TDS
       kMtRef: 600,
       soluteBFactors: {
         monovalent: 0.85, 
@@ -583,7 +591,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.00205, // Calibrated for 11.6 bar drop @ 50 m3/h (6 elements)
+      coefficient: 0.0034, // Calibrated for 1.0 bar drop @ 11.6 m3/h avg (4 elements)
       exponent: 1.75
     },
     designFlux: {
@@ -621,8 +629,8 @@ export const MEMBRANES = {
     areaM2: 37.16,
     maxFlux: 42.0,
     transport: {
-      aValueRef: 1.08, // Calibrated for 73.3 bar @ 51 LMH
-      membraneBRef: 0.065, // Adjusted for industrial salt passage benchmarks
+      aValueRef: 1.07, // Calibrated for 45.3 bar @ 22.4 LMH (22k TDS, 40% rec)
+      membraneBRef: 0.053, // Calibrated for 71.28 mg/l TDS
       kMtRef: 650,
       soluteBFactors: {
         monovalent: 1.0,
@@ -648,7 +656,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.000171, // Calibrated for 24.2 psi drop @ 62.5 m3/h (7 elements)
+      coefficient: 0.00325, // Calibrated for 1.1 bar drop @ 10 m3/h avg (6 elements)
       exponent: 1.75
     },
     designFlux: {
