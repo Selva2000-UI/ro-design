@@ -746,6 +746,7 @@ export const normalizeAValueTo25C = (aValueAtConditions, tempCelsius, sourceType
 const MOLECULAR_WEIGHTS = {
   na: 22.99,
   k: 39.10,
+  nh4: 18.04,
   ca: 40.08,
   mg: 24.31,
   cl: 35.45,
@@ -760,7 +761,7 @@ const MOLECULAR_WEIGHTS = {
 };
 
 const ION_CHARGES = {
-  na: 1, k: 1, cl: -1, f: -1, no3: -1,
+  na: 1, k: 1, nh4: 1, cl: -1, f: -1, no3: -1,
   ca: 2, mg: 2, sr: 2, ba: 2,
   so4: -2, co3: -2, po4: -3, hco3: -1
 };
@@ -951,15 +952,16 @@ export const calculateROStage = (inputs) => {
   ? pExpInput
   : (membrane?.pressureDropModel?.exponent || 
      (membrane?.category === '4040' ? 1.75 : 1.22));
-  const Q_vessel_avg = (Qf + Qc) / (2 * vesselsPerStage);
-  const deltaP_element = k_dp * Math.pow(Math.max(Q_vessel_avg, 0.01), p_exp);
+  const Q_vessel = vesselsPerStage > 0 ? Qf / vesselsPerStage : 0;
+  const Q_vessel_avg = vesselsPerStage > 0 ? (Qf + Qc) / (2 * vesselsPerStage) : 0;
+  const deltaP_element = vesselsPerStage > 0 ? k_dp * Math.pow(Math.max(Q_vessel_avg, 0.01), p_exp) : 0;
   const deltaP_vessel = deltaP_element * elementsPerVessel;
   // Account for inter-stage plumbing drop
   const deltaP_system = deltaP_vessel;
 
   // Compaction correction: A-value decreases at high pressure (Brackish only)
   // Seawater membranes are typically pre-compacted or use higher pressure baseline
-  const P_avg_est = inputs.Pfeed !== undefined ? (inputs.Pfeed - 0.5 * deltaP_vessel) : 15.0;
+  const P_avg_est = (inputs.Pfeed !== undefined && vesselsPerStage > 0) ? (inputs.Pfeed - 0.5 * deltaP_vessel) : 15.0;
   const pCorr = 1.0; // Disabled compaction for industrial benchmark alignment
   const A = A_ref * TCF * pCorr;
 
@@ -972,10 +974,9 @@ export const calculateROStage = (inputs) => {
   // Brackish base tuned to match industrial benchmarks (IMS/WAVE: 1.13 highestBeta @ 110 LMH)
   const base_k_mt = kMtInput || membrane?.transport?.kMtRef || (isSeawater ? 850 : 410);
   const Q_ref_k = membrane?.category === '4040' ? 3.6 : 16.0; 
-  const Q_vessel = Qf / vesselsPerStage;
-  const k_mt = base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 0.8);
+  const k_mt = vesselsPerStage > 0 ? base_k_mt * Math.pow(Math.max(Q_vessel_avg, 0.1) / Q_ref_k, 0.8) : base_k_mt;
   
-  let beta = Math.exp(J / Math.max(k_mt, 1));
+  let beta = vesselsPerStage > 0 ? Math.exp(J / Math.max(k_mt, 1)) : 1.0;
   beta = Number.isFinite(beta) ? Math.max(1.0, Math.min(1.35, beta)) : 1.35; 
   
   const Csurface = beta * Cavg;
@@ -1003,24 +1004,25 @@ export const calculateROStage = (inputs) => {
   // TDS-dependent B-factor correction
   // Seawater membranes use fixed B-factor logic from manufacturer specs
   // Brackish elements scale with salinity to match industrial passage curves (IMS/WAVE)
-  // Refined model: (0.85 + 0.05 * TDS/1000) matches CPA5 (2.5k) and BW-TDS-10K (5k-10k) benchmarks
+  // Refined model: (1.0 + 0.30 * TDS/1000) matches Stage 4 benchmark (~200 mg/l) more accurately
   const isActuallySeawaterMembrane = (membrane?.type === 'Seawater' || membrane?.type === 'Seawater FO' || membrane?.id?.toLowerCase().includes('sw'));
-  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (0.85 + 0.05 * (Cf / 1000));
+  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.30 * (Cf / 1000));
   const B_actual = B_ref * TCF_B * bFactorTds;
 
   // Salt Passage Model: Cp = Cs * B / (J + B)
-  const Cp = Csurface * (B_actual / (Math.max(J, 0.01) + B_actual));
+  // Safety cap: Use Math.max(J, 0) for salt passage calculation to prevent negative TDS
+  const Cp = Csurface * (B_actual / (Math.max(J, 0) + B_actual));
   
   // STEP 11 — ESTIMATE HIGHEST FLUX AND BETA (Per element variation)
   // In seawater, flux is much higher at the inlet element
   const pi_f_inlet = getOsmotic(Cf, feedIons);
   // Refined inlet flux estimation matching benchmark profiles (e.g. 110.7/92.2=1.20)
-  const J_inlet = A * (Pfeed - Number(permeatePressure) - pi_f_inlet - 0.05 * deltaP_vessel); 
-  const highestFlux = Math.max(J_inlet, J * 1.20); 
+  const J_inlet = A * (Pfeed - Number(permeatePressure) - pi_f_inlet - 0.08 * deltaP_vessel); 
+  const highestFlux = vesselsPerStage > 0 ? Math.max(J_inlet, J * 1.20) : 0; 
   
   // Re-calculate k_mt at inlet flow for highestBeta using consistent 0.8 exponent
-  const k_mt_inlet = base_k_mt * Math.pow(Math.max(Q_vessel, 0.1) / Q_ref_k, 0.8);
-  let hBeta = Math.exp(highestFlux / Math.max(k_mt_inlet, 1));
+  const k_mt_inlet = vesselsPerStage > 0 ? base_k_mt * Math.pow(Math.max(Q_vessel, 0.1) / Q_ref_k, 0.8) : base_k_mt;
+  let hBeta = vesselsPerStage > 0 ? Math.exp(highestFlux / Math.max(k_mt_inlet, 1)) : 1.0;
   const highestBeta = Number.isFinite(hBeta) ? Math.min(1.35, hBeta) : 1.35;
 
   // Permeate pH estimation based on flux-dependent model
@@ -1041,15 +1043,23 @@ export const calculateROStage = (inputs) => {
         // Dissolved gases pass 100%
         if (i === 'co2') return factors.co2 || 1000;
         
-        const bIonBase = baseB * (
-            ['ca', 'mg', 'ba', 'sr'].includes(i) ? (factors.divalent || 0.4) :
-            ['so4', 'po4'].includes(i) ? (factors.divalent || 0.1) :
-            ['hco3', 'co3'].includes(i) ? (factors.alkalinity || 1.0) :
-            ['na', 'cl', 'k'].includes(i) ? (factors.monovalent || 1.0) :
-            (i === 'b' ? (factors.boron || 1.6) : (factors.silica || 1.6))
-        );
+        let multiplier = factors.monovalent || 1.0;
+        
+        if (['ca', 'mg', 'ba', 'sr'].includes(i)) {
+            multiplier = factors.divalent || 0.4;
+        } else if (['so4', 'po4'].includes(i)) {
+            multiplier = factors.divalent || 0.1;
+        } else if (['hco3', 'co3'].includes(i)) {
+            multiplier = factors.alkalinity || 1.0;
+        } else if (['na', 'cl', 'k', 'nh4', 'f', 'no3'].includes(i)) {
+            multiplier = factors.monovalent || 1.0;
+        } else if (i === 'b') {
+            multiplier = factors.boron || 1.6;
+        } else if (i === 'sio2' || i === 'silica') {
+            multiplier = factors.silica || 1.6;
+        }
 
-        return bIonBase * bFactorTds;
+        return baseB * multiplier * TCF_B * bFactorTds;
     };
 
     Object.entries(feedIons).forEach(([ionKey, val]) => {
@@ -1057,8 +1067,8 @@ export const calculateROStage = (inputs) => {
         const Ci_f = Number(val) || 0;
         const Bi = getIonB(ion, B_ref);
         const Ci_s = beta * Ci_f * (Cavg / Cf);
-        // Use consistent salt passage model for individual ions
-        const Ci_p = (Bi / (Math.max(J, 0.01) + Bi)) * Ci_s;
+        // Use consistent salt passage model for individual ions - Cap J at 0 to prevent negative values
+        const Ci_p = (Bi / (Math.max(J, 0) + Bi)) * Ci_s;
         
         // Safety check for invalid values
         const Ci_p_safe = Number.isFinite(Ci_p) ? Ci_p : 0;
@@ -1173,8 +1183,8 @@ export const calculateROStageGivenPressure = (inputs) => {
     const J = totalArea > 0 ? (Qp * 1000) / totalArea : 0;
     
     // deltaP (using average vessel flow)
-    const Q_vessel_avg = (Qf + Qc) / (2 * vesselsPerStage);
-    const deltaP_element = k_dp * Math.pow(Math.max(Q_vessel_avg, 0.01), p_exp);
+    const Q_vessel_avg = vesselsPerStage > 0 ? (Qf + Qc) / (2 * vesselsPerStage) : 0;
+    const deltaP_element = vesselsPerStage > 0 ? k_dp * Math.pow(Math.max(Q_vessel_avg, 0.01), p_exp) : 0;
     const deltaP_system = deltaP_element * elementsPerVessel;
 
     // Osmotic pressures (log-mean approximation)

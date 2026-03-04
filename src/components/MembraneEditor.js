@@ -80,13 +80,13 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
         <h3 style={{ marginTop: 0, color: '#004a80' }}>Add New Membrane Model</h3>
         <form onSubmit={handleAdd} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <input 
-            placeholder="ID (e.g., swc5)" 
+            placeholder="ID (e.g., cpa3)" 
             value={newMembrane.id} 
             onChange={e => setNewMembrane({...newMembrane, id: e.target.value.toLowerCase().replace(/\s/g, '')})} 
             style={inputStyle} 
           />
           <input 
-            placeholder="Full Name (e.g., SWC5-LD)" 
+            placeholder="Full Name (e.g., CPA3-8040)" 
             value={newMembrane.name} 
             onChange={e => setNewMembrane({...newMembrane, name: e.target.value})} 
             style={inputStyle} 
