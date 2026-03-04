@@ -77,18 +77,6 @@ export const RO_DESIGN_EXAMPLES = {
     feedPressure: 42.28 // 613.2 psi
   },
 
-  cpa5ldBrackish: {
-    name: 'CPA5-LD Brackish (2500 TDS)',
-    ions: {
-      na: 983.73,
-      cl: 1516.17,
-      hco3: 0.50
-    },
-    targetRecovery: 0.40,
-    feedTemperature: 25,
-    feedPressure: 43.7
-  },
-
   lfc3ldLowFouling: {
     name: 'LFC3-LD Low Fouling (2500 TDS)',
     ions: {

@@ -17,7 +17,6 @@
 |---|---|---|---|---|
 | ESPA2-LD-4040 | espa2ld | None | 50.0 | ✅ Added |
 | CPA3 | cpa3 | None | 51.8 | ✅ Added |
-| CPA5-LD-8040 | cpa5ld8040 | None | 53.0 | ✅ Added |
 | LFC3-LD-4040 | lfc3ld4040 | None | 48.0 | ✅ Added |
 | BW-TDS-2K-8040 | bwtds2k8040 | None | 48.0 | ✅ Added |
 | BW-TDS-5K-8040 | bwtds5k8040 | None | 48.0 | ✅ Added |
@@ -115,14 +114,12 @@ Added "Max Flux (LMH)" column to show membrane specifications
 | Membrane | A-value | maxFlux | dpExponent | Status |
 |---|---|---|---|---|
 | ESPA2-LD-4040 | 4.43 | 50.0 | 1.75 | ✅ |
-| CPA5LD-4040 | 4.25 | 50.0 | 1.75 | ✅ |
 | LFC3-LD-4040 | 4.40 | 48.0 | 1.75 | ✅ |
 
 #### **8040 Membranes (Large Area: 400+ ft²)**
 | Membrane | A-value | maxFlux | dpExponent | Status |
 |---|---|---|---|---|
 | CPA3 | 3.21 | 51.8 | 1.18 | ✅ |
-| CPA5-LD-8040 | 3.35 | 53.0 | 1.18 | ✅ |
 | BW-TDS-2K | 3.18 | 48.0 | 1.22 | ✅ |
 | BW-TDS-5K | 3.18 | 48.0 | 1.22 | ✅ |
 | BW-TDS-10K-FR | 3.18 | 48.0 | 1.22 | ✅ |
@@ -147,9 +144,9 @@ Added "Max Flux (LMH)" column to show membrane specifications
 - After: Uses specific maxFlux = 42.0 ✅
 - **Result:** Lower flux constraint properly enforced
 
-### **✅ Low Fouling Membranes (LFC3, CPA5LD)**
+### **✅ Low Fouling Membranes (LFC3)**
 - Before: Used hardcoded maxFlux = 48.5 ❌
-- After: Uses specific maxFlux (48.0 / 50.0) ✅
+- After: Uses specific maxFlux (48.0) ✅
 - **Result:** Correct performance characteristics
 
 

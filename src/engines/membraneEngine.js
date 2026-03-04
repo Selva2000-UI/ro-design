@@ -51,12 +51,12 @@ export const MEMBRANES = {
     areaM2: 7.432,
     maxFlux: 50.0,
     transport: {
-      aValueRef: 4.72, // Calibrated for 12.4 bar @ 44.8 LMH (48% recovery)
-      membraneBRef: 0.176, // Calibrated for 8.44 mg/l TDS @ 1366 feed
-      kMtRef: 410,
+      aValueRef: 5.40, // Calibrated for 137.3 psi @ 6.38 GFD (6-stage 4040 benchmark)
+      membraneBRef: 0.32, // Calibrated for ~45 mg/l System Permeate TDS
+      kMtRef: 1970, // Calibrated for 1.06 beta at 42.3 gfd
       soluteBFactors: {
         monovalent: 1.0,
-        divalent: 0.6,
+        divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
         co2: 999
@@ -77,8 +77,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0533, // Calibrated for 2.4 bar drop @ 4.17/2.17 m3/h (6 elements)
-      exponent: 1.75
+      coefficient: 0.106, // Calibrated for 38.1 psi drop @ 21.25 gpm (Stage 1 4040 benchmark)
+      exponent: 1.22
     },
     designFlux: {
       min: 20,
@@ -91,72 +91,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.0007925,
-      formula: 'π(bar) = 0.0007925 × TDS',
-      note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
-    },
-    limits: {
-      maxTds: 2000,
-      maxTemp: 45,
-      maxPressure: 600
-    },
-    compatibleWaterTypes: [
-      'Brackish Well Non-Fouling',
-      'Brackish Surface',
-      'Municipal'
-    ]
-  },
-
-  espa2ld: {
-    id: 'espa2ld',
-    name: 'ESPA2-LD-8040',
-    category: '8040',
-    type: MEMBRANE_TYPES.BRACKISH,
-    areaM2: 37.16,
-    maxFlux: 50.0,
-    transport: {
-      aValueRef: 4.35,
-      membraneBRef: 0.14,
-      kMtRef: 410,
-      soluteBFactors: {
-        monovalent: 1.0,
-        divalent: 0.6,
-        silica: 0.8,
-        boron: 1.4,
-        co2: 999
-      }
-    },
-    testConditions: {
-      pressureBar: 10.3,
-      temperatureC: 25,
-      tds: 1500,
-      recovery: 0.15,
-      fluxLMH: 28
-    },
-    hydraulics: {
-      maxFeedFlowM3H: 16,
-      minConcentrateFlowM3H: 3,
-      maxElementRecovery: 0.15,
-      maxPressureDropBar: 1.0,
-      spacerMil: 34
-    },
-    pressureDropModel: {
-      coefficient: 0.00238,
-      exponent: 1.75
-    },
-    designFlux: {
-      min: 20,
-      max: 40,
-      recommended: 28
-    },
-    agingModel: {
-      annualFluxDecline: 0.05,
-      foulingFactorDefault: 1.0
-    },
-    osmoticModel: {
-      type: 'industrial-linear',
-      coefficient: 0.0007925,
-      formula: 'π(bar) = 0.0007925 × TDS',
+      coefficient: 0.00084, // Calibrated for 137 psi benchmark osmotic profile
+      formula: 'π(bar) = 0.00084 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -240,15 +176,14 @@ export const MEMBRANES = {
     name: 'CPA5-LD-8040',
     category: '8040',
     type: MEMBRANE_TYPES.BRACKISH,
-    // areaM2: 40.9,
-    areaM2: 37.16,
-    maxFlux: 53.0,
+    areaM2: 37.16, // 400 sq ft
+    maxFlux: 120.0,
     transport: {
-      aValueRef: 3.13, // Calibrated for 39.9 bar @ 92.2 LMH (55% recovery)
-      membraneBRef: 0.191, // Calibrated for 19.89 mg/l @ 5000 TDS
-      kMtRef: 410,
+      aValueRef: 3.19, 
+      membraneBRef: 0.18,
+      kMtRef: 650,
       soluteBFactors: {
-        monovalent: 1.0, // Standard industrial monovalent factor
+        monovalent: 1.0,
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
@@ -260,23 +195,23 @@ export const MEMBRANES = {
       temperatureC: 25,
       tds: 1500,
       recovery: 0.15,
-      fluxLMH: 30
+      fluxLMH: 28
     },
     hydraulics: {
-      maxFeedFlowM3H: 17,
+      maxFeedFlowM3H: 70,
       minConcentrateFlowM3H: 3,
-      maxElementRecovery: 0.20,
-      maxPressureDropBar: 1.0,
+      maxElementRecovery: 0.30,
+      maxPressureDropBar: 1.2,
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.00238, // Calibrated for 7.1 bar drop @ 43.6/19.6 m3/h (7 elements)
+      coefficient: 0.0021,
       exponent: 1.75
     },
     designFlux: {
-      min: 20,
-      max: 40,
-      recommended: 30
+      min: 18,
+      max: 35,
+      recommended: 28
     },
     agingModel: {
       annualFluxDecline: 0.05,
@@ -289,7 +224,7 @@ export const MEMBRANES = {
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
-      maxTds: 2000,
+      maxTds: 5000,
       maxTemp: 45,
       maxPressure: 600
     },
@@ -299,7 +234,6 @@ export const MEMBRANES = {
       'Municipal'
     ]
   },
-
 
   lfc3ld4040: {
     id: 'lfc3ld4040',

@@ -46,12 +46,12 @@ const SystemDesign = ({
     // Initialize with only Stage 1 active (vessels > 0), others have 0
     const stage1Vessels = systemConfig.stage1Vessels || 3;
     return [
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: stage1Vessels },
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 }
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: stage1Vessels },
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 }
     ];
   };
 
@@ -1239,7 +1239,7 @@ const SystemDesign = ({
                     </thead>
                     <tbody>
                       <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>New Heading Name</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>Description</td>
                         {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
                           <td key={`name-${p.id}`} style={{ border: '1px solid #c9d3de', padding: '6px', fontSize: '0.7rem', background: '#f9f9f9' }}>{p.name || ''}</td>
                         ))}
@@ -1322,6 +1322,7 @@ const SystemDesign = ({
                   <th style={{ border: '1px solid #ccc' }}>Feed ({pUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Conc ({pUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Feed ({fUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Perm ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Conc ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Flux ({fluxUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Highest flux ({fluxUnit})</th>
@@ -1341,6 +1342,9 @@ const SystemDesign = ({
                     </td>
                     <td style={{ border: '1px solid #ccc' }}>
                       {row.feedFlowVessel}
+                    </td>
+                    <td style={{ border: '1px solid #ccc' }}>
+                      {row.permeateFlowVessel}
                     </td>
                     <td style={{ border: '1px solid #ccc' }}>{row.concFlowVessel}</td>
                     <td style={{ border: '1px solid #ccc' }}>{row.flux}</td>
