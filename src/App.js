@@ -80,13 +80,19 @@ const App = () => {
   
   const mergeMembranes = (savedMembranes) => {
     if (!savedMembranes || !Array.isArray(savedMembranes)) return DEFAULT_MEMBRANES;
-    const savedMap = new Map(savedMembranes.map(m => [m.id, m]));
+    
+    // Surgical Removal: Remove exact duplicates or incorrect entries identified by user
+    const forbiddenIds = ['swc5ld', 'cpa5ld', 'espa2ld8040', 'espa2ld'];
+    const filteredSaved = savedMembranes.filter(m => 
+      !forbiddenIds.includes(m.id.toLowerCase().replace(/-/g, ''))
+    );
+
+    const savedMap = new Map(filteredSaved.map(m => [m.id, m]));
     const merged = DEFAULT_MEMBRANES.map(defaultMem => {
       const saved = savedMap.get(defaultMem.id);
       if (!saved) return defaultMem;
       // Industrial Recalibration: Always prioritize defaultMem properties for transport and hydraulics
       // for standard membranes to ensure engine updates apply to all projects.
-      // We only preserve the name/id from saved if needed (though they should be identical).
       return {
         ...saved,
         ...defaultMem, // defaultMem (engine) properties win
@@ -99,7 +105,8 @@ const App = () => {
         limits: { ...(defaultMem.limits || {}) }
       };
     });
-    const customMembranes = savedMembranes.filter(m => !DEFAULT_MEMBRANES.some(d => d.id === m.id));
+
+    const customMembranes = filteredSaved.filter(m => !DEFAULT_MEMBRANES.some(d => d.id === m.id));
     return [...merged, ...customMembranes];
   };
   const [waterData, setWaterData] = useState({

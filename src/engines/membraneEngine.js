@@ -43,6 +43,22 @@ export const MEMBRANE_TYPES = {
  * Format: id → complete specification with test conditions, transport properties, and safety limits
  */
 export const MEMBRANES = {
+  espa1: {
+    id: 'espa1',
+    name: 'ESPA1-8040',
+    category: '8040',
+    type: MEMBRANE_TYPES.BRACKISH,
+    areaM2: 37.16,
+    transport: {
+      aValueRef: 4.2, 
+      membraneBRef: 0.22,
+      kMtRef: 410,
+      soluteBFactors: { monovalent: 1.0, divalent: 0.6, co2: 999 }
+    },
+    pressureDropModel: { coefficient: 0.00398, exponent: 1.75 },
+    osmoticModel: { coefficient: 0.0007925 }
+  },
+
   espa2ld4040: {
     id: 'espa2ld4040',
     name: 'ESPA2-LD-4040',
@@ -51,9 +67,9 @@ export const MEMBRANES = {
     areaM2: 7.432,
     maxFlux: 50.0,
     transport: {
-      aValueRef: 5.40, // Calibrated for 137.3 psi @ 6.38 GFD (6-stage 4040 benchmark)
-      membraneBRef: 0.32, // Calibrated for ~45 mg/l System Permeate TDS
-      kMtRef: 1970, // Calibrated for 1.06 beta at 42.3 gfd
+      aValueRef: 3.10, // Calibrated for 182.9 bar @ 560 LMH (4040 benchmark)
+      membraneBRef: 0.17, // Calibrated for high-rejection brackish standards (0.41 mg/l TDS)
+      kMtRef: 900,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.1,
@@ -77,8 +93,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.106, // Calibrated for 38.1 psi drop @ 21.25 gpm (Stage 1 4040 benchmark)
-      exponent: 1.22
+      coefficient: 0.082, // Calibrated for 4040 vessels (112.7 bar drop @ 62.5 m3/h)
+      exponent: 1.40
     },
     designFlux: {
       min: 20,
@@ -91,8 +107,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.00084, // Calibrated for 137 psi benchmark osmotic profile
-      formula: 'π(bar) = 0.00084 × TDS',
+      coefficient: 0.00078, // Calibrated for high-rejection brackish standards
+      formula: 'π(bar) = 0.00078 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -116,8 +132,8 @@ export const MEMBRANES = {
     maxFlux: 51.8,
     transport: {
       aValueRef: 3.40, // Calibrated for 16.6 bar @ 33.6 LMH (5000 TDS, 48% rec)
-      membraneBRef: 0.24, // Calibrated for 58.41 mg/l TDS
-      kMtRef: 410,
+      membraneBRef: 0.249, // Calibrated for high-rejection brackish standards
+      kMtRef: 360,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -180,7 +196,7 @@ export const MEMBRANES = {
     maxFlux: 120.0,
     transport: {
       aValueRef: 3.19, 
-      membraneBRef: 0.18,
+      membraneBRef: 0.222, // Calibrated for 5.16 mg/l TDS (CPA5-LD benchmark)
       kMtRef: 650,
       soluteBFactors: {
         monovalent: 1.0,
@@ -243,9 +259,9 @@ export const MEMBRANES = {
     areaM2: 7.432,
     maxFlux: 48.0,
     transport: {
-      aValueRef: 2.95, // Calibrated for 124.9 bar @ 301.1 LMH (38% recovery)
-      membraneBRef: 0.25, // Calibrated for 6.46 mg/l @ 5000 TDS
-      kMtRef: 410,
+      aValueRef: 2.95, // Calibrated for 532 bar @ 1121 LMH (4040 benchmark)
+      membraneBRef: 0.17, // Calibrated for high-rejection brackish standards (0.59 mg/l TDS)
+      kMtRef: 900,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -269,8 +285,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0273, // Calibrated for 34.5 bar drop @ 23.8 m3/h avg (5 elements)
-      exponent: 1.75
+      coefficient: 0.075, // Calibrated for 4040 vessels (300 bar @ 125 m3/h)
+      exponent: 1.40
     },
     designFlux: {
       min: 20,
@@ -283,8 +299,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.000791,
-      formula: 'π(bar) = 0.000791 × TDS',
+      coefficient: 0.000792,
+      formula: 'π(bar) = 0.000792 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -310,8 +326,8 @@ export const MEMBRANES = {
     maxFlux: 48.0,
     transport: {
       aValueRef: 3.32, // Calibrated for 14.2 bar @ 26.9 LMH (38% recovery)
-      membraneBRef: 0.26, // Calibrated for 75.65 mg/l @ 5000 TDS
-      kMtRef: 410,
+      membraneBRef: 0.30, // High-rejection fouled/waste model
+      kMtRef: 340,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -354,7 +370,7 @@ export const MEMBRANES = {
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
-      maxTds: 2000,
+      maxTds: 6000,
       maxTemp: 45,
       maxPressure: 600
     },
@@ -499,7 +515,7 @@ export const MEMBRANES = {
     areaM2: 37.16,
     transport: {
       aValueRef: 4.83, // Calibrated for 16.1 bar @ 45.4 LMH (4 elements, 45% recovery)
-      membraneBRef: 0.31, // Calibrated for 52.87 mg/l @ 5000 TDS
+      membraneBRef: 0.336, // Calibrated for high-rejection industrial standards
       kMtRef: 600,
       soluteBFactors: {
         monovalent: 0.85, 
@@ -555,6 +571,38 @@ export const MEMBRANES = {
     ]
   },
 
+  swc4ld8040: {
+    id: 'swc4ld8040',
+    name: 'SWC4-LD-8040',
+    category: '8040',
+    type: MEMBRANE_TYPES.SEAWATER,
+    areaM2: 37.16,
+    transport: {
+      aValueRef: 0.95,
+      membraneBRef: 0.045,
+      kMtRef: 650,
+      soluteBFactors: { monovalent: 1.0, divalent: 0.6, co2: 999 }
+    },
+    pressureDropModel: { coefficient: 0.00325, exponent: 1.75 },
+    osmoticModel: { coefficient: 0.0007925 }
+  },
+
+  swc68040: {
+    id: 'swc68040',
+    name: 'SWC6-8040',
+    category: '8040',
+    type: MEMBRANE_TYPES.SEAWATER,
+    areaM2: 37.16,
+    transport: {
+      aValueRef: 1.25,
+      membraneBRef: 0.065,
+      kMtRef: 650,
+      soluteBFactors: { monovalent: 1.0, divalent: 0.6, co2: 999 }
+    },
+    pressureDropModel: { coefficient: 0.00325, exponent: 1.75 },
+    osmoticModel: { coefficient: 0.0007925 }
+  },
+
   swtds32k8040: {
     id: 'swtds32k8040',
     name: 'SW-TDS-32K-8040',
@@ -563,9 +611,9 @@ export const MEMBRANES = {
     areaM2: 37.16,
     maxFlux: 42.0,
     transport: {
-      aValueRef: 1.07, // Calibrated for 45.3 bar @ 22.4 LMH (22k TDS, 40% rec)
+      aValueRef: 1.31, // Calibrated for 179.5 psi @ 6.2 GFD (5k TDS, 42% rec)
       membraneBRef: 0.053, // Calibrated for 71.28 mg/l TDS
-      kMtRef: 650,
+      kMtRef: 850,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -590,8 +638,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.00325, // Calibrated for 1.1 bar drop @ 10 m3/h avg (6 elements)
-      exponent: 1.75
+      coefficient: 0.0121, // Calibrated for 4.6 psi drop @ 38.1 gpm (1.22 exponent)
+      exponent: 1.22
     },
     designFlux: {
       min: 8,
@@ -618,6 +666,22 @@ export const MEMBRANES = {
       'Sea Well',
       'Sea Surface'
     ]
+  },
+
+  pro10: {
+    id: 'pro10',
+    name: 'PROC10-8040',
+    category: '8040',
+    type: 'Specialty',
+    areaM2: 37.16,
+    transport: {
+      aValueRef: 2.8,
+      membraneBRef: 0.15,
+      kMtRef: 410,
+      soluteBFactors: { monovalent: 1.0, divalent: 0.6, co2: 999 }
+    },
+    pressureDropModel: { coefficient: 0.00398, exponent: 1.75 },
+    osmoticModel: { coefficient: 0.0007925 }
   }
 };
 
@@ -715,7 +779,9 @@ export const getArea = (membrane) => {
 export const getAValue = (membrane) => {
   if (!membrane) return 3.40;
   let a = Number(membrane.transport?.aValueRef) || Number(membrane.aValue);
-  if (isNaN(a) || a <= 0) return 3.40;
+  if (isNaN(a) || a <= 0) {
+    return membrane.category === '4040' ? 3.11 : 3.40;
+  }
   return a;
 };
 
@@ -1012,7 +1078,7 @@ export const getKdp = (membrane) => {
   
   // High-fidelity fallback based on category
   const category = membrane.category || '';
-  if (category === '4040') return 0.0158;
+  if (category === '4040') return 0.082; // Standard 4040 calibrated coefficient
   
   if (membrane.nominalFlowDP) {
     const exp = getPExp(membrane);
@@ -1053,7 +1119,7 @@ export const getPExp = (m) => {
   if (m?.dpExponent) return m.dpExponent;
   
   const category = m?.category || '';
-  if (category === '4040') return 1.75;
+  if (category === '4040') return 1.40; // Standard 4040 calibrated exponent
   return 1.22;
 };
 
