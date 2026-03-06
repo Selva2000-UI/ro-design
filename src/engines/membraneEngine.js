@@ -62,8 +62,8 @@ export const estimateMembraneB = (A, pressureBar, tds, rejection = 0.996) => {
 };
 
 // Automatic Calibration - Seawater SW-TDS-32K-8040
-const SW_TDS_32K_A = calculateA(18, 55, 32000, 0.0007925) * 1.6; // ~0.61 * 1.6 = 0.98
-const SW_TDS_32K_B = estimateMembraneB(SW_TDS_32K_A, 55, 32000, 0.998); // ~0.066
+const SW_TDS_32K_A = calculateA(18, 55, 32000, 0.0007925) * 2.5; // ~1.52 (Matches industrial benchmark at 5000 TDS)
+const SW_TDS_32K_B = estimateMembraneB(SW_TDS_32K_A, 55, 32000, 0.9935); // ~0.19 (Calibrated for 44 mg/l permeate)
 
 // Automatic Calibration - Brackish ESPA2-LD-4040
 const ESPA2_LD_4040_A = calculateA(28, 10.3, 1500, 0.00078) * 1.0; // ~3.1
@@ -104,22 +104,6 @@ const BW_TDS_2K_B = estimateMembraneB(BW_TDS_2K_A, 10.3, 1500, 0.9935); // ~0.31
  * Format: id → complete specification with test conditions, transport properties, and safety limits
  */
 export const MEMBRANES = {
-  espa1: {
-    id: 'espa1',
-    name: 'ESPA1-8040',
-    category: '8040',
-    type: MEMBRANE_TYPES.BRACKISH,
-    areaM2: 37.16,
-    transport: {
-      aValueRef: 4.2, 
-      membraneBRef: 0.22,
-      kMtRef: 410,
-      soluteBFactors: { monovalent: 1.0, divalent: 0.6, co2: 999 }
-    },
-    pressureDropModel: { coefficient: 0.00398, exponent: 1.75 },
-    osmoticModel: { coefficient: 0.0007925 }
-  },
-
   espa2ld4040: {
     id: 'espa2ld4040',
     name: 'ESPA2-LD-4040',
@@ -640,38 +624,6 @@ export const MEMBRANES = {
     ]
   },
 
-  swc4ld8040: {
-    id: 'swc4ld8040',
-    name: 'SWC4-LD-8040',
-    category: '8040',
-    type: MEMBRANE_TYPES.SEAWATER,
-    areaM2: 37.16,
-    transport: {
-      aValueRef: 0.95,
-      membraneBRef: 0.045,
-      kMtRef: 650,
-      soluteBFactors: { monovalent: 1.0, divalent: 0.6, co2: 999 }
-    },
-    pressureDropModel: { coefficient: 0.00325, exponent: 1.75 },
-    osmoticModel: { coefficient: 0.0007925 }
-  },
-
-  swc68040: {
-    id: 'swc68040',
-    name: 'SWC6-8040',
-    category: '8040',
-    type: MEMBRANE_TYPES.SEAWATER,
-    areaM2: 37.16,
-    transport: {
-      aValueRef: 1.25,
-      membraneBRef: 0.065,
-      kMtRef: 650,
-      soluteBFactors: { monovalent: 1.0, divalent: 0.6, co2: 999 }
-    },
-    pressureDropModel: { coefficient: 0.00325, exponent: 1.75 },
-    osmoticModel: { coefficient: 0.0007925 }
-  },
-
   swtds32k8040: {
     id: 'swtds32k8040',
     name: 'SW-TDS-32K-8040',
@@ -698,7 +650,7 @@ export const MEMBRANES = {
       tds: 32000,
       recovery: 0.08,
       fluxLMH: 18,
-      rejection: 0.998
+      rejection: 0.9935
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
@@ -736,22 +688,6 @@ export const MEMBRANES = {
       'Sea Well',
       'Sea Surface'
     ]
-  },
-
-  pro10: {
-    id: 'pro10',
-    name: 'PROC10-8040',
-    category: '8040',
-    type: 'Specialty',
-    areaM2: 37.16,
-    transport: {
-      aValueRef: 2.8,
-      membraneBRef: 0.15,
-      kMtRef: 410,
-      soluteBFactors: { monovalent: 1.0, divalent: 0.6, co2: 999 }
-    },
-    pressureDropModel: { coefficient: 0.00398, exponent: 1.75 },
-    osmoticModel: { coefficient: 0.0007925 }
   }
 };
 

@@ -1,10 +1,11 @@
 [
-  { "id": "espa1", "name": "ESPA1-8040", "type": "Brackish", "area": 400, "rejection": 99.4, "description": "Energy-saving polyamide." },
   { "id": "espa2ld4040", "name": "ESPA2-LD-4040", "type": "Brackish", "area": 80, "areaM2": 7.432, "rejection": 99.6, "description": "High rejection, low pressure (4040)." },
-  { "id": "cpaf3", "name": "CPA3-8040", "type": "Brackish", "area": 400, "rejection": 99.3, "description": "Standard high rejection." },
-  { "id": "swc4", "name": "SWC4-LD-8040", "type": "Seawater", "area": 400, "rejection": 99.8, "description": "High rejection seawater." },
-  { "id": "swc6", "name": "SWC6-8040", "type": "Seawater", "area": 400, "rejection": 99.8, "description": "High flow seawater." },
-  { "id": "lfc3ld8040", "name": "LFC3-LD-8040", "type": "Low Fouling", "area": 400, "rejection": 99.7, "description": "Neutral charge, low fouling." },
+  { "id": "cpa3", "name": "CPA3-8040", "type": "Brackish", "area": 400, "areaM2": 37.16, "rejection": 99.7, "description": "Standard high rejection." },
+  { "id": "cpa5ld8040", "name": "CPA5-LD-8040", "type": "Brackish", "area": 400, "areaM2": 37.16, "rejection": 99.7, "description": "High rejection, low fouling." },
   { "id": "lfc3ld4040", "name": "LFC3-LD-4040", "type": "Low Fouling", "area": 80, "areaM2": 7.432, "rejection": 99.7, "description": "Neutral charge, low fouling (4040)." },
-  { "id": "pro10", "name": "PROC10-8040", "type": "Specialty", "area": 400, "rejection": 99.6, "description": "High salt concentration handling." }
+  { "id": "lfc3ld8040", "name": "LFC3-LD-8040", "type": "Low Fouling", "area": 400, "areaM2": 37.16, "rejection": 99.7, "description": "Neutral charge, low fouling." },
+  { "id": "bwtds2k8040", "name": "BW-TDS-2K-8040", "type": "Brackish", "area": 400, "areaM2": 37.16, "rejection": 99.35, "description": "Brackish water RO element." },
+  { "id": "bwtds5k8040", "name": "BW-TDS-5K-8040", "type": "Brackish", "area": 400, "areaM2": 37.16, "rejection": 99.35, "description": "High TDS brackish water RO element." },
+  { "id": "bwtds10kfr8040", "name": "BW-TDS-10K-FR-8040", "type": "Fouling Resistant", "area": 400, "areaM2": 37.16, "rejection": 99.35, "description": "Fouling resistant RO element." },
+  { "id": "swtds32k8040", "name": "SW-TDS-32K-8040", "type": "Seawater", "area": 400, "areaM2": 37.16, "rejection": 99.8, "description": "High rejection seawater element." }
 ]
