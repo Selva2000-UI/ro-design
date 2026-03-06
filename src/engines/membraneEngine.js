@@ -76,11 +76,11 @@ const ESPA2_LD_4040_A = calculateA(28, 10.3, 1500, 0.00078) * 1.05;
 const ESPA2_LD_4040_B_VAL = estimateMembraneB(28, 1500, 0.9960, false, 450); 
 
 // Automatic Calibration - Brackish CPA3-8040
-const CPA3_A = calculateA(28, 15.5, 2000, 0.0007925) * 1.43; 
+const CPA3_A = calculateA(28, 15.5, 2000, 0.0007925) * 1.40; 
 const CPA3_B_VAL = estimateMembraneB(28, 2000, 0.9970, false, 450); 
 
 // Automatic Calibration - CPA5-LD-8040
-const CPA5_LD_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.62; 
+const CPA5_LD_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.55; 
 const CPA5_LD_B_VAL = estimateMembraneB(28, 1500, 0.9975, false, 450); 
 
 // Automatic Calibration - LFC3-LD-4040
@@ -88,19 +88,19 @@ const LFC3_LD_4040_A = calculateA(28, 10.3, 1500, 0.000792) * 1.05;
 const LFC3_LD_4040_B_VAL = estimateMembraneB(28, 1500, 0.9970, false, 450); 
 
 // Automatic Calibration - LFC3-LD-8040 (Waste model)
-const LFC3_LD_8040_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.38; 
+const LFC3_LD_8040_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.35; 
 const LFC3_LD_8040_B_VAL = estimateMembraneB(28, 1500, 0.9970, false, 450); 
 
 // Automatic Calibration - BW-TDS-5K-8040
-const BW_TDS_5K_A = calculateA(40.37, 15.5, 2000, 0.0008) * 1.45; 
+const BW_TDS_5K_A = calculateA(40.37, 15.5, 2000, 0.0008) * 1.38; 
 const BW_TDS_5K_B_VAL = estimateMembraneB(40.37, 2000, 0.9935, false, 450); 
 
 // Automatic Calibration - BW-TDS-10K-FR-8040
-const BW_TDS_10K_A = calculateA(40.37, 15.5, 2000, 0.0008) * 1.45; 
+const BW_TDS_10K_A = calculateA(40.37, 15.5, 2000, 0.0008) * 1.38; 
 const BW_TDS_10K_B_VAL = estimateMembraneB(40.37, 2000, 0.9935, false, 450); 
 
 // Automatic Calibration - BW-TDS-2K-8040
-const BW_TDS_2K_A = calculateA(40.37, 10.3, 1500, 0.0008) * 1.45; 
+const BW_TDS_2K_A = calculateA(40.37, 10.3, 1500, 0.0008) * 1.38; 
 const BW_TDS_2K_B_VAL = estimateMembraneB(40.37, 1500, 0.9935, false, 450); 
 
 /**
@@ -188,7 +188,7 @@ export const MEMBRANES = {
       membraneBRef: CPA3_B_VAL, 
       kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.6, 
+        monovalent: 1.25, 
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
@@ -253,7 +253,7 @@ export const MEMBRANES = {
       membraneBRef: CPA5_LD_B_VAL,
       kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.6, 
+        monovalent: 1.25, 
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
@@ -408,7 +408,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0025, // Calibrated for high-flow 8040 vessel
+      coefficient: 0.0030, // Calibrated for high-flow 8040 vessel
       exponent: 1.70
     },
     designFlux: {
@@ -452,7 +452,7 @@ export const MEMBRANES = {
       membraneBRef: BW_TDS_2K_B_VAL, 
       kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.6, 
+        monovalent: 1.25, 
         divalent: 0.4,
         silica: 0.8,
         boron: 1.4,
@@ -475,7 +475,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0025, // Calibrated for high-flow 8040 vessel
+      coefficient: 0.0030, // Calibrated for high-flow 8040 vessel
       exponent: 1.70
     },
     designFlux: {
@@ -516,7 +516,7 @@ export const MEMBRANES = {
       membraneBRef: BW_TDS_5K_B_VAL, 
       kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.6, 
+        monovalent: 1.25, 
         divalent: 0.4,
         silica: 0.8,
         boron: 1.4,
@@ -539,7 +539,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0025, // Calibrated for high-flow 8040 vessel
+      coefficient: 0.0030, // Calibrated for high-flow 8040 vessel
       exponent: 1.70
     },
     designFlux: {
@@ -604,7 +604,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0025, // Calibrated for high-flow 8040 vessel
+      coefficient: 0.0030, // Calibrated for high-flow 8040 vessel
       exponent: 1.70
     },
     designFlux: {

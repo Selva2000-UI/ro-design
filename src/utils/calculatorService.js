@@ -153,7 +153,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
   const pBackBar = usePsi ? (Number(permeatePressure) || 0) / BAR_TO_PSI : (Number(permeatePressure) || 0);
 
   // 2. WATER ANALYSIS PREP
-  const rawFeedTds = Object.values(feedIons).reduce((sum, v) => sum + (Number(v) || 0), 0) || Number(inputs.tds) || 500;
+  const rawFeedTds = Object.entries(feedIons).reduce((sum, [k, v]) => sum + (k.toLowerCase() === 'co2' ? 0 : Number(v) || 0), 0) || Number(inputs.tds) || 500;
 
   // 3. AGING & FOULING FACTORS
   const ageYears = Math.max(Number(membraneAge) || 0, 0);
@@ -340,11 +340,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
   });
 
   // Calculate flow-weighted average for system bulk permeate TDS
-  let totalWeightedTds = 0;
-  finalSystemRun.results.forEach(res => {
-    totalWeightedTds += Number(res.Cp) * res.Qp;
-  });
-  const permeateTds = Number((totalWeightedTds / (totalPermeateM3h || 1)).toFixed(2));
+  const permeateTds = Number(Object.entries(permeateIons).reduce((sum, [k, v]) => sum + (k === 'co2' ? 0 : v), 0).toFixed(2));
   
   // Calculate flow-weighted average for system permeate pH
   let totalWeightedPh = 0;
@@ -356,9 +352,8 @@ export const calculateSystem = (inputs, allMembranes = []) => {
   const concIons = finalSystemRun.lastIons || { ...feedIons };
   const lastMembraneModel = activeStages.length > 0 ? activeStages[activeStages.length - 1].membraneModel : activeStages[0]?.membraneModel;
   const osmoticCoeff = getMembrane(lastMembraneModel)?.osmoticModel?.coefficient || 0.000792;
-  
-  const systemConcentrateTds = Number((finalSystemRun.lastTds || 0).toFixed(2));
-  const concentrateOsmotic = (finalSystemRun.lastTds || 0) * osmoticCoeff;
+  const systemConcentrateTds = Number(Object.entries(concIons).reduce((sum, [k, v]) => sum + (k === 'co2' ? 0 : v), 0).toFixed(2));
+  const concentrateOsmotic = systemConcentrateTds * osmoticCoeff;
   const concentrateOsmoticDisplay = usePsi ? concentrateOsmotic * BAR_TO_PSI : concentrateOsmotic;
   
   const cfActual = 1 / (1 - Math.min(systemRecovery, 0.99));

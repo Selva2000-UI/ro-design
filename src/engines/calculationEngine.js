@@ -355,7 +355,7 @@ export const calculateWaterSaturations = (ions, temp, ph, osmoticCoeff = 0.00079
  * @returns {number} Total dissolved solids in mg/L
  */
 export const calculateFeedTds = (ions) => {
-  return Object.values(ions).reduce((sum, val) => sum + (Number(val) || 0), 0);
+  return Object.entries(ions).reduce((sum, [k, v]) => sum + (k.toLowerCase() === 'co2' ? 0 : Number(v) || 0), 0);
 };
 
 /**
@@ -1102,8 +1102,8 @@ export const calculateROStage = (inputs) => {
     Number.isFinite(value) ? Number(value.toFixed(4)) : 0;
 
   // Final Cp prioritization: if ions provided, use ion sum; else use global TDS salt passage
-  const finalCp = permeateTdsFromIons > 0 ? round2(permeateTdsFromIons) : round2(Cp);
-  const finalCc = round2((Qf * Cf - Qp * finalCp) / Math.max(Qc, 0.001));
+  const finalCp = permeateTdsFromIons > 0 ? permeateTdsFromIons : Cp;
+  const finalCc = (Qf * Cf - Qp * finalCp) / Math.max(Qc, 0.001);
   const finalRejection = Cf > 0 ? (1 - (finalCp / Cf)) : 1.0;
 
 return {
