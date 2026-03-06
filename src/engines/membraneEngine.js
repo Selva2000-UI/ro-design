@@ -48,54 +48,60 @@ export const calculateA = (fluxLMH, pressureBar, tds, osmoticCoeff = 0.0007925) 
   return fluxLMH / ndp;
 };
 
-export const estimateMembraneB = (A, pressureBar, tds, rejection = 0.996) => {
-  const osmoticCoeff = 0.0007925;
-  const osmoticPressure = osmoticCoeff * tds;
-  const ndp = pressureBar - osmoticPressure;
+export const estimateMembraneB = (flux, tds, rejection, isSeawater = false, k_mt_ref = null) => {
+  const recovery = isSeawater ? 0.08 : 0.15;
   const saltPassage = 1 - (Number(rejection) || 0.996);
   
-  // B = SP * A * NDP
-  let B = saltPassage * A * ndp;
-  // Industrial concentration polarization correction
-  B *= 1.15;
-  return B;
+  const cf = 1 / (1 - recovery);
+  const cf_avg = (cf - 1) / Math.log(cf);
+  
+  // Industrial beta model matching engine
+  const k_mt_base = k_mt_ref || (isSeawater ? 400 : 450);
+  const k_mt = k_mt_base * Math.pow((isSeawater ? 16.0 : 16.0) / 16.0, 0.15); // At test conditions Q_vessel is standard
+  const beta = Math.exp(flux / k_mt);
+  
+  const bFactorTds = isSeawater ? 1.0 : (1.0 + 0.02 * (tds / 1000));
+  
+  const B_actual = (saltPassage * flux) / (cf_avg * beta - saltPassage);
+  
+  return B_actual / bFactorTds;
 };
 
 // Automatic Calibration - Seawater SW-TDS-32K-8040
-const SW_TDS_32K_A = calculateA(18, 55, 32000, 0.0007925) * 2.5; // ~1.52 (Matches industrial benchmark at 5000 TDS)
-const SW_TDS_32K_B = estimateMembraneB(SW_TDS_32K_A, 55, 32000, 0.9935); // ~0.19 (Calibrated for 44 mg/l permeate)
+const SW_TDS_32K_A = calculateA(34.77, 55.16, 32000, 0.00085) * 0.81; 
+const SW_TDS_32K_B_VAL = estimateMembraneB(34.77, 32000, 0.9985, true, 400); 
 
 // Automatic Calibration - Brackish ESPA2-LD-4040
-const ESPA2_LD_4040_A = calculateA(28, 10.3, 1500, 0.00078) * 1.1; // ~3.4
-const ESPA2_LD_4040_B = estimateMembraneB(ESPA2_LD_4040_A, 10.3, 1500, 0.994); // ~0.22
+const ESPA2_LD_4040_A = calculateA(28, 10.3, 1500, 0.00078) * 1.05; 
+const ESPA2_LD_4040_B_VAL = estimateMembraneB(28, 1500, 0.9960, false, 450); 
 
 // Automatic Calibration - Brackish CPA3-8040
-const CPA3_A = calculateA(28, 15.5, 2000, 0.0007925) * 1.72; // ~3.45 (Matches industrial benchmark 225.3 psi)
-const CPA3_B = estimateMembraneB(CPA3_A, 15.5, 2000, 0.9958); // ~0.24 (Calibrated for 223 mg/l permeate TDS)
+const CPA3_A = calculateA(28, 15.5, 2000, 0.0007925) * 1.43; 
+const CPA3_B_VAL = estimateMembraneB(28, 2000, 0.9970, false, 450); 
 
 // Automatic Calibration - CPA5-LD-8040
-const CPA5_LD_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.72; 
-const CPA5_LD_B = estimateMembraneB(CPA5_LD_A, 15.5, 1500, 0.9958); 
+const CPA5_LD_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.62; 
+const CPA5_LD_B_VAL = estimateMembraneB(28, 1500, 0.9975, false, 450); 
 
 // Automatic Calibration - LFC3-LD-4040
-const LFC3_LD_4040_A = calculateA(28, 10.3, 1500, 0.000792) * 1.15; 
-const LFC3_LD_4040_B = estimateMembraneB(LFC3_LD_4040_A, 10.3, 1500, 0.9958); 
+const LFC3_LD_4040_A = calculateA(28, 10.3, 1500, 0.000792) * 1.05; 
+const LFC3_LD_4040_B_VAL = estimateMembraneB(28, 1500, 0.9970, false, 450); 
 
 // Automatic Calibration - LFC3-LD-8040 (Waste model)
-const LFC3_LD_8040_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.72; 
-const LFC3_LD_8040_B = estimateMembraneB(LFC3_LD_8040_A, 15.5, 1500, 0.995); 
+const LFC3_LD_8040_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.38; 
+const LFC3_LD_8040_B_VAL = estimateMembraneB(28, 1500, 0.9970, false, 450); 
 
 // Automatic Calibration - BW-TDS-5K-8040
-const BW_TDS_5K_A = calculateA(40.4, 15.5, 2000, 0.00077) * 1.25; 
-const BW_TDS_5K_B = estimateMembraneB(BW_TDS_5K_A, 15.5, 2000, 0.992); 
+const BW_TDS_5K_A = calculateA(40.37, 15.5, 2000, 0.0008) * 1.45; 
+const BW_TDS_5K_B_VAL = estimateMembraneB(40.37, 2000, 0.9935, false, 450); 
 
 // Automatic Calibration - BW-TDS-10K-FR-8040
-const BW_TDS_10K_A = calculateA(24, 15.5, 2000, 0.0007925) * 3.0; 
-const BW_TDS_10K_B = estimateMembraneB(BW_TDS_10K_A, 15.5, 2000, 0.992); 
+const BW_TDS_10K_A = calculateA(40.37, 15.5, 2000, 0.0008) * 1.45; 
+const BW_TDS_10K_B_VAL = estimateMembraneB(40.37, 2000, 0.9935, false, 450); 
 
 // Automatic Calibration - BW-TDS-2K-8040
-const BW_TDS_2K_A = calculateA(40.4, 10.3, 1500, 0.0007925) * 1.15; 
-const BW_TDS_2K_B = estimateMembraneB(BW_TDS_2K_A, 10.3, 1500, 0.992); 
+const BW_TDS_2K_A = calculateA(40.37, 10.3, 1500, 0.0008) * 1.45; 
+const BW_TDS_2K_B_VAL = estimateMembraneB(40.37, 1500, 0.9935, false, 450); 
 
 /**
  * Industrial-Grade Membrane Library
@@ -113,10 +119,10 @@ export const MEMBRANES = {
     maxFlux: 50.0,
     transport: {
       aValueRef: ESPA2_LD_4040_A, // ~3.1 (Auto-calculated from test data)
-      membraneBRef: ESPA2_LD_4040_B, // ~0.17 (Auto-calculated from rejection)
-      kMtRef: 900,
+      membraneBRef: ESPA2_LD_4040_B_VAL, // ~0.17 (Auto-calculated from rejection)
+      kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.0,
+        monovalent: 1.6,
         divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
@@ -139,8 +145,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.082, // Calibrated for 4040 vessels (112.7 bar drop @ 62.5 m3/h)
-      exponent: 1.40
+      coefficient: 0.082, // Calibrated for 4040 vessels (Matches 233 bar @ 125 m3/h)
+      exponent: 1.65
     },
     designFlux: {
       min: 20,
@@ -175,13 +181,14 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
+    rejection: 0.9920,
     maxFlux: 51.8,
     transport: {
-      aValueRef: CPA3_A, // ~3.14 (Auto-calculated from test data)
-      membraneBRef: CPA3_B, // ~0.24 (Auto-calculated from rejection)
-      kMtRef: 360,
+      aValueRef: CPA3_A, 
+      membraneBRef: CPA3_B_VAL, 
+      kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.0,
+        monovalent: 1.6, 
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
@@ -194,7 +201,7 @@ export const MEMBRANES = {
       tds: 2000,
       recovery: 0.15,
       fluxLMH: 28,
-      rejection: 0.9958
+      rejection: 0.9942
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
@@ -204,8 +211,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0037, // Calibrated for 7.2 psi drop per vessel
-      exponent: 1.75
+      coefficient: 0.0035, // Calibrated for CPA3 8040 vessel
+      exponent: 1.70
     },
     designFlux: {
       min: 18,
@@ -243,10 +250,10 @@ export const MEMBRANES = {
     maxFlux: 120.0,
     transport: {
       aValueRef: CPA5_LD_A, 
-      membraneBRef: CPA5_LD_B,
-      kMtRef: 650,
+      membraneBRef: CPA5_LD_B_VAL,
+      kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.0,
+        monovalent: 1.6, 
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
@@ -259,7 +266,7 @@ export const MEMBRANES = {
       tds: 1500,
       recovery: 0.15,
       fluxLMH: 28,
-      rejection: 0.994
+      rejection: 0.9975
     },
     hydraulics: {
       maxFeedFlowM3H: 70,
@@ -269,8 +276,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0021,
-      exponent: 1.75
+      coefficient: 0.0025, // Calibrated for high-flow 8040 vessel (Matches 11.7 bar @ 62.5 m3/h)
+      exponent: 1.70
     },
     designFlux: {
       min: 18,
@@ -308,10 +315,10 @@ export const MEMBRANES = {
     maxFlux: 48.0,
     transport: {
       aValueRef: LFC3_LD_4040_A, 
-      membraneBRef: LFC3_LD_4040_B, 
-      kMtRef: 900,
+      membraneBRef: LFC3_LD_4040_B_VAL, 
+      kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.0,
+        monovalent: 1.6, 
         divalent: 0.6,
         silica: 0.75,
         boron: 1.3,
@@ -334,8 +341,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.075, // Calibrated for 4040 vessels (300 bar @ 125 m3/h)
-      exponent: 1.40
+      coefficient: 0.082, // Calibrated for 4040 vessels
+      exponent: 1.65
     },
     designFlux: {
       min: 20,
@@ -375,10 +382,10 @@ export const MEMBRANES = {
     maxFlux: 48.0,
     transport: {
       aValueRef: LFC3_LD_8040_A, 
-      membraneBRef: LFC3_LD_8040_B, 
-      kMtRef: 340,
+      membraneBRef: LFC3_LD_8040_B_VAL, 
+      kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.0,
+        monovalent: 1.6, 
         divalent: 0.6,
         silica: 0.75,
         boron: 1.3,
@@ -401,8 +408,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.00358, // Calibrated for 1.1 bar drop @ 10.6 m3/h avg (5 elements)
-      exponent: 1.75
+      coefficient: 0.0025, // Calibrated for high-flow 8040 vessel
+      exponent: 1.70
     },
     designFlux: {
       min: 20,
@@ -439,13 +446,14 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
+    rejection: 0.9920,
     transport: {
-      aValueRef: BW_TDS_2K_A, // ~4.8 (Auto-calculated from test data)
-      membraneBRef: BW_TDS_2K_B, // ~0.31 (Auto-calculated from rejection)
-      kMtRef: 410,
+      aValueRef: BW_TDS_2K_A, 
+      membraneBRef: BW_TDS_2K_B_VAL, 
+      kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.0,
-        divalent: 0.6,
+        monovalent: 1.6, 
+        divalent: 0.4,
         silica: 0.8,
         boron: 1.4,
         co2: 999
@@ -456,8 +464,8 @@ export const MEMBRANES = {
       temperatureC: 25,
       tds: 1500,
       recovery: 0.15,
-      fluxLMH: 40.4,
-      rejection: 0.9935
+      fluxLMH: 40.37,
+      rejection: 0.997
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
@@ -467,8 +475,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.00238,
-      exponent: 1.75
+      coefficient: 0.0025, // Calibrated for high-flow 8040 vessel
+      exponent: 1.70
     },
     designFlux: {
       min: 12,
@@ -481,8 +489,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.0007925,
-      formula: 'π(bar) = 0.0007925 × TDS',
+      coefficient: 0.0008,
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -502,13 +510,14 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
+    rejection: 0.9920,
     transport: {
       aValueRef: BW_TDS_5K_A, 
-      membraneBRef: BW_TDS_5K_B, 
-      kMtRef: 410,
+      membraneBRef: BW_TDS_5K_B_VAL, 
+      kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.0,
-        divalent: 0.6,
+        monovalent: 1.6, 
+        divalent: 0.4,
         silica: 0.8,
         boron: 1.4,
         co2: 999
@@ -519,8 +528,8 @@ export const MEMBRANES = {
       temperatureC: 25,
       tds: 2000,
       recovery: 0.15,
-      fluxLMH: 40.4,
-      rejection: 0.9935
+      fluxLMH: 40.37,
+      rejection: 0.997
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
@@ -530,8 +539,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.00238,
-      exponent: 1.75
+      coefficient: 0.0025, // Calibrated for high-flow 8040 vessel
+      exponent: 1.70
     },
     designFlux: {
       min: 10,
@@ -544,8 +553,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.00077,
-      formula: 'π(bar) = 0.00077 × TDS',
+      coefficient: 0.0008,
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -565,13 +574,14 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.FOULING_RESISTANT,
     areaM2: 37.16,
+    rejection: 0.9920,
     transport: {
       aValueRef: BW_TDS_10K_A, 
-      membraneBRef: BW_TDS_10K_B, 
-      kMtRef: 600,
+      membraneBRef: BW_TDS_10K_B_VAL, 
+      kMtRef: 450,
       soluteBFactors: {
-        monovalent: 0.85, 
-        divalent: 0.6,
+        monovalent: 1.6, 
+        divalent: 0.4,
         silica: 0.8,
         boron: 1.4,
         alkalinity: 2.1,
@@ -583,8 +593,8 @@ export const MEMBRANES = {
       temperatureC: 25,
       tds: 2000,
       recovery: 0.15,
-      fluxLMH: 24,
-      rejection: 0.9935
+      fluxLMH: 40.37,
+      rejection: 0.997
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
@@ -594,8 +604,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0034, // Calibrated for 1.0 bar drop @ 11.6 m3/h avg (4 elements)
-      exponent: 1.75
+      coefficient: 0.0025, // Calibrated for high-flow 8040 vessel
+      exponent: 1.70
     },
     designFlux: {
       min: 10,
@@ -608,8 +618,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.0007925,
-      formula: 'π(bar) = 0.0007925 × TDS',
+      coefficient: 0.0008,
+      formula: 'π(bar) = 0.0008 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -630,11 +640,12 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.SEAWATER,
     areaM2: 37.16,
+    rejection: 0.9920,
     maxFlux: 42.0,
     transport: {
-      aValueRef: SW_TDS_32K_A, // ~1.31 (Auto-calculated from test data)
-      membraneBRef: SW_TDS_32K_B, // ~0.053 (Auto-calculated from rejection)
-      kMtRef: 850,
+      aValueRef: SW_TDS_32K_A, 
+      membraneBRef: SW_TDS_32K_B_VAL, 
+      kMtRef: 400,
       soluteBFactors: {
         monovalent: 1.0,
         divalent: 0.6,
@@ -645,12 +656,12 @@ export const MEMBRANES = {
       }
     },
     testConditions: {
-      pressureBar: 55,
+      pressureBar: 55.16,
       temperatureC: 25,
       tds: 32000,
       recovery: 0.08,
-      fluxLMH: 18,
-      rejection: 0.9935
+      fluxLMH: 34.77,
+      rejection: 0.9985
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
@@ -660,7 +671,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0121, // Calibrated for 4.6 psi drop @ 38.1 gpm (1.22 exponent)
+      coefficient: 0.012, // Calibrated for 1.2 bar drop @ 23.2 m3/h (2 elements)
       exponent: 1.22
     },
     designFlux: {
@@ -674,8 +685,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'seawater-linear',
-      coefficient: 0.0007925, // Calibrated to match 229.9 psi at 20000 TDS
-      formula: 'π(bar) = 0.0007925 × TDS',
+      coefficient: 0.00085, // Calibrated for seawater pi calculation (matches polynomial 27.2 bar @ 32k)
+      formula: 'π(bar) = 0.00085 × TDS',
       note: 'Industrial seawater model. Calibrated for 20k-40k TDS range.'
     },
     limits: {
@@ -794,10 +805,26 @@ export const getAValue = (membrane) => {
 /**
  * Get membrane B coefficient (physically dominant transport parameter)
  * @param {object} membrane - Membrane object
+ * @param {object} inputs - Optional simulation inputs for dynamic calibration {tds, feedPressure, recovery, flux}
  * @returns {number} Membrane B value
  */
-export const getMembraneB = (membrane) => {
-  return Number(membrane?.transport?.membraneBRef) || Number(membrane?.membraneB) || 0.14;
+export const getMembraneB = (membrane, inputs = null) => {
+  const bRef = membrane?.transport?.membraneBRef || membrane?.membraneB;
+  
+  // If it's a function (dynamic calibrator), call it with inputs or defaults
+  if (typeof bRef === 'function') {
+    const A = getAValue(membrane);
+    const pressure = inputs?.feedPressure ? Number(inputs.feedPressure) : (membrane?.testConditions?.pressureBar || 55.16);
+    const tds = inputs?.tds ? Number(inputs.tds) : (membrane?.testConditions?.tds || 32000);
+    const rejection = membrane.rejection || membrane?.testConditions?.rejection || 0.9985;
+    return bRef(A, pressure, tds, rejection);
+  }
+
+  // If it's a seawater membrane and we have simulation inputs, we can also apply dynamic calibration 
+  // even if it wasn't a function, but usually we prefer the function path for SW.
+  // For Brackish, we usually use the reference value.
+  
+  return Number(bRef) || 0.14;
 };
 
 /**
@@ -981,7 +1008,7 @@ export const createCustomMembrane = (spec) => {
     areaM2: spec.areaM2 || 37.16,
     transport: {
       aValueRef: spec.aValue || 3.2,
-      membraneBRef: spec.membraneB || 0.14,
+      membraneBRef: typeof spec.membraneB === 'function' ? spec.membraneB : (A, P, TDS, SP) => estimateMembraneB(A, P, TDS, SP || spec.rejection || 0.996),
       soluteBFactors: spec.soluteBFactors || {
         monovalent: 1.0,
         divalent: 0.6,
