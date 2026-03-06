@@ -5,6 +5,15 @@ import * as MembraneEngine from '../engines/membraneEngine.js';
 const { getMembrane, MEMBRANES } = MembraneEngine;
 
 export const MEMBRANE_SPECIFIC_CONSTRAINTS = {
+  'espa2ld': {
+    fluxMin: 15,
+    fluxMax: 50,
+    recoveryMin: 40,
+    recoveryMax: 75,
+    pressureMin: 100,
+    pressureMax: 600,
+    optimalFlux: 30
+  },
   'lfc3ld4040': {
     fluxMin: 12,
     fluxMax: 25,
@@ -13,6 +22,15 @@ export const MEMBRANE_SPECIFIC_CONSTRAINTS = {
     pressureMin: 100,
     pressureMax: 600,
     optimalFlux: 18
+  },
+  'cpa5ld8040': {
+    fluxMin: 15,
+    fluxMax: 53,
+    recoveryMin: 40,
+    recoveryMax: 75,
+    pressureMin: 100,
+    pressureMax: 600,
+    optimalFlux: 35
   },
   'cpa3': {
     fluxMin: 12,

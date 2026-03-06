@@ -233,6 +233,7 @@ const App = () => {
           if (normalized.includes('lfc3ld4040')) return 'lfc3ld4040';
           if (normalized.includes('lfc3ld8040')) return 'lfc3ld8040';
           if (normalized.includes('espa2ld4040')) return 'espa2ld4040';
+          if (normalized.includes('espa2ld8040')) return 'espa2ld';
           if (normalized.includes('swtds32k8040')) return 'swtds32k8040';
           return model;
         };
@@ -415,7 +416,7 @@ const App = () => {
             <div><strong>Feed pressure:</strong> ${isImperial ? projection.calcFeedPressurePsi : projection.calcFeedPressureBar} ${pUnit}</div>
             <div><strong>Feed temperature:</strong> ${tempF.toFixed(2)} °F</div>
             <div><strong>Feed Water pH:</strong> ${feedPh.toFixed(2)}</div>
-            <div><strong>Chemical dose:</strong> ${systemConfig.chemicalDose || 0} ${systemConfig.doseUnit || 'mg/l'}</div>
+            <div><strong>Chemical dose, mg/L:</strong> ${systemConfig.chemical || 'None'}</div>
             <div><strong>Membrane age:</strong> ${Number(systemConfig.membraneAge || 0).toFixed(2)} years</div>
             <div><strong>Flux decline, per year:</strong> ${Number(systemConfig.fluxDeclinePerYear || 0).toFixed(2)} %</div>
             <div><strong>Fouling factor:</strong> ${Number(systemConfig.foulingFactor || 1).toFixed(2)}</div>
@@ -572,7 +573,6 @@ const App = () => {
                     <td>${row.feedPressure}</td>
                     <td>${row.concPressure}</td>
                     <td>${row.feedFlowVessel}</td>
-                    <td>${row.permeateFlowVessel}</td>
                     <td>${row.concFlowVessel}</td>
                     <td>${row.flux}</td>
                     <td>${row.highestFlux}</td>

@@ -43,7 +43,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     pretreatmentRequired: ['Coagulation', 'Filtration', 'Ultra Filtration']
   },
   [WATER_TYPES.SEA_WELL]: {
-    recommended: ['swtds32k8040'],
+    recommended: ['swtds32k8040', 'swc5ld'],
     category: MEMBRANE_CATEGORIES.SEAWATER,
     description: 'Seawater from subsurface wells, relatively stable composition',
     sdiMax: 3,
@@ -93,6 +93,23 @@ export const WATER_TYPE_TO_MEMBRANES = {
 };
 
 export const MEMBRANE_SPECIFICATIONS = {
+  espa2ld: {
+    name: 'ESPA2-LD-4040',
+    size: '4"',
+    area: 80,
+    areaM2: 7.43,
+    ratedFlow: 0.42,
+    ratedFlowM3h: 1.59,
+    saltRejection: 99.6,
+    classification: MEMBRANE_CATEGORIES.BRACKISH,
+    suitableFor: [WATER_TYPES.WELL_WATER, WATER_TYPES.RO_PERMEATE],
+    constraints: {
+      maxTds: 2000,
+      maxTemp: 45,
+      maxPressure: 600,
+      maxFlow: 12
+    }
+  },
   cpa3: {
     name: 'CPA3-8040',
     size: '8"',
@@ -128,6 +145,23 @@ export const MEMBRANE_SPECIFICATIONS = {
     classification: MEMBRANE_CATEGORIES.BRACKISH,
     suitableFor: [WATER_TYPES.BRACKISH_WELL_NON_FOULING, WATER_TYPES.BRACKISH_SURFACE],
     constraints: { maxTds: 5000, maxTemp: 45, maxPressure: 600, maxFlow: 70 }
+  },
+  swc5ld: {
+    name: 'SWC5-LD',
+    size: '8"',
+    area: 400,
+    areaM2: 37.16,
+    ratedFlow: 1.68,
+    ratedFlowM3h: 6.36,
+    saltRejection: 99.3,
+    classification: MEMBRANE_CATEGORIES.SEAWATER,
+    suitableFor: [WATER_TYPES.SEA_WELL, WATER_TYPES.SEA_SURFACE],
+    constraints: {
+      maxTds: 42000,
+      maxTemp: 45,
+      maxPressure: 1200,
+      maxFlow: 60
+    }
   },
   lfc3ld4040: {
     name: 'LFC3-LD-4040',
