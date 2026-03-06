@@ -66,36 +66,36 @@ const SW_TDS_32K_A = calculateA(18, 55, 32000, 0.0007925) * 2.5; // ~1.52 (Match
 const SW_TDS_32K_B = estimateMembraneB(SW_TDS_32K_A, 55, 32000, 0.9935); // ~0.19 (Calibrated for 44 mg/l permeate)
 
 // Automatic Calibration - Brackish ESPA2-LD-4040
-const ESPA2_LD_4040_A = calculateA(28, 10.3, 1500, 0.00078) * 1.0; // ~3.1
-const ESPA2_LD_4040_B = estimateMembraneB(ESPA2_LD_4040_A, 10.3, 1500, 0.996); // ~0.17
+const ESPA2_LD_4040_A = calculateA(28, 10.3, 1500, 0.00078) * 1.1; // ~3.4
+const ESPA2_LD_4040_B = estimateMembraneB(ESPA2_LD_4040_A, 10.3, 1500, 0.994); // ~0.22
 
 // Automatic Calibration - Brackish CPA3-8040
-const CPA3_A = calculateA(28, 15.5, 2000, 0.0007925) * 1.6; // ~1.96 * 1.6 = 3.14
-const CPA3_B = estimateMembraneB(CPA3_A, 15.5, 2000, 0.997); // ~0.24
+const CPA3_A = calculateA(28, 15.5, 2000, 0.0007925) * 1.72; // ~3.45 (Matches industrial benchmark 225.3 psi)
+const CPA3_B = estimateMembraneB(CPA3_A, 15.5, 2000, 0.9958); // ~0.24 (Calibrated for 223 mg/l permeate TDS)
 
 // Automatic Calibration - CPA5-LD-8040
-const CPA5_LD_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.6; // ~3.1
-const CPA5_LD_B = estimateMembraneB(CPA5_LD_A, 15.5, 1500, 0.997); // ~0.22
+const CPA5_LD_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.72; 
+const CPA5_LD_B = estimateMembraneB(CPA5_LD_A, 15.5, 1500, 0.9958); 
 
 // Automatic Calibration - LFC3-LD-4040
-const LFC3_LD_4040_A = calculateA(28, 10.3, 1500, 0.000792) * 1.0; // ~3.1
-const LFC3_LD_4040_B = estimateMembraneB(LFC3_LD_4040_A, 10.3, 1500, 0.997); // ~0.17
+const LFC3_LD_4040_A = calculateA(28, 10.3, 1500, 0.000792) * 1.15; 
+const LFC3_LD_4040_B = estimateMembraneB(LFC3_LD_4040_A, 10.3, 1500, 0.9958); 
 
 // Automatic Calibration - LFC3-LD-8040 (Waste model)
-const LFC3_LD_8040_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.6; // ~3.1
-const LFC3_LD_8040_B = estimateMembraneB(LFC3_LD_8040_A, 15.5, 1500, 0.995); // ~0.30
+const LFC3_LD_8040_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.72; 
+const LFC3_LD_8040_B = estimateMembraneB(LFC3_LD_8040_A, 15.5, 1500, 0.995); 
 
 // Automatic Calibration - BW-TDS-5K-8040
-const BW_TDS_5K_A = calculateA(40.4, 15.5, 2000, 0.00077) * 1.15; // ~3.2
-const BW_TDS_5K_B = estimateMembraneB(BW_TDS_5K_A, 15.5, 2000, 0.9935); // ~0.45
+const BW_TDS_5K_A = calculateA(40.4, 15.5, 2000, 0.00077) * 1.25; 
+const BW_TDS_5K_B = estimateMembraneB(BW_TDS_5K_A, 15.5, 2000, 0.992); 
 
 // Automatic Calibration - BW-TDS-10K-FR-8040
-const BW_TDS_10K_A = calculateA(24, 15.5, 2000, 0.0007925) * 2.8; // ~4.8
-const BW_TDS_10K_B = estimateMembraneB(BW_TDS_10K_A, 15.5, 2000, 0.9935); // ~0.65
+const BW_TDS_10K_A = calculateA(24, 15.5, 2000, 0.0007925) * 3.0; 
+const BW_TDS_10K_B = estimateMembraneB(BW_TDS_10K_A, 15.5, 2000, 0.992); 
 
 // Automatic Calibration - BW-TDS-2K-8040
-const BW_TDS_2K_A = calculateA(40.4, 10.3, 1500, 0.0007925) * 1.08; // ~4.8
-const BW_TDS_2K_B = estimateMembraneB(BW_TDS_2K_A, 10.3, 1500, 0.9935); // ~0.31
+const BW_TDS_2K_A = calculateA(40.4, 10.3, 1500, 0.0007925) * 1.15; 
+const BW_TDS_2K_B = estimateMembraneB(BW_TDS_2K_A, 10.3, 1500, 0.992); 
 
 /**
  * Industrial-Grade Membrane Library
@@ -194,7 +194,7 @@ export const MEMBRANES = {
       tds: 2000,
       recovery: 0.15,
       fluxLMH: 28,
-      rejection: 0.997
+      rejection: 0.9958
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
@@ -204,7 +204,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.00398, // Calibrated for 0.6 bar drop @ 7.9 m3/h avg (4 elements)
+      coefficient: 0.0037, // Calibrated for 7.2 psi drop per vessel
       exponent: 1.75
     },
     designFlux: {
@@ -259,7 +259,7 @@ export const MEMBRANES = {
       tds: 1500,
       recovery: 0.15,
       fluxLMH: 28,
-      rejection: 0.997
+      rejection: 0.994
     },
     hydraulics: {
       maxFeedFlowM3H: 70,

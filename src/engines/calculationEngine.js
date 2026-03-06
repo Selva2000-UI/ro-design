@@ -217,13 +217,9 @@ export const calculateOsmoticPressure = (tds, unit = 'bar', usePolynomial = null
   const isSeawater = usePolynomial !== null ? usePolynomial : (tds >= 2000);
   
   let osmoticBar;
-  const coeff = osmoticCoeff || (isSeawater ? 0.0007925 : 0.00077);
+  const coeff = osmoticCoeff || 0.0007925; // Industrial standard (van't Hoff)
   
-  if (isSeawater) {
-    osmoticBar = coeff * tds;
-  } else {
-    osmoticBar = coeff * tds;
-  }
+  osmoticBar = coeff * tds;
   
   if (unit === 'psi') {
     return osmoticBar * 14.5038;
