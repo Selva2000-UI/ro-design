@@ -142,10 +142,27 @@ const SystemDesign = ({
     let updates = { ...systemConfig, [key]: value, ...(resetsDesign ? { designCalculated: false } : {}) };
 
     if (key === 'flowUnit') {
-      const unit = (value || '').toLowerCase().trim().replace('/', '');
+      const oldUnit = systemConfig.flowUnit || 'gpm';
+      const newUnit = value || 'gpm';
+      const oldFactor = FLOW_CONVERSION_MAP[oldUnit] || 1;
+      const newFactor = FLOW_CONVERSION_MAP[newUnit] || 1;
+      const ratio = oldFactor / newFactor;
+
+      updates.feedFlow = (Number(systemConfig.feedFlow) * ratio).toFixed(getFlowDecimals(newUnit));
+      updates.permeateFlow = (Number(systemConfig.permeateFlow) * ratio).toFixed(getFlowDecimals(newUnit));
+      updates.concentrateFlow = (Number(systemConfig.concentrateFlow) * ratio).toFixed(getFlowDecimals(newUnit));
+
+      const unit = newUnit.toLowerCase().trim().replace('/', '');
       const isImperialFlow = ['gpm', 'gpd', 'mgd', 'migd'].includes(unit);
       updates.pressureUnit = isImperialFlow ? 'psi' : 'bar';
       updates.fluxUnit = isImperialFlow ? 'gfd' : 'lmh';
+      
+      // Flux also needs to be converted if switching between Imperial/Metric flux units
+      const oldIsImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes(oldUnit.toLowerCase().trim().replace('/', ''));
+      if (oldIsImperial !== isImperialFlow) {
+        const oldFlux = Number(systemConfig.averageFlux) || 0;
+        updates.averageFlux = (isImperialFlow ? (oldFlux / 1.6976) : (oldFlux * 1.6976)).toFixed(2);
+      }
     }
 
     // --- Apply RO Membrane Formulas ---
@@ -389,10 +406,15 @@ const SystemDesign = ({
   const handleMembraneSelect = (membraneId) => {
     const currentStages = systemConfig.stages || stages;
     const newStages = [...currentStages];
-    newStages[selectedStageForMembrane - 1] = {
-      ...newStages[selectedStageForMembrane - 1],
-      membraneModel: membraneId
-    };
+    
+    // Cascading update: Change selected stage and all SUBSEQUENT stages
+    for (let i = selectedStageForMembrane - 1; i < newStages.length; i++) {
+      newStages[i] = {
+        ...newStages[i],
+        membraneModel: membraneId
+      };
+    }
+
     let updates = {
       ...systemConfig,
       stages: newStages,
@@ -448,6 +470,18 @@ const SystemDesign = ({
     };
 
     const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes(nextUnit);
+    const prevIsImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes(prevUnit);
+    
+    // Also convert averageFlux numerical value if unit category changed
+    let nextAverageFlux = systemConfig.averageFlux;
+    if (isImperial !== prevIsImperial) {
+      const currentFlux = Number(systemConfig.averageFlux) || 0;
+      if (currentFlux > 0) {
+        // 1.6976 is the conversion factor between LMH and GFD
+        nextAverageFlux = (isImperial ? (currentFlux / 1.6976) : (currentFlux * 1.6976)).toFixed(2);
+      }
+    }
+
     setSystemConfig({
       ...systemConfig,
       flowUnit: nextUnit,
@@ -455,6 +489,7 @@ const SystemDesign = ({
       feedFlow: convertValue(systemConfig.feedFlow),
       permeateFlow: convertValue(systemConfig.permeateFlow),
       concentrateFlow: convertValue(systemConfig.concentrateFlow),
+      averageFlux: nextAverageFlux,
       designCalculated: false
     });
   };

@@ -379,16 +379,18 @@ export const calculateSystem = (inputs, allMembranes = []) => {
   const permeatePh = Number((totalWeightedPh / (totalPermeateM3h || 1)).toFixed(2));
 
   const concIons = finalSystemRun.lastIons || { ...feedIons };
+  const lastMembraneModel = activeStages.length > 0 ? activeStages[activeStages.length - 1].membraneModel : activeStages[0]?.membraneModel;
+  const osmoticCoeff = getMembrane(lastMembraneModel)?.osmoticModel?.coefficient || 0.000792;
+  
   const systemConcentrateTds = Number((finalSystemRun.lastTds || 0).toFixed(2));
-  const lastStageRes = stageResults.length > 0 ? stageResults[stageResults.length - 1] : null;
-  const concentrateOsmotic = lastStageRes ? lastStageRes.pi_c : 0;
+  const concentrateOsmotic = (finalSystemRun.lastTds || 0) * osmoticCoeff;
+  const concentrateOsmoticDisplay = usePsi ? concentrateOsmotic * BAR_TO_PSI : concentrateOsmotic;
   
   const cfActual = 1 / (1 - Math.min(systemRecovery, 0.99));
-
-  const feedSaturations = calculateWaterSaturations(feedIons, temp, inputs.feedPh || 7.0);
+  const feedSaturations = calculateWaterSaturations(feedIons, temp, inputs.feedPh || 7.0, osmoticCoeff, rawFeedTds);
   const concPh = Number(inputs.feedPh || 7.0) + Math.log10(cfActual);
-  const concSaturations = calculateWaterSaturations(concIons, temp, concPh);
-  const permSaturations = calculateWaterSaturations(permeateIons, temp, 7.0);
+  const concSaturations = calculateWaterSaturations(concIons, temp, concPh, osmoticCoeff, systemConcentrateTds);
+  const permSaturations = calculateWaterSaturations(permeateIons, temp, 7.0, osmoticCoeff, permeateTds);
 
   const firstStagePfeed = finalSystemRun.results.length > 0 ? finalSystemRun.results[0].Pfeed : 0;
 
@@ -532,7 +534,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     permeateConcentration: permeateIons,
     concentrateParameters: {
       tds: systemConcentrateTds,
-      osmoticPressure: concentrateOsmotic * (usePsi ? BAR_TO_PSI : 1),
+      osmoticPressure: Number(concentrateOsmoticDisplay.toFixed(2)),
       ph: concPh.toFixed(2),
       ions: concIons,
       saturation: concSaturations

@@ -245,7 +245,7 @@ export const calculateOsmoticPressure = (tds, unit = 'bar', usePolynomial = null
  * @returns {object} { permeateIons, permeateTds }
  */
 export const calculateIonComposition = (feedIons, globalRejection, fluxLmh, spFactor, membrane = {}) => {
-  const testFluxLMH = 25; // Standard test flux
+  const testFluxLMH = Number(membrane.testConditions?.fluxLMH) || 25; // Use membrane-specific test flux if available
   const membraneRejection = Math.min(Math.max(Number(membrane.rejection) || globalRejection, 80), 99.9);
   
   // Rejection defaults based on ion valence and type
@@ -301,8 +301,9 @@ export const calculateIonComposition = (feedIons, globalRejection, fluxLmh, spFa
  * @param {number} ph - pH value
  * @returns {object} Saturation results
  */
-export const calculateWaterSaturations = (ions, temp, ph) => {
-  const tds = Object.entries(ions).reduce((sum, [k, v]) => sum + (k === 'co2' ? 0 : Number(v) || 0), 0);
+export const calculateWaterSaturations = (ions, temp, ph, osmoticCoeff = 0.000792, forcedTds = null) => {
+  const sumOfIons = Object.entries(ions).reduce((sum, [k, v]) => sum + (k.toLowerCase() === 'co2' ? 0 : Number(v) || 0), 0);
+  const tds = forcedTds !== null ? Number(forcedTds) : sumOfIons;
   
   const getNum = (key) => Number(ions[key]) || 0;
   
@@ -330,7 +331,7 @@ export const calculateWaterSaturations = (ions, temp, ph) => {
     lsi: Number(lsi.toFixed(1)),
     phs: Number(phs.toFixed(2)),
     ccpp: Number(ccpp.toFixed(2)),
-    osmoticPressureBar: Number((tds * 0.0007925).toFixed(3)),
+    osmoticPressureBar: Number((tds * (osmoticCoeff || 0.000792)).toFixed(3)),
     saturations: {
       caSo4: Number(((ca * so4) / 10).toFixed(2)), // as %
       baSo4: Number(((ba * so4) / 0.5).toFixed(2)), // as %
@@ -394,11 +395,11 @@ export const calculateConcentrateTds = (feedTds, logMeanCF) => {
  */
 export const calculatePermeatePhSimplified = (feedPh, flux, recovery) => {
   // Calibrated flux-dependent pH model
-  // Refined to match CPA5 benchmark: 5.0 pH at 92 LMH and 55% recovery
+  // Refined for extreme flux benchmarks (pH 3.7 @ 1121 LMH)
   const f = Math.max(flux, 0.1);
   const logFluxRatio = Math.log10(f / 25.2);
-  const phDrop = 1.25 + 0.85 * logFluxRatio + (recovery * 0.5);
-  return Math.max(Math.min(feedPh - phDrop, 9.5), 3.5);
+  const phDrop = 1.25 + 1.25 * logFluxRatio + (recovery * 0.5);
+  return Math.max(Math.min(feedPh - phDrop, 9.5), 3.0);
 };
 
 /**
@@ -947,11 +948,11 @@ export const calculateROStage = (inputs) => {
   
   // STEP 6 — PRESSURE DROP (REFINED FOR MEMBRANE-SPECIFIC MODELS)
   // Default coefficients handle 4040/8040 cases if membrane metadata is missing
-  const k_dp = kDpInput !== undefined ? kDpInput : (membrane?.pressureDropModel?.coefficient || (membrane?.category === '4040' ? 0.0158 : (isSeawater ? 0.015 : 0.0042))); 
+  const k_dp = kDpInput !== undefined ? kDpInput : (membrane?.pressureDropModel?.coefficient || (membrane?.category === '4040' ? 0.084 : (isSeawater ? 0.015 : 0.0042))); 
  const p_exp = pExpInput !== undefined
   ? pExpInput
   : (membrane?.pressureDropModel?.exponent || 
-     (membrane?.category === '4040' ? 1.75 : 1.22));
+     (membrane?.category === '4040' ? 1.40 : 1.22));
   const Q_vessel = vesselsPerStage > 0 ? Qf / vesselsPerStage : 0;
   const Q_vessel_avg = vesselsPerStage > 0 ? (Qf + Qc) / (2 * vesselsPerStage) : 0;
   const deltaP_element = vesselsPerStage > 0 ? k_dp * Math.pow(Math.max(Q_vessel_avg, 0.01), p_exp) : 0;
@@ -1004,9 +1005,9 @@ export const calculateROStage = (inputs) => {
   // TDS-dependent B-factor correction
   // Seawater membranes use fixed B-factor logic from manufacturer specs
   // Brackish elements scale with salinity to match industrial passage curves (IMS/WAVE)
-  // Refined model: (1.0 + 0.30 * TDS/1000) matches Stage 4 benchmark (~200 mg/l) more accurately
+  // Refined model: (1.0 + 0.02 * TDS/1000) matches industrial salt passage curves for high-rejection elements
   const isActuallySeawaterMembrane = (membrane?.type === 'Seawater' || membrane?.type === 'Seawater FO' || membrane?.id?.toLowerCase().includes('sw'));
-  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.30 * (Cf / 1000));
+  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.02 * (Cf / 1000));
   const B_actual = B_ref * TCF_B * bFactorTds;
 
   // Salt Passage Model: Cp = Cs * B / (J + B)
@@ -1017,8 +1018,9 @@ export const calculateROStage = (inputs) => {
   // In seawater, flux is much higher at the inlet element
   const pi_f_inlet = getOsmotic(Cf, feedIons);
   // Refined inlet flux estimation matching benchmark profiles (e.g. 110.7/92.2=1.20)
+  const is4040 = membrane?.category === '4040';
   const J_inlet = A * (Pfeed - Number(permeatePressure) - pi_f_inlet - 0.08 * deltaP_vessel); 
-  const highestFlux = vesselsPerStage > 0 ? Math.max(J_inlet, J * 1.20) : 0; 
+  const highestFlux = vesselsPerStage > 0 ? Math.max(J_inlet, J * (is4040 ? 1.38 : 1.20)) : 0; 
   
   // Re-calculate k_mt at inlet flow for highestBeta using consistent 0.8 exponent
   const k_mt_inlet = vesselsPerStage > 0 ? base_k_mt * Math.pow(Math.max(Q_vessel, 0.1) / Q_ref_k, 0.8) : base_k_mt;
@@ -1068,7 +1070,7 @@ export const calculateROStage = (inputs) => {
         const Bi = getIonB(ion, B_ref);
         const Ci_s = beta * Ci_f * (Cavg / Cf);
         // Use consistent salt passage model for individual ions - Cap J at 0 to prevent negative values
-        const Ci_p = (Bi / (Math.max(J, 0) + Bi)) * Ci_s;
+        const Ci_p = (Bi / (Math.max(J, 0.1) + Bi)) * Ci_s;
         
         // Safety check for invalid values
         const Ci_p_safe = Number.isFinite(Ci_p) ? Ci_p : 0;
@@ -1087,16 +1089,16 @@ export const calculateROStage = (inputs) => {
     });
   }
 
-  // helper function
-const round4 = (value) => 
-  Number.isFinite(value) ? Number(value.toFixed(4)) : 0;
+  // helper functions
+  const round2 = (value) => 
+    Number.isFinite(value) ? Number(value.toFixed(2)) : 0;
+  const round4 = (value) => 
+    Number.isFinite(value) ? Number(value.toFixed(4)) : 0;
 
-const finalCp = permeateTdsFromIons > 0 ? round4(permeateTdsFromIons) : round4(Cp);
-const finalCc = Object.entries(concentrateIons).reduce((sum, [ion, val]) => {
-    const v = Number(val);
-    return sum + (ion.toLowerCase() === 'co2' || !Number.isFinite(v) ? 0 : v);
-}, 0) || Cc;
-const finalRejection = Cf > 0 ? (1 - (finalCp / Cf)) : 1.0;
+  // Final Cp prioritization: if ions provided, use ion sum; else use global TDS salt passage
+  const finalCp = permeateTdsFromIons > 0 ? round2(Math.max(permeateTdsFromIons, Cp)) : round2(Cp);
+  const finalCc = round2((Qf * Cf - Qp * finalCp) / Math.max(Qc, 0.001));
+  const finalRejection = Cf > 0 ? (1 - (finalCp / Cf)) : 1.0;
 
 return {
     Qf: Qf,
@@ -1162,11 +1164,11 @@ export const calculateROStageGivenPressure = (inputs) => {
   const Q_ref_k = inputs.membrane?.category === '4040' ? 3.6 : 16.0;
   
   // Use membrane model if available, else use smart defaults based on category
-  const k_dp = kDpInput !== undefined ? kDpInput : (inputs.membrane?.pressureDropModel?.coefficient || (inputs.membrane?.category === '4040' ? 0.0158 : (isSeawater ? 0.015 : 0.0042)));
+  const k_dp = kDpInput !== undefined ? kDpInput : (inputs.membrane?.pressureDropModel?.coefficient || (inputs.membrane?.category === '4040' ? 0.084 : (isSeawater ? 0.015 : 0.0042)));
   const p_exp = pExpInput !== undefined
   ? pExpInput
   : (inputs.membrane?.pressureDropModel?.exponent ||
-     (inputs.membrane?.category === '4040' ? 1.75 : 1.22));
+     (inputs.membrane?.category === '4040' ? 1.40 : 1.22));
   
   // Use consistent osmotic factor logic
   const osmoticFactor = osmoticCoeffInput || inputs.membrane?.osmoticModel?.coefficient || (isSeawater ? 0.0007925 : 0.00079);
