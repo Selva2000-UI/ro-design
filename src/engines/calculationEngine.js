@@ -10,7 +10,7 @@
  * Goal: Replace scattered calculations in App.js, calculatorService.js, components
  */
 
-
+import { getMembrane, MEMBRANES } from './membraneEngine';
 
 // ============================================
 // UNIT CONVERSION CONSTANTS
@@ -823,7 +823,7 @@ export const calculateOsmoticPressureFromIons = (params) => {
   const {
     ions,
     tempCelsius = 25,
-    iDissociation = 0.93 // Calibrated for NaCl industrial activity/osmotic matching
+    iDissociation = 1.85 // Calibrated for brackish/seawater industrial activity matching
   } = params;
   
   const tempKelvin = tempCelsius + 273.15;
@@ -914,14 +914,14 @@ export const calculateROStage = (inputs) => {
         return (membrane?.osmoticModel?.coefficient || 0.0007925) * tds;
     }
     // High-precision brackish factor matching industrial standards (e.g. 28.7 psi @ 2500 TDS)
-    return (membrane?.osmoticModel?.coefficient || 0.000791) * tds;
+    return (membrane?.osmoticModel?.coefficient || 0.0007925) * tds;
   };
 
   const pi_f = getOsmotic(Cf, feedIons);
   
   // Estimate concentrate ions for pi_c if feedIons provided
   let pi_c;
-  if (Object.keys(feedIons).length > 0) {
+  if (feedIons && Object.keys(feedIons).length > 0) {
     const concIonsTemp = {};
     const cf = 1 / (1 - Math.min(R, 0.99));
     Object.entries(feedIons).forEach(([ion, val]) => {
@@ -972,7 +972,7 @@ export const calculateROStage = (inputs) => {
   
   // Refined industrial beta model: exp(J / k_mt)
   // k_mt depends on feed flow (turbulence)
-  const k_mt_ref = kMtInput || membrane?.transport?.kMtRef || (isSeawater ? 400 : 450);
+  const k_mt_ref = kMtInput || membrane?.transport?.kMtRef || (isSeawater ? 720 : 1000);
   const Q_vessel_v = vesselsPerStage > 0 ? Qf / vesselsPerStage : 16.0;
   const k_mt = k_mt_ref * Math.pow(Math.max(Q_vessel_v, 0.1) / (membrane?.category === '4040' ? 3.6 : 16.0), 0.50);
   
@@ -982,7 +982,7 @@ export const calculateROStage = (inputs) => {
   const Csurface = beta * Cavg;
   
   let pi_surface;
-  if (Object.keys(feedIons).length > 0) {
+  if (feedIons && Object.keys(feedIons).length > 0) {
     const surfaceIonsTemp = {};
     const surfaceFactor = beta * (Cavg / Cf);
     Object.entries(feedIons).forEach(([ion, val]) => {
@@ -1004,8 +1004,8 @@ export const calculateROStage = (inputs) => {
   // TDS-dependent B-factor correction
   // Seawater membranes use fixed B-factor logic from manufacturer specs
   // Brackish elements scale with salinity to match industrial passage curves (IMS/WAVE)
-  // Refined model: (1.0 + 0.11 * TDS/1000) matches industrial salt passage curves for high-rejection elements
-  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.11 * (Cf / 1000));
+  // Refined model: (1.0 + 0.10 * TDS/1000) matches industrial salt passage curves for high-rejection elements
+  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.10 * (Cf / 1000));
   const B_actual = B_ref * TCF_B * bFactorTds;
 
   // Salt Passage Model: Cp = Cs * B / (J + B)
@@ -1033,7 +1033,7 @@ export const calculateROStage = (inputs) => {
   const concentrateIons = {};
   let permeateTdsFromIons = 0;
   
-  if (Object.keys(feedIons).length > 0) {
+  if (feedIons && Object.keys(feedIons).length > 0) {
     const getIonB = (ion, baseB) => {
         const i = ion.toLowerCase();
         const factors = inputs.soluteBFactors || {};
@@ -1123,6 +1123,7 @@ return {
     deltaP_system: deltaP_system,
     deltaP_vessel: deltaP_vessel,
     rejection: finalRejection, 
+    A: A,
     Cavg: Cavg,
     pi_avg: pi_avg,
     beta: beta,
@@ -1360,6 +1361,7 @@ export const calculateStageHydraulics = (params) => {
     concentrateConc: result.Cc * beta,
     concentrateIons: surfaceIons,
     pressureDrop: result.deltaP_system,
+    A: result.A,
     dynamicAValue: result.NDP > 0 ? (result.J / result.NDP) : 0
   };
 };
@@ -1373,15 +1375,26 @@ export const designMultiStageSystem = (params) => {
     feedPressure,
     feedConc,
     feedIons,
-    targetRecovery,
+    targetRecovery = 0.5,
     membrane,
     numStages = 2,
     tempCelsius = 25,
     elementsPerVessel = 6,
-    vesselsPerStage = [4, 2, 1]
+    vesselsPerStage = [4, 2, 1],
+    fluxDeclinePercent = 0,
+    membraneAgeYears = 0,
+    foulingFactor = 1.0
   } = params;
 
   if (numStages < 1 || numStages > 6) throw new Error("Invalid numStages");
+
+  const aValueCorrected = calculateDynamicAValue({
+    aValue25: membrane.aValue || membrane.transport?.aValueRef || 3.2,
+    tempCelsius,
+    fluxDeclinePercent,
+    membraneAgeYears,
+    foulingFactor
+  });
 
   const stageRecovery = 1 - Math.pow(1 - targetRecovery, 1 / numStages);
   const stages = [];
@@ -1402,8 +1415,8 @@ export const designMultiStageSystem = (params) => {
       Cf: currentConc,
       R: stageRecovery,
       T: tempCelsius,
-      A_ref: membrane.aValue || membrane.transport?.aValueRef || 3.2,
-      B_ref: membrane.membraneB || membrane.transport?.membraneBRef || 0.14,
+      A_ref: aValueCorrected / calculateTCF(tempCelsius, 'A'), // calculateROStage will re-apply TCF
+      B_ref: (membrane.membraneB || membrane.transport?.membraneBRef || 0.14) * Math.pow(1.07, membraneAgeYears), // SP increase 7%/yr
       Area: membrane.areaM2 || 37.16,
       Pfeed: currentPressure,
       vesselsPerStage: vessels,
@@ -1422,6 +1435,7 @@ export const designMultiStageSystem = (params) => {
       flux: res.J,
       recovery: stageRecovery,
       pressureDrop: res.deltaP_system,
+      dynamicAValue: res.NDP > 0 ? (res.J / res.NDP) : 0,
       vessels
     });
 
@@ -1459,11 +1473,15 @@ export const designMultiStageSystem = (params) => {
     feedPressure,
     feedConc,
     membrane,
-    tempCelsius
+    tempCelsius,
+    valid: validateMultiStageDesign(stages, targetRecovery, currentPressure)
   };
 };
 
-export const distributeRecovery = (total, n) => 1 - Math.pow(1 - total, 1 / n);
+export const distributeRecovery = (total, n) => {
+  const r = 1 - Math.pow(1 - total, 1 / n);
+  return Array(n).fill(r);
+};
 
 export const validateMultiStageDesign = (stages, target, finalP) => {
   const issues = [];
@@ -1552,6 +1570,62 @@ export const calculateStageByStageHydraulics = (inputs) => {
       error: validationError
     }
   };
+};
+
+/**
+ * USER-FRIENDLY RO SIMULATION WRAPPER
+ * Allows running calculations using simple, direct industrial inputs.
+ * 
+ * @param {object} inputs - { tds, recoveryPct, feedFlow, membraneType, membranesPerVessel, vessels, numStages, temp, ph }
+ * @returns {object} Simulation results
+ */
+export const runUserSimulation = (inputs) => {
+  const {
+    tds,                // Feed TDS (mg/L)
+    recoveryPct,        // System Recovery (%)
+    feedFlow,           // Feed Flow (m3/h)
+    membraneType,       // Membrane model name
+    membranesPerVessel = 6,
+    vessels = 1,        // Vessels in Stage 1
+    numStages = 1,
+    vesselsPerStage = null, // [v1, v2, ...]
+    temp = 25,
+    ph = 7.0
+  } = inputs;
+
+  const membrane = getMembrane(membraneType) || MEMBRANES.cpa5ld8040;
+  
+  // Construct vessels array if not provided
+  const stageVessels = vesselsPerStage || (numStages === 1 ? [vessels] : distributeVessels(vessels, numStages));
+
+  return designMultiStageSystem({
+    feedFlow,
+    feedConc: tds,
+    targetRecovery: recoveryPct / 100,
+    membrane,
+    numStages,
+    tempCelsius: temp,
+    elementsPerVessel: membranesPerVessel,
+    vesselsPerStage: stageVessels,
+    feedPh: ph,
+    // Add default ions if only TDS is provided (Industrial NaCl equivalent)
+    feedIons: inputs.feedIons || {
+        na: tds * 0.39,
+        cl: tds * 0.60,
+        hco3: tds * 0.01
+    }
+  });
+};
+
+/**
+ * Distribute vessels across stages (Standard 2:1 or similar ratio)
+ */
+const distributeVessels = (totalVesselsInFirstStage, numStages) => {
+    const arr = [totalVesselsInFirstStage];
+    for (let i = 1; i < numStages; i++) {
+        arr.push(Math.max(Math.ceil(arr[i-1] / 1.5), 1));
+    }
+    return arr;
 };
 
 export const calculateSaltPassageAdvanced = (b, c) => b * c;
