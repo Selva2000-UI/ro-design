@@ -72,24 +72,24 @@ const SW_TDS_32K_A = calculateA(34.77, 55.16, 32000, 0.00085) * 0.81;
 const SW_TDS_32K_B_VAL = estimateMembraneB(34.77, 32000, 0.9985, true, 400); 
 
 // Automatic Calibration - Brackish ESPA2-LD-4040
-const ESPA2_LD_4040_A = calculateA(28, 10.3, 1500, 0.00078) * 1.05; 
-const ESPA2_LD_4040_B_VAL = estimateMembraneB(28, 1500, 0.9960, false, 450); 
+const ESPA2_LD_4040_A = calculateA(40.3, 10.3, 1500, 0.00078) * 1.04; 
+const ESPA2_LD_4040_B_VAL = estimateMembraneB(40.3, 1500, 0.9960, false, 450); 
 
 // Automatic Calibration - Brackish CPA3-8040
-const CPA3_A = calculateA(28, 15.5, 2000, 0.0007925) * 1.40; 
-const CPA3_B_VAL = estimateMembraneB(28, 2000, 0.9970, false, 450); 
+const CPA3_A = calculateA(46.7, 15.5, 1500, 0.0007925) * 1.00; 
+const CPA3_B_VAL = estimateMembraneB(46.7, 1500, 0.9970, false, 450); 
 
 // Automatic Calibration - CPA5-LD-8040
-const CPA5_LD_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.55; 
-const CPA5_LD_B_VAL = estimateMembraneB(28, 1500, 0.9975, false, 450); 
+const CPA5_LD_A = calculateA(46.7, 15.5, 1500, 0.0007925) * 1.04; 
+const CPA5_LD_B_VAL = estimateMembraneB(46.7, 1500, 0.9970, false, 850); 
 
 // Automatic Calibration - LFC3-LD-4040
-const LFC3_LD_4040_A = calculateA(28, 10.3, 1500, 0.000792) * 1.05; 
-const LFC3_LD_4040_B_VAL = estimateMembraneB(28, 1500, 0.9970, false, 450); 
+const LFC3_LD_4040_A = calculateA(38.2, 10.3, 1500, 0.000792) * 1.00; 
+const LFC3_LD_4040_B_VAL = estimateMembraneB(38.2, 1500, 0.9970, false, 450); 
 
 // Automatic Calibration - LFC3-LD-8040 (Waste model)
-const LFC3_LD_8040_A = calculateA(28, 15.5, 1500, 0.0007925) * 1.35; 
-const LFC3_LD_8040_B_VAL = estimateMembraneB(28, 1500, 0.9970, false, 450); 
+const LFC3_LD_8040_A = calculateA(46.7, 15.5, 1500, 0.0007925) * 1.00; 
+const LFC3_LD_8040_B_VAL = estimateMembraneB(46.7, 1500, 0.9970, false, 850); 
 
 // Automatic Calibration - BW-TDS-5K-8040
 const BW_TDS_5K_A = calculateA(40.37, 15.5, 2000, 0.0008) * 1.38; 
@@ -134,7 +134,7 @@ export const MEMBRANES = {
       temperatureC: 25,
       tds: 1500,
       recovery: 0.15,
-      fluxLMH: 28,
+      fluxLMH: 40.3,
       rejection: 0.996
     },
     hydraulics: {
@@ -145,8 +145,8 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.082, // Calibrated for 4040 vessels (Matches 233 bar @ 125 m3/h)
-      exponent: 1.65
+      coefficient: 0.117, // Calibrated for 4040 vessels
+      exponent: 1.20
     },
     designFlux: {
       min: 20,
@@ -181,7 +181,7 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
-    rejection: 0.9920,
+    rejection: 0.9970,
     maxFlux: 51.8,
     transport: {
       aValueRef: CPA3_A, 
@@ -198,10 +198,10 @@ export const MEMBRANES = {
     testConditions: {
       pressureBar: 15.5,
       temperatureC: 25,
-      tds: 2000,
+      tds: 1500,
       recovery: 0.15,
-      fluxLMH: 28,
-      rejection: 0.9942
+      fluxLMH: 46.7,
+      rejection: 0.9970
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
@@ -251,7 +251,7 @@ export const MEMBRANES = {
     transport: {
       aValueRef: CPA5_LD_A, 
       membraneBRef: CPA5_LD_B_VAL,
-      kMtRef: 450,
+      kMtRef: 850,
       soluteBFactors: {
         monovalent: 1.25, 
         divalent: 0.6,
@@ -265,8 +265,8 @@ export const MEMBRANES = {
       temperatureC: 25,
       tds: 1500,
       recovery: 0.15,
-      fluxLMH: 28,
-      rejection: 0.9975
+      fluxLMH: 46.7,
+      rejection: 0.9970
     },
     hydraulics: {
       maxFeedFlowM3H: 70,

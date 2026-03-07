@@ -946,16 +946,16 @@ export const calculateROStage = (inputs) => {
   // STEP 6 — PRESSURE DROP (REFINED FOR MEMBRANE-SPECIFIC MODELS)
   // Default coefficients handle 4040/8040 cases if membrane metadata is missing
   const k_dp = kDpInput !== undefined ? kDpInput : (membrane?.pressureDropModel?.coefficient || (membrane?.category === '4040' ? 0.084 : (isSeawater ? 0.015 : 0.0042))); 
- const p_exp = pExpInput !== undefined
+  const p_exp = pExpInput !== undefined
   ? pExpInput
   : (membrane?.pressureDropModel?.exponent || 
-     (membrane?.category === '4040' ? 1.40 : 1.22));
+     (membrane?.category === '4040' ? 1.20 : 1.22));
   const Q_vessel = vesselsPerStage > 0 ? Qf / vesselsPerStage : 0;
   const Q_vessel_avg = vesselsPerStage > 0 ? (Qf + Qc) / (2 * vesselsPerStage) : 0;
   const deltaP_element = vesselsPerStage > 0 ? k_dp * Math.pow(Math.max(Q_vessel_avg, 0.01), p_exp) : 0;
   const deltaP_vessel = deltaP_element * elementsPerVessel;
   // Account for inter-stage plumbing drop (Refined for benchmark alignment)
-  const deltaP_system = deltaP_vessel + 0.1;
+  const deltaP_system = deltaP_vessel;
 
   // Compaction correction: A-value decreases at high pressure (Brackish only)
   // Seawater membranes are typically pre-compacted or use higher pressure baseline
@@ -974,7 +974,7 @@ export const calculateROStage = (inputs) => {
   // k_mt depends on feed flow (turbulence)
   const k_mt_ref = kMtInput || membrane?.transport?.kMtRef || (isSeawater ? 400 : 450);
   const Q_vessel_v = vesselsPerStage > 0 ? Qf / vesselsPerStage : 16.0;
-  const k_mt = k_mt_ref * Math.pow(Math.max(Q_vessel_v, 0.1) / (membrane?.category === '4040' ? 3.6 : 16.0), 0.15);
+  const k_mt = k_mt_ref * Math.pow(Math.max(Q_vessel_v, 0.1) / (membrane?.category === '4040' ? 3.6 : 16.0), 0.50);
   
   let beta = vesselsPerStage > 0 ? Math.exp(J / Math.max(k_mt, 100)) : 1.0;
   beta = Number.isFinite(beta) ? Math.max(1.0, Math.min(1.40, beta)) : 1.12; 
@@ -1004,8 +1004,8 @@ export const calculateROStage = (inputs) => {
   // TDS-dependent B-factor correction
   // Seawater membranes use fixed B-factor logic from manufacturer specs
   // Brackish elements scale with salinity to match industrial passage curves (IMS/WAVE)
-  // Refined model: (1.0 + 0.02 * TDS/1000) matches industrial salt passage curves for high-rejection elements
-  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.02 * (Cf / 1000));
+  // Refined model: (1.0 + 0.087 * TDS/1000) matches industrial salt passage curves for high-rejection elements
+  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.087 * (Cf / 1000));
   const B_actual = B_ref * TCF_B * bFactorTds;
 
   // Salt Passage Model: Cp = Cs * B / (J + B)
@@ -1057,7 +1057,8 @@ export const calculateROStage = (inputs) => {
             multiplier = factors.silica || 1.4;
         }
 
-        return baseB * multiplier * TCF_B * bFactorTds;
+        // Use the same base B_actual logic (including TCF_B and bFactorTds)
+        return B_actual * multiplier;
     };
 
     Object.entries(feedIons).forEach(([ionKey, val]) => {
@@ -1205,7 +1206,7 @@ export const calculateROStageGivenPressure = (inputs) => {
     // Surface osmotic - use industrial benchmark k_mt model
     const k_mt_ref = kMtInput || inputs.membrane?.transport?.kMtRef || (isSeawater ? 400 : 450);
     const Q_vessel_v = vesselsPerStage > 0 ? Qf / vesselsPerStage : 16.0;
-    const k_mt = k_mt_ref * Math.pow(Math.max(Q_vessel_v, 0.1) / (inputs.membrane?.category === '4040' ? 3.6 : 16.0), 0.15);
+    const k_mt = k_mt_ref * Math.pow(Math.max(Q_vessel_v, 0.1) / (inputs.membrane?.category === '4040' ? 3.6 : 16.0), 0.50);
     const beta = Math.max(1.0, Math.min(1.40, Math.exp(J / Math.max(k_mt, 100))));
     const pi_surface = beta * pi_avg;
 
