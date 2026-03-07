@@ -117,7 +117,7 @@ const ROCalculator = () => {
     // Log mean concentration factor
     const cf_avg = recoveryFraction > 0.01 ? (cf - 1) / Math.log(cf) : (1 + cf) / 2;
     // Mass transfer coefficient (approximate for typical vessels)
-    const k_mt = isSeawater ? 400 : 450;
+    const k_mt = (membrane?.transport?.kMtRef) || (isSeawater ? 720 : 450);
     // Concentration polarization factor
     const beta = Math.exp(fluxLMH / k_mt);
     

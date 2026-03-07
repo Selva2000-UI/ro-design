@@ -174,6 +174,7 @@ const App = () => {
         concentrateFlow: results.results.trainConcentrateFlow,
         totalPlantProductFlowDisplay: results.results.totalPermeateFlow,
         pumpPressure: results.results.feedPressure,
+        designValidation: results.designValidation,
         fluxUnit: fluxUnitLabel
       });
     } catch (error) {
@@ -380,6 +381,12 @@ const App = () => {
       `;
     }).join('');
 
+    const validationAlerts = (projection.designValidation?.issues || []).map(issue => `
+      <div style="background: #fff5f5; color: #c53030; padding: 8px; margin-bottom: 5px; border-left: 4px solid #c53030; font-size: 12px; font-weight: bold;">
+        ${issue}
+      </div>
+    `).join('');
+
     const printWindow = window.open('', '_blank', 'width=1200,height=900');
     if (!printWindow) return;
     printWindow.document.open();
@@ -546,6 +553,7 @@ const App = () => {
               <div><strong>Total plant product flow ${unit}:</strong> ${(Number(projection.permeateFlow) * Number(systemConfig.numTrains || 1)).toFixed(1)}</div>
             </div>
           </div>
+
 
           <div class="section">
             <div class="section-title">Calculation Results(All flows are per vessel)</div>
@@ -728,6 +736,10 @@ const App = () => {
                 </tr>
               </tbody>
             </table>
+          </div>
+          <div class="section">
+            <div class="section-title">Design Alerts</div>
+            ${validationAlerts || '<div>No design warnings</div>'}
           </div>
         </body>
       </html>

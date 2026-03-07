@@ -4,7 +4,8 @@ import {
   calculateWaterSaturations,
   PRESSURE_CONVERSION,
   FLOW_CONVERSION,
-  FLUX_CONVERSION
+  FLUX_CONVERSION,
+  validateMultiStageDesign
 } from '../engines/calculationEngine.js';
 import * as MembraneEngine from '../engines/membraneEngine.js';
 
@@ -321,6 +322,14 @@ export const calculateSystem = (inputs, allMembranes = []) => {
   // 5. SYSTEM AGGREGATION
   const totalPermeateM3hFullSystem = totalPermeateM3h * trains;
   const systemRecovery = trainFeedM3h > 0 ? totalPermeateM3h / trainFeedM3h : 0;
+
+  // Design validation
+  const firstMembraneModel = activeStages.length > 0 ? activeStages[0].membraneModel : 'cpa3';
+  const firstMembraneObj = (allMembranes && allMembranes.length > 0)
+    ? allMembranes.find(m => m.id === firstMembraneModel) || getMembrane(firstMembraneModel)
+    : getMembrane(firstMembraneModel);
+  const designValidation = validateMultiStageDesign(finalSystemRun.results, systemRecovery, 0, firstMembraneObj);
+
   const avgFluxLMH = totalAreaM2 > 0 ? (totalPermeateM3h * 1000) / totalAreaM2 : 0;
 
   const permeateIons = {};
@@ -509,6 +518,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     },
     stageResults,
     flowDiagramPoints,
+    designValidation,
     chemicalResults: {
       active_kg_hr: chemicalActive_kg_hr,
       solution_kg_hr: chemicalSolution_kg_hr

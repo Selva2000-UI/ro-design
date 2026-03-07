@@ -972,7 +972,7 @@ export const calculateROStage = (inputs) => {
   
   // Refined industrial beta model: exp(J / k_mt)
   // k_mt depends on feed flow (turbulence)
-  const k_mt_ref = kMtInput || membrane?.transport?.kMtRef || (isSeawater ? 720 : 1000);
+  const k_mt_ref = kMtInput || membrane?.transport?.kMtRef || (isSeawater ? 720 : 450);
   const Q_vessel_v = vesselsPerStage > 0 ? Qf / vesselsPerStage : 16.0;
   const k_mt = k_mt_ref * Math.pow(Math.max(Q_vessel_v, 0.1) / (membrane?.category === '4040' ? 3.6 : 16.0), 0.50);
   
@@ -1001,6 +1001,10 @@ export const calculateROStage = (inputs) => {
   // STEP 7 — NET DRIVING PRESSURE (NDP)
   const NDP = Pfeed - Number(permeatePressure) - pi_surface - (0.5 * deltaP_vessel);
 
+  // Element-level NDP (Lead and Tail estimates for validation)
+  const leadNDP = Pfeed - pi_f - Number(permeatePressure);
+  const tailNDP = (Pfeed - deltaP_vessel) - pi_c * beta - Number(permeatePressure);
+
   // TDS-dependent B-factor correction
   // Seawater membranes use fixed B-factor logic from manufacturer specs
   // Brackish elements scale with salinity to match industrial passage curves (IMS/WAVE)
@@ -1014,10 +1018,10 @@ export const calculateROStage = (inputs) => {
   
   // STEP 11 — ESTIMATE HIGHEST FLUX AND BETA (Per element variation)
   // Refined model matching industrial benchmarks (e.g., CPA5-LD-8040)
-  // Multiplier is recovery-dependent: higher recovery = lower ratio (1.17 @ 40% vs 1.35 @ 18%)
+  // Multiplier is recovery-dependent and element-count dependent
   const is4040 = membrane?.category === '4040';
-  const baseMult = is4040 ? 1.12 : 1.175;
-  const fluxMult = vesselsPerStage > 0 ? (baseMult + (0.4 - R) * 0.8) : 1.0;
+  const baseMult = is4040 ? 1.08 : 1.12; // Base multiplier for 6 elements
+  const fluxMult = vesselsPerStage > 0 ? (1.0 + (baseMult - 1.0 + (0.4 - R) * 0.4) * (elementsPerVessel / 6.0)) : 1.0;
   const highestFlux = vesselsPerStage > 0 ? (J * fluxMult) : 0; 
   
   let hBeta = vesselsPerStage > 0 ? Math.exp(highestFlux / Math.max(k_mt, 100)) : 1.0;
@@ -1110,6 +1114,7 @@ export const calculateROStage = (inputs) => {
 return {
     Qf: Qf,
     Cf: Cf,
+    elements: elementsPerVessel,
     Qp: Qp,
     Qc: Qc,
     Qf_vessel: vesselsPerStage > 0 ? Qf / vesselsPerStage : Qf,
@@ -1120,6 +1125,8 @@ return {
     J: J,
     Pfeed: Pfeed,
     NDP: NDP,
+    leadNDP: leadNDP,
+    tailNDP: tailNDP,
     deltaP_system: deltaP_system,
     deltaP_vessel: deltaP_vessel,
     rejection: finalRejection, 
@@ -1474,7 +1481,7 @@ export const designMultiStageSystem = (params) => {
     feedConc,
     membrane,
     tempCelsius,
-    valid: validateMultiStageDesign(stages, targetRecovery, currentPressure)
+    valid: validateMultiStageDesign(stages, targetRecovery, currentPressure, membrane)
   };
 };
 
@@ -1483,10 +1490,50 @@ export const distributeRecovery = (total, n) => {
   return Array(n).fill(r);
 };
 
-export const validateMultiStageDesign = (stages, target, finalP) => {
-  const issues = [];
-  if (finalP < 0) issues.push("System pressure negative");
-  return { valid: issues.length === 0, issues, warnings: [] };
+export const validateMultiStageDesign = (stages, target, finalP, membrane = null) => {
+  const alerts = [];
+  const limits = membrane?.limits || {
+    maxBeta: 1.20,
+    minConcentrateFlowGpm: 12.0,
+    minNdpPsi: 5.0
+  };
+
+  stages.forEach((stage, index) => {
+    const arrayId = `1 - ${index + 1}`;
+    
+    // 1. Beta Check
+    const beta = stage.highestBeta || stage.beta || 1.0;
+    if (beta > limits.maxBeta) {
+      alerts.push(`Array ${arrayId}: Concentrate polarization factor beta (${beta.toFixed(2)}) is higher than the limit (${limits.maxBeta.toFixed(2)}).`);
+    }
+
+    // 2. Concentrate Flow Check
+    // stage.Qc is m3/h. Need to convert to gpm per vessel.
+    const FLOW_TO_GPM = 4.403;
+    const qcVesselGpm = (stage.Qc * FLOW_TO_GPM) / (stage.vessels || 1);
+    if (qcVesselGpm < limits.minConcentrateFlowGpm) {
+      alerts.push(`Array ${arrayId}: Concentrate flow per vessel (${qcVesselGpm.toFixed(2)} gpm) is lower than the limit (${limits.minConcentrateFlowGpm.toFixed(2)} gpm) for ${membrane?.name || 'this'} membrane.`);
+    }
+
+    // 3. NDP Check
+    // stage.NDP is bar. Need to convert to psi.
+    const leadNdpPsi = (stage.leadNDP || stage.NDP) * 14.5038;
+    const tailNdpPsi = (stage.tailNDP || stage.NDP) * 14.5038;
+    const elements = stage.elements || 6;
+    
+    if (leadNdpPsi < limits.minNdpPsi) {
+      alerts.push(`Array ${arrayId}-1: NDP (${leadNdpPsi.toFixed(2)} psi) is less than the limit (${limits.minNdpPsi.toFixed(2)} psi) for ${membrane?.name || 'this'} membrane.`);
+    }
+    if (tailNdpPsi < limits.minNdpPsi && Math.abs(tailNdpPsi - leadNdpPsi) > 0.1) {
+      alerts.push(`Array ${arrayId}-${elements}: NDP (${tailNdpPsi.toFixed(2)} psi) is less than the limit (${limits.minNdpPsi.toFixed(2)} psi) for ${membrane?.name || 'this'} membrane.`);
+    }
+  });
+
+  return { 
+    valid: alerts.length === 0, 
+    issues: alerts, 
+    warnings: alerts 
+  };
 };
 
 export const calculateFluxImproved = (params) => {

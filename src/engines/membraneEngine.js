@@ -44,18 +44,10 @@ const DEFAULT_OSMOTIC_COEFF_SEAWATER = 0.00085;
  * Derives A and B transport parameters from manufacturer test data
  */
 export const calculateA = (fluxLMH, pressureBar, tds, osmoticCoeff = 0.0007925, recovery = 0.15, isSeawater = false) => {
-  const recoveryFraction = recovery > 1 ? recovery / 100 : recovery;
-  const cf = 1 / Math.max(0.001, 1 - recoveryFraction);
-  const cf_avg = recoveryFraction > 0.005 ? (cf - 1) / Math.log(cf) : (1 + cf) / 2;
-
-  const k_mt = isSeawater ? 720 : 680;
-  const beta = Math.exp(fluxLMH / k_mt);
-
-  const osmoticPressureSurface = osmoticCoeff * tds * cf_avg * beta;
-  const ndp = pressureBar - osmoticPressureSurface;
-  
+  const osmoticPressure = osmoticCoeff * tds;
+  const ndp = pressureBar - osmoticPressure;
   if (ndp <= 0) return 0;
-  // A = Jw / (P - Δπ_surface)
+  // A = Jw / (P - Δπ)
   return fluxLMH / ndp;
 };
 
@@ -82,14 +74,14 @@ export const estimateMembraneB = (
     ? (cf - 1) / Math.log(cf) 
     : (1 + cf) / 2;
 
-  // Mass transfer coefficient (Industrial standard defaults)
-  const k_mt = k_mt_ref || (isSeawater ? 720 : 680);
+  // Mass transfer coefficient (User requested defaults)
+  const k_mt = k_mt_ref || (isSeawater ? 400 : 450);
 
   // Concentration polarization factor
   const beta = Math.exp(fluxLMH / k_mt);
 
-  // TDS correction (Salt permeability B increases with salinity)
-  const bFactorTds = isSeawater ? 1.0 : 1.0 + 0.10 * (tds / 1000);
+  // TDS correction (brackish membranes slightly affected)
+  const bFactorTds = isSeawater ? 1.0 : (1.0 + 0.08 * (tds / 1000));
 
   const B_actual = (saltPassage * fluxLMH) / (cf_avg * beta - saltPassage);
 
@@ -244,12 +236,12 @@ export const MEMBRANES = {
     areaM2: 37.16, // 400 sq ft
     maxFlux: 120.0,
     calibration: {
-      aMultiplier: 0.975 // Aligned to 43.7 bar @ 112 LMH Case 1 (Industrial)
+      aMultiplier: 1.12 // Aligned to 157.0 psi Feed (Case 5000 TDS)
     },
     transport: {
-      kMtRef: 680, // Matches beta 1.08 @ 112 LMH and 1.04 @ 18 LMH
+      kMtRef: 200, // Aligned to Beta 1.08 @ 12 gfd
       soluteBFactors: {
-        monovalent: 1.25, // Aligned to Case 2 average (11.2 mg/l)
+        monovalent: 1.45, // Aligned to 167 mg/l Case 5000 TDS (Low flux)
         divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
@@ -272,7 +264,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0022, // Matches 11.7 bar drop Case 1 and 2.7 psi drop Screenshot
+      coefficient: 0.0039, // Matches 4.8 psi drop @ 40 gpm (2 elements)
       exponent: 1.70
     },
     designFlux: {
@@ -293,7 +285,11 @@ export const MEMBRANES = {
     limits: {
       maxTds: 5000,
       maxTemp: 45,
-      maxPressure: 600
+      maxPressure: 600,
+      maxBeta: 1.20,
+      minConcentrateFlowGpm: 12.0,
+      minNdpPsi: 5.0,
+      minPressureNetOsmoticPsi: 5.0
     },
     compatibleWaterTypes: [
       'Brackish Well Non-Fouling',
@@ -1156,7 +1152,7 @@ export const getKdp = (membrane) => {
 export const getKmt = (membrane) => {
   if (membrane?.transport?.kMtRef) return membrane.transport.kMtRef;
   const isSeawater = (membrane?.type === MEMBRANE_TYPES.SEAWATER || membrane?.id?.toLowerCase().includes('sw'));
-  return isSeawater ? 720 : 1000;
+  return isSeawater ? 720 : 450;
 };
 
 /**

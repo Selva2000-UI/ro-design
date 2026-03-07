@@ -53,20 +53,24 @@ const ValidationBanner = ({ projection, systemConfig, waterData }) => {
     background: '#f8f9fa'
   });
 
+  const alerts = projection.designValidation?.issues || [];
+
   return (
-    <div style={bannerStyle}>
-      <span style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#002f5d', marginRight: '10px' }}>
-        DESIGN STATUS:
-      </span>
-      {checks.map(check => (
-        <div key={check.id} style={badgeStyle(check.status)}>
-          <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 'bold' }}>{check.label.toUpperCase()}</div>
-          <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#333' }}>{check.value}</div>
-          <div style={{ fontSize: '0.65rem', color: check.status === 'success' ? '#27ae60' : '#d35400' }}>
-            {check.status === 'success' ? '✓ ' : '⚠ '}{check.msg}
+    <div style={{ background: '#fff' }}>
+      <div style={bannerStyle}>
+        <span style={{ fontWeight: 'bold', fontSize: '0.8rem', color: '#002f5d', marginRight: '10px' }}>
+          DESIGN STATUS:
+        </span>
+        {checks.map(check => (
+          <div key={check.id} style={badgeStyle(check.status)}>
+            <div style={{ fontSize: '0.7rem', color: '#666', fontWeight: 'bold' }}>{check.label.toUpperCase()}</div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#333' }}>{check.value}</div>
+            <div style={{ fontSize: '0.65rem', color: check.status === 'success' ? '#27ae60' : '#d35400' }}>
+              {check.status === 'success' ? '✓ ' : '⚠ '}{check.msg}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
