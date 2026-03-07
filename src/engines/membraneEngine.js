@@ -68,7 +68,7 @@ export const estimateMembraneB = (flux, tds, rejection, isSeawater = false, k_mt
 };
 
 // Automatic Calibration - Seawater SW-TDS-32K-8040
-const SW_TDS_32K_A = calculateA(34.77, 55.16, 32000, 0.00085) * 0.81; 
+const SW_TDS_32K_A = calculateA(34.77, 55.16, 32000, 0.00085) * 1.02; 
 const SW_TDS_32K_B_VAL = estimateMembraneB(34.77, 32000, 0.9985, true, 400); 
 
 // Automatic Calibration - Brackish ESPA2-LD-4040
@@ -80,16 +80,16 @@ const CPA3_A = calculateA(46.7, 15.5, 1500, 0.0007925) * 1.00;
 const CPA3_B_VAL = estimateMembraneB(46.7, 1500, 0.9970, false, 450); 
 
 // Automatic Calibration - CPA5-LD-8040
-const CPA5_LD_A = calculateA(46.7, 15.5, 1500, 0.0007925) * 1.04; 
+const CPA5_LD_A = calculateA(46.7, 15.5, 1500, 0.0007925) * 0.97; 
 const CPA5_LD_B_VAL = estimateMembraneB(46.7, 1500, 0.9970, false, 850); 
 
 // Automatic Calibration - LFC3-LD-4040
 const LFC3_LD_4040_A = calculateA(38.2, 10.3, 1500, 0.000792) * 1.00; 
-const LFC3_LD_4040_B_VAL = estimateMembraneB(38.2, 1500, 0.9970, false, 450); 
+const LFC3_LD_4040_B_VAL = estimateMembraneB(38.2, 1500, 0.9970, false, 850); 
 
 // Automatic Calibration - LFC3-LD-8040 (Waste model)
-const LFC3_LD_8040_A = calculateA(46.7, 15.5, 1500, 0.0007925) * 1.00; 
-const LFC3_LD_8040_B_VAL = estimateMembraneB(46.7, 1500, 0.9970, false, 850); 
+const LFC3_LD_8040_A = calculateA(46.7, 15.5, 1500, 0.0007925) * 1.03; 
+const LFC3_LD_8040_B_VAL = estimateMembraneB(46.7, 1500, 0.9961, false, 850); 
 
 // Automatic Calibration - BW-TDS-5K-8040
 const BW_TDS_5K_A = calculateA(40.37, 15.5, 2000, 0.0008) * 1.38; 
@@ -120,9 +120,9 @@ export const MEMBRANES = {
     transport: {
       aValueRef: ESPA2_LD_4040_A, // ~3.1 (Auto-calculated from test data)
       membraneBRef: ESPA2_LD_4040_B_VAL, // ~0.17 (Auto-calculated from rejection)
-      kMtRef: 450,
+      kMtRef: 850,
       soluteBFactors: {
-        monovalent: 1.6,
+        monovalent: 2.4,
         divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
@@ -253,7 +253,7 @@ export const MEMBRANES = {
       membraneBRef: CPA5_LD_B_VAL,
       kMtRef: 850,
       soluteBFactors: {
-        monovalent: 1.25, 
+        monovalent: 1.8, 
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
@@ -316,9 +316,9 @@ export const MEMBRANES = {
     transport: {
       aValueRef: LFC3_LD_4040_A, 
       membraneBRef: LFC3_LD_4040_B_VAL, 
-      kMtRef: 450,
+      kMtRef: 850,
       soluteBFactors: {
-        monovalent: 1.6, 
+        monovalent: 1.9, 
         divalent: 0.6,
         silica: 0.75,
         boron: 1.3,
@@ -383,9 +383,9 @@ export const MEMBRANES = {
     transport: {
       aValueRef: LFC3_LD_8040_A, 
       membraneBRef: LFC3_LD_8040_B_VAL, 
-      kMtRef: 450,
+      kMtRef: 850,
       soluteBFactors: {
-        monovalent: 1.6, 
+        monovalent: 1.9, 
         divalent: 0.6,
         silica: 0.75,
         boron: 1.3,
@@ -671,7 +671,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.012, // Calibrated for 1.2 bar drop @ 23.2 m3/h (2 elements)
+      coefficient: 0.012, // Calibrated for 3.5 psi drop @ 32.14 gpm (2 elements)
       exponent: 1.22
     },
     designFlux: {

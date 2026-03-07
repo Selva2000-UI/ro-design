@@ -1004,8 +1004,8 @@ export const calculateROStage = (inputs) => {
   // TDS-dependent B-factor correction
   // Seawater membranes use fixed B-factor logic from manufacturer specs
   // Brackish elements scale with salinity to match industrial passage curves (IMS/WAVE)
-  // Refined model: (1.0 + 0.087 * TDS/1000) matches industrial salt passage curves for high-rejection elements
-  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.087 * (Cf / 1000));
+  // Refined model: (1.0 + 0.11 * TDS/1000) matches industrial salt passage curves for high-rejection elements
+  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.11 * (Cf / 1000));
   const B_actual = B_ref * TCF_B * bFactorTds;
 
   // Salt Passage Model: Cp = Cs * B / (J + B)
@@ -1050,7 +1050,7 @@ export const calculateROStage = (inputs) => {
         } else if (['hco3', 'co3'].includes(i)) {
             multiplier = factors.alkalinity || 1.2;
         } else if (['na', 'cl', 'k', 'nh4', 'f', 'no3'].includes(i)) {
-            multiplier = factors.monovalent || 1.65; // Matches high-flux salt passage increase
+            multiplier = factors.monovalent || 2.0; // Matches high-flux salt passage increase
         } else if (i === 'b') {
             multiplier = factors.boron || 1.8;
         } else if (i === 'sio2' || i === 'silica') {
