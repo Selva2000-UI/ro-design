@@ -42,10 +42,10 @@ export const MEMBRANE_SPECIFIC_CONSTRAINTS = {
     optimalFlux: 40
   },
   'lfc3ld8040': {
-    fluxMin: 12,
-    fluxMax: 25,
-    recoveryMin: 10,
-    recoveryMax: 15,
+    fluxMin: 8,
+    fluxMax: 35,
+    recoveryMin: 40,
+    recoveryMax: 85,
     pressureMin: 100,
     pressureMax: 600,
     optimalFlux: 18

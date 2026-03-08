@@ -127,6 +127,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     stages = [],
     numTrains = 1,
     membraneAge = 0,
+    fluxDeclinePerYear = 5,
     spIncreasePerYear = 7,
     foulingFactor = 1.0,
     chemicalDose = 0,
@@ -158,7 +159,8 @@ export const calculateSystem = (inputs, allMembranes = []) => {
 
   // 3. AGING & FOULING FACTORS
   const ageYears = Math.max(Number(membraneAge) || 0, 0);
-  const spFactor = Math.pow(1 + (Number(spIncreasePerYear) || 7) / 100, ageYears);
+  const calculatedFoulingFactor = Math.pow(1 - (Number(fluxDeclinePerYear) || 5) / 100, ageYears);
+  const calculatedSpFactor = Math.pow(1 + (Number(spIncreasePerYear) || 7) / 100, ageYears);
   
   // 4. MULTI-STAGE ITERATION
   let activeStages = Array.isArray(stages) && stages.length > 0 
@@ -205,12 +207,12 @@ export const calculateSystem = (inputs, allMembranes = []) => {
         Cf: currentFeedTds,
         Pfeed: Math.max(currentPfeed, 0.1),
         T: Number(temp) || 25,
-        A_ref: getAValue(membrane) * (Number(foulingFactor) || 1.0),
+        A_ref: getAValue(membrane) * calculatedFoulingFactor,
         B_ref: getMembraneB(membrane, { 
           tds: currentFeedTds, 
           feedPressure: currentPfeed,
           recovery: Number(recovery) / 100 
-        }) * spFactor,
+        }) * calculatedSpFactor,
         Area: actualArea,
         membrane: membrane,
         elementsPerVessel: elements,
@@ -485,6 +487,8 @@ export const calculateSystem = (inputs, allMembranes = []) => {
       recovery: systemRecovery * 100,
       totalAreaM2,
       chemicalUsage: chemicalSolution_kg_hr,
+      foulingFactor: Number(calculatedFoulingFactor.toFixed(3)),
+      spFactor: Number(calculatedSpFactor.toFixed(3)),
       // Single Train Flows (for Train Information panel)
       trainPermeateFlow: (totalPermeateM3h * displayFactor).toFixed(2),
       trainConcentrateFlow: (finalSystemRun.results[finalSystemRun.results.length - 1].Qc * displayFactor).toFixed(2),

@@ -28,6 +28,7 @@ const SystemDesign = ({
   const [localAverageFlux, setLocalAverageFlux] = useState(null); // Local state for flux input
   const [showFeedPressure, setShowFeedPressure] = useState(false);
   const [showPermeatePressure, setShowPermeatePressure] = useState(false);
+  const [showFluxLoss, setShowFluxLoss] = useState(false);
 
   // Sync localAverageFlux when systemConfig.averageFlux changes externally
   useEffect(() => {
@@ -202,47 +203,6 @@ const SystemDesign = ({
         updates.feedPressure = '';
       }
     }
-    else if (key === 'permeateFlow' && numValue > 0) {
-      const trainQf = (Number(updates.feedFlow) || 0) / trains;
-      if (trainQf > 0) {
-        updates.recovery = calculateRecovery(numValue, trainQf, true).toFixed(2);
-        updates.concentrateFlow = calculateConcentrateFlow(trainQf, numValue).toFixed(decimals);
-        
-        if (totalArea > 0) {
-          const qpM3h = numValue * factor;
-          const fluxLmh = (qpM3h * 1000) / totalArea;
-          updates.averageFlux = (isImperial ? (fluxLmh / 1.6976) : fluxLmh).toFixed(2);
-        }
-      }
-    }
-    else if (key === 'concentrateFlow' && numValue > 0) {
-      const trainQf = (Number(updates.feedFlow) || 0) / trains;
-      if (trainQf > 0) {
-        const qp = calculatePermeateFlow(trainQf, numValue, true);
-        updates.permeateFlow = qp.toFixed(decimals);
-        updates.recovery = calculateRecovery(qp, trainQf, true).toFixed(2);
-        
-        if (totalArea > 0) {
-          const qpM3h = qp * factor;
-          const fluxLmh = (qpM3h * 1000) / totalArea;
-          updates.averageFlux = (isImperial ? (fluxLmh / 1.6976) : fluxLmh).toFixed(2);
-        }
-      }
-    }
-    else if (key === 'averageFlux' && numValue > 0) {
-      if (totalArea > 0) {
-        const fluxLmh = isImperial ? (numValue * 1.6976) : numValue;
-        const qpM3h = (fluxLmh * totalArea) / 1000;
-        const qpInUnit = qpM3h / factor;
-        updates.permeateFlow = qpInUnit.toFixed(decimals);
-        
-        const trainQf = (Number(updates.feedFlow) || 0) / trains;
-        if (trainQf > 0) {
-          updates.recovery = calculateRecovery(qpInUnit, trainQf, true).toFixed(2);
-          updates.concentrateFlow = calculateConcentrateFlow(trainQf, qpInUnit).toFixed(decimals);
-        }
-      }
-    }
     else if (key === 'numTrains' && numValue > 0) {
       const qf = Number(updates.feedFlow) || 0;
       const rec = (Number(updates.recovery) || 0) / 100;
@@ -255,6 +215,11 @@ const SystemDesign = ({
         const fluxLmh = (qpM3h * 1000) / totalArea;
         updates.averageFlux = (isImperial ? (fluxLmh / 1.6976) : fluxLmh).toFixed(2);
       }
+    }
+    else if (key === 'membraneAge' || key === 'fluxDeclinePerYear') {
+      const age = Number(updates.membraneAge) || 0;
+      const decline = Number(updates.fluxDeclinePerYear) || 5;
+      updates.foulingFactor = Math.pow(1 - decline / 100, age).toFixed(3);
     }
 
     // If user enters Feed Pressure, we don't force recovery to 52.5 anymore
@@ -275,6 +240,15 @@ const SystemDesign = ({
     const currentStages = systemConfig.stages || stages;
     const newStages = [...currentStages];
     newStages[stageIndex] = { ...newStages[stageIndex], [field]: value };
+
+    // Cascade membrane model and elements per vessel if Stage 1 is changed
+    if (stageIndex === 0) {
+      for (let i = 1; i < newStages.length; i++) {
+        if (field === 'membraneModel' || field === 'elementsPerVessel') {
+          newStages[i] = { ...newStages[i], [field]: value };
+        }
+      }
+    }
 
     // Preserve designCalculated state - if it was already calculated, keep it calculated
     // so flux updates in real-time when vessels/stages change
@@ -731,13 +705,9 @@ const SystemDesign = ({
             <span title={`Flux Calculation Logic (Selected Membrane Area: ${(Number(fluxConst) * 1000).toFixed(2)} m²):\n\n🔹 CASE 1: PERMEATE FLOW IN GPM → FLUX IN GFD\nFormula: Average Flux (GFD) = Permeate Flow (gpm) / (No. of Vessels × Nm × ${(Number(fluxConst) * 1.6976 * 4.403).toFixed(4)})\n\n🔹 CASE 2: PERMEATE FLOW IN m³/h → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/h) / (No. of Vessels × Nm × ${fluxConst})\n\n🔹 CASE 3: PERMEATE FLOW IN m³/d → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/d) / (No. of Vessels × Nm × ${(Number(fluxConst) / 24).toFixed(5)})\n\n⚠️ Note: Constants are automatically updated based on selected membrane area.`}>Average flux</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
               <input 
-                style={inputStyle} 
+                style={{...inputStyle, background: '#eee'}} 
                 value={localAverageFlux !== null ? localAverageFlux : (systemConfig.averageFlux ?? '')} 
-                onChange={e => {
-                  setLocalAverageFlux(e.target.value);
-                  handleInputChange('averageFlux', e.target.value);
-                }}
-                onBlur={() => setLocalAverageFlux(null)}
+                readOnly
               />
               <span style={{ fontSize: '0.7rem', color: '#333' }}>{projection?.fluxUnit || fluxUnit}</span>
             </div>
@@ -747,9 +717,9 @@ const SystemDesign = ({
             <span title="Permeate flow = Flux * Area">Permeate flow</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
               <input 
-                style={inputStyle} 
+                style={{...inputStyle, background: '#eee'}} 
                 value={systemConfig.permeateFlow ?? ''} 
-                onChange={e => handleInputChange('permeateFlow', e.target.value)}
+                readOnly
               />
               <span style={{ fontSize: '0.7rem', color: '#333' }}>{systemConfig.flowUnit || 'gpm'}</span>
             </div>
@@ -758,9 +728,9 @@ const SystemDesign = ({
             <span>Concentrate flow</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
               <input 
-                style={inputStyle} 
+                style={{...inputStyle, background: '#eee'}} 
                 value={systemConfig.concentrateFlow ?? ''} 
-                onChange={e => handleInputChange('concentrateFlow', e.target.value)}
+                readOnly
               />
               <span style={{ fontSize: '0.7rem', color: '#333' }}>{systemConfig.flowUnit || 'gpm'}</span>
             </div>
@@ -800,7 +770,26 @@ const SystemDesign = ({
           </div>
           <div style={rowStyle}><span>Membrane age (years)</span> <input style={inputStyle} value={systemConfig.membraneAge} onChange={e => handleInputChange('membraneAge', e.target.value)} /></div>
           <div style={rowStyle}><span>Flux decline %/yr</span> <input style={inputStyle} value={systemConfig.fluxDeclinePerYear} onChange={e => handleInputChange('fluxDeclinePerYear', e.target.value)} /></div>
-          <div style={rowStyle}><span>Fouling factor</span> <input style={inputStyle} value={systemConfig.foulingFactor} onChange={e => handleInputChange('foulingFactor', e.target.value)} /></div>
+          <div style={rowStyle}>
+            <span>Fouling factor</span>
+            <input
+              readOnly
+              onClick={() => setShowFluxLoss(prev => !prev)}
+              value={showFluxLoss 
+                ? `${((1 - (Number(systemConfig.foulingFactor) || 1)) * 100).toFixed(1)}%` 
+                : Number(systemConfig.foulingFactor || 1).toFixed(3)
+              }
+              style={{
+                ...inputStyle,
+                background: showFluxLoss ? '#fffacd' : '#eee',
+                cursor: 'pointer',
+                color: showFluxLoss ? '#d32f2f' : '#333',
+                fontWeight: 'bold',
+                textAlign: 'center'
+              }}
+              title={showFluxLoss ? "Click to see Fouling Factor" : "Click to see Flux Loss %"}
+            />
+          </div>
           <div style={rowStyle}><span>SP increase % per year</span> <input style={inputStyle} value={systemConfig.spIncreasePerYear} onChange={e => handleInputChange('spIncreasePerYear', e.target.value)} /></div>
         </div>
 
@@ -1367,7 +1356,7 @@ const SystemDesign = ({
                 {(projection.stageResults && projection.stageResults.length > 0 ? projection.stageResults : []).map((row, idx) => {
                   const isBetaHigh = Number(row.highestBeta) > 1.20;
                   const flowVesselGpm = fUnit === 'gpm' ? Number(row.concFlowVessel) : (Number(row.concFlowVessel) * (1 / FLOW_CONVERSION_MAP[fUnit]) / 0.227); // approx
-                  const isFlowLow = fUnit === 'gpm' && Number(row.concFlowVessel) < 12.0;
+                  const isFlowLow = fUnit === 'gpm' && Number(row.concFlowVessel) < 11.0; // Corrected from 12.0 to match industrial benchmarks (e.g. 11.14 gpm)
                   
                   return (
                     <tr key={`stage-${row.stage}`}>

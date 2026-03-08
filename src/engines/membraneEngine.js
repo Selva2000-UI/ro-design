@@ -389,12 +389,12 @@ export const MEMBRANES = {
       temperatureC: 25,
       tds: 1500,
       recovery: 0.15,
-      fluxLMH: 28,
+      fluxLMH: 42.0, // Corrected from 28.0 - aligned to 11,000 gpd (43.2 m3/d) standard rating
       rejection: 0.9961
     },
     hydraulics: {
       maxFeedFlowM3H: 16,
-      minConcentrateFlowM3H: 3,
+      minConcentrateFlowM3H: 2.5, // Corrected from 3.0 - aligned to 11 gpm benchmark
       maxElementRecovery: 0.15,
       maxPressureDropBar: 1.0,
       spacerMil: 34
