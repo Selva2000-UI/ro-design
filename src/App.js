@@ -359,28 +359,90 @@ const App = () => {
     const rawTds = Number(waterData.calculatedTds) || 0;
     const toEcondString = (tds, ph) => calculateEC(tds, ph).toFixed(2);
 
+    const generateFlowDiagramSVG = () => {
+      const numStages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);
+      const startX = 50;
+      const startY = 80;
+      const stageWidth = 100;
+      const horizontalGap = 150;
+      const verticalGap = 80;
+      
+      let elements = [];
+
+      // 1. Feed line and Pump
+      elements.push('<line x1="' + startX + '" y1="' + startY + '" x2="' + (startX + 100) + '" y2="' + startY + '" stroke="#1e6bd6" stroke-width="6" />');
+      elements.push('<polygon points="' + (startX + 30) + ',' + (startY - 15) + ' ' + (startX + 60) + ',' + (startY - 15) + ' ' + (startX + 75) + ',' + startY + ' ' + (startX + 60) + ',' + (startY + 15) + ' ' + (startX + 30) + ',' + (startY + 15) + ' ' + (startX + 15) + ',' + startY + '" fill="white" stroke="#222" stroke-width="2" />');
+      elements.push('<text x="' + (startX + 45) + '" y="' + (startY + 5) + '" text-anchor="middle" font-size="12" font-weight="bold">1</text>');
+
+      const pumpX = startX + 130;
+      elements.push('<circle cx="' + pumpX + '" cy="' + startY + '" r="25" fill="white" stroke="#222" stroke-width="3" />');
+      elements.push('<polygon points="' + (pumpX - 5) + ',' + (startY - 12) + ' ' + (pumpX + 15) + ',' + startY + ' ' + (pumpX - 5) + ',' + (startY + 12) + '" fill="none" stroke="#222" stroke-width="2" />');
+
+      elements.push('<line x1="' + (pumpX + 25) + '" y1="' + startY + '" x2="250" y2="' + startY + '" stroke="#1e6bd6" stroke-width="6" />');
+      elements.push('<polygon points="' + (pumpX + 50) + ',' + (startY - 15) + ' ' + (pumpX + 80) + ',' + (startY - 15) + ' ' + (pumpX + 95) + ',' + startY + ' ' + (pumpX + 80) + ',' + (startY + 15) + ' ' + (pumpX + 50) + ',' + (startY + 15) + ' ' + (pumpX + 35) + ',' + startY + '" fill="white" stroke="#222" stroke-width="2" />');
+      elements.push('<text x="' + (pumpX + 65) + '" y="' + (startY + 5) + '" text-anchor="middle" font-size="12" font-weight="bold">2</text>');
+
+      // Common Permeate Line at Top
+      const permY = 25;
+      const finalX = 250 + (numStages * horizontalGap);
+      elements.push('<line x1="350" y1="' + permY + '" x2="' + (finalX + 50) + '" y2="' + permY + '" stroke="#3cc7f4" stroke-width="6" />');
+
+      for (let i = 0; i < numStages; i++) {
+        const sX = 250 + (i * horizontalGap);
+        const sY = startY + (i * verticalGap);
+
+        // Membrane Block
+        elements.push('<rect x="' + sX + '" y="' + (sY - 25) + '" width="' + stageWidth + '" height="50" fill="white" stroke="#222" stroke-width="2" />');
+        elements.push('<line x1="' + sX + '" y1="' + (sY + 25) + '" x2="' + (sX + stageWidth) + '" y2="' + (sY - 25) + '" stroke="#222" stroke-width="1" />');
+
+        // Permeate branch
+        elements.push('<line x1="' + (sX + stageWidth) + '" y1="' + (sY - 15) + '" x2="' + (sX + stageWidth) + '" y2="' + permY + '" stroke="#3cc7f4" stroke-width="4" />');
+        
+        const pLabelId = numStages + i + 3;
+        const pY = i === 0 ? permY : (sY + permY) / 2 - 10;
+        const pX = i === 0 ? sX + stageWidth + 40 : sX + stageWidth;
+        
+        elements.push('<polygon points="' + (pX - 15) + ',' + (pY - 12) + ' ' + (pX + 15) + ',' + (pY - 12) + ' ' + (pX + 25) + ',' + pY + ' ' + (pX + 15) + ',' + (pY + 12) + ' ' + (pX - 15) + ',' + (pY + 12) + ' ' + (pX - 25) + ',' + pY + '" fill="white" stroke="#222" stroke-width="1.5" />');
+        elements.push('<text x="' + pX + '" y="' + (pY + 4) + '" text-anchor="middle" font-size="11" font-weight="bold">' + pLabelId + '</text>');
+
+        // Reject / Next Feed
+        if (i < numStages - 1) {
+          const nY = startY + (i + 1) * verticalGap;
+          elements.push('<line x1="' + (sX + stageWidth / 2) + '" y1="' + (sY + 25) + '" x2="' + (sX + stageWidth / 2) + '" y2="' + nY + '" stroke="#35c84b" stroke-width="6" />');
+          elements.push('<line x1="' + (sX + stageWidth / 2) + '" y1="' + nY + '" x2="' + (sX + horizontalGap) + '" y2="' + nY + '" stroke="#35c84b" stroke-width="6" />');
+          const rLabelId = i + 3;
+          const rY = (sY + 25 + nY) / 2;
+          elements.push('<polygon points="' + (sX + stageWidth / 2 - 15) + ',' + (rY - 12) + ' ' + (sX + stageWidth / 2 + 15) + ',' + (rY - 12) + ' ' + (sX + stageWidth / 2 + 25) + ',' + rY + ' ' + (sX + stageWidth / 2 + 15) + ',' + (rY + 12) + ' ' + (sX + stageWidth / 2 - 15) + ',' + (rY + 12) + ' ' + (sX + stageWidth / 2 - 25) + ',' + rY + '" fill="white" stroke="#222" stroke-width="1.5" />');
+          elements.push('<text x="' + (sX + stageWidth / 2) + '" y="' + (rY + 4) + '" text-anchor="middle" font-size="11" font-weight="bold">' + rLabelId + '</text>');
+        } else {
+          // Final Concentrate
+          elements.push('<line x1="' + (sX + stageWidth / 2) + '" y1="' + (sY + 25) + '" x2="' + (sX + stageWidth / 2) + '" y2="' + (sY + 70) + '" stroke="#35c84b" stroke-width="6" />');
+          const cLabelId = numStages + 2;
+          elements.push('<polygon points="' + (sX + stageWidth / 2 - 15) + ',' + (sY + 50 - 12) + ' ' + (sX + stageWidth / 2 + 15) + ',' + (sY + 50 - 12) + ' ' + (sX + stageWidth / 2 + 25) + ',' + (sY + 50) + ' ' + (sX + stageWidth / 2 + 15) + ',' + (sY + 50 + 12) + ' ' + (sX + stageWidth / 2 - 15) + ',' + (sY + 50 + 12) + ' ' + (sX + stageWidth / 2 - 25) + ',' + (sY + 50) + '" fill="white" stroke="#222" stroke-width="1.5" />');
+          elements.push('<text x="' + (sX + stageWidth / 2) + '" y="' + (sY + 50 + 4) + '" text-anchor="middle" font-size="11" font-weight="bold">' + cLabelId + '</text>');
+        }
+      }
+
+      // Final Permeate Label
+      const finalPLab = 3 + (numStages > 1 ? 2 * numStages : numStages);
+      elements.push('<polygon points="' + (finalX + 45 - 15) + ',' + (permY - 12) + ' ' + (finalX + 45 + 15) + ',' + (permY - 12) + ' ' + (finalX + 45 + 25) + ',' + permY + ' ' + (finalX + 45 + 15) + ',' + (permY + 12) + ' ' + (finalX + 45 - 15) + ',' + (permY + 12) + ' ' + (finalX + 45 - 25) + ',' + permY + '" fill="white" stroke="#222" stroke-width="1.5" />');
+      elements.push('<text x="' + (finalX + 45) + '" y="' + (permY + 4) + '" text-anchor="middle" font-size="11" font-weight="bold">' + finalPLab + '</text>');
+
+      if (systemConfig.chemical !== 'None') {
+        elements.push('<text x="180" y="45" text-anchor="middle" font-size="11" font-family="Arial" fill="#b83b2e" font-weight="bold">' + systemConfig.chemical + '</text>');
+        elements.push('<line x1="180" y1="50" x2="180" y2="80" stroke="#b83b2e" stroke-width="2" stroke-dasharray="4" />');
+      }
+
+      const viewWidth = Math.max(900, 250 + (numStages * horizontalGap) + 100);
+      const viewHeight = Math.max(260, 100 + (numStages * verticalGap));
+      
+      return '<svg viewBox="0 0 ' + viewWidth + ' ' + viewHeight + '" width="100%" height="' + viewHeight + '">' + elements.join('') + '</svg>';
+    };
+
     const ionFeed = waterData;
     const permIons = projection.permeateParameters?.ions || {};
     const concIons = projection.concentrateParameters?.ions || {};
     
-    const stageRows = (projection.stageResults || []).map((row) => {
-      return `
-        <tr>
-          <td>${row.array}</td>
-          <td>${row.vessels ?? ''}</td>
-          <td>${row.feedPressure ?? ''}</td>
-          <td>${row.concPressure ?? ''}</td>
-          <td>${row.feedFlowVessel ?? ''}</td>
-          <td>${row.permeateFlowVessel ?? ''}</td>
-          <td>${row.concFlowVessel ?? ''}</td>
-          <td>${row.flux ?? ''}</td>
-          <td>${row.highestFlux ?? ''}</td>
-          <td>${row.highestBeta ?? ''}</td>
-          <td>${row.rejection ?? ''}</td>
-        </tr>
-      `;
-    }).join('');
-
     const validationAlerts = (projection.designValidation?.issues || []).map(issue => `
       <div style="background: #fff5f5; color: #c53030; padding: 8px; margin-bottom: 5px; border-left: 4px solid #c53030; font-size: 12px; font-weight: bold;">
         ${issue}
@@ -405,6 +467,8 @@ const App = () => {
             th { background: #f0f3f7; }
             .meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 12px; }
             .meta div { padding: 4px 0; }
+            .flow-diagram-table td { font-size: 11px; }
+            .flow-diagram-table .row-label { font-weight: bold; background: #f9f9f9; text-align: left; width: 140px; }
           </style>
         </head>
         <body>
@@ -562,15 +626,14 @@ const App = () => {
                 <tr>
                   <th>Array</th>
                   <th>Vessels</th>
-                  <th>Feed (${pUnit})</th>
-                  <th>Conc (${pUnit})</th>
-                  <th>Feed (${fUnit})</th>
-                  <th>Perm (${fUnit})</th>
-                  <th>Conc (${fUnit})</th>
+                  <th>Feed Pres (${pUnit})</th>
+                  <th>Conc Pres (${pUnit})</th>
+                  <th>Feed Flow (${fUnit})</th>
+                  <th>Perm Flow (${fUnit})</th>
+                  <th>Conc Flow (${fUnit})</th>
                   <th>Flux (${fluxUnit})</th>
                   <th>Highest flux (${fluxUnit})</th>
                   <th>Highest beta</th>
-                  <th>Final rejection (%)</th>
                 </tr>
               </thead>
               <tbody>
@@ -581,11 +644,11 @@ const App = () => {
                     <td>${row.feedPressure}</td>
                     <td>${row.concPressure}</td>
                     <td>${row.feedFlowVessel}</td>
+                    <td>${row.permeateFlowVessel}</td>
                     <td>${row.concFlowVessel}</td>
                     <td>${row.flux}</td>
                     <td>${row.highestFlux}</td>
                     <td>${row.highestBeta}</td>
-                    <td>${row.rejection}</td>
                   </tr>
                 `).join('') || '<tr><td colspan="10">No calculation results</td></tr>'}
               </tbody>
@@ -654,85 +717,57 @@ const App = () => {
           <div class="section">
             <div class="section-title">Flow Diagram</div>
             <div style="padding: 10px 0;">
-              <svg viewBox="0 0 900 260" width="100%" height="260">
-                <line x1="40" y1="130" x2="240" y2="130" stroke="#1e6bd6" strokeWidth="6" />
-                <line x1="240" y1="130" x2="320" y2="130" stroke="#1e6bd6" strokeWidth="6" />
-                <line x1="320" y1="130" x2="380" y2="130" stroke="#1e6bd6" strokeWidth="6" />
-                <line x1="440" y1="130" x2="520" y2="130" stroke="#1e6bd6" strokeWidth="6" />
-                <line x1="520" y1="130" x2="660" y2="130" stroke="#1e6bd6" strokeWidth="6" />
-                <line x1="660" y1="130" x2="780" y2="130" stroke="#3cc7f4" strokeWidth="6" />
-                <line x1="660" y1="130" x2="660" y2="210" stroke="#35c84b" strokeWidth="6" />
-                <polygon points="90,110 120,110 135,130 120,150 90,150 75,130" fill="white" stroke="#222" strokeWidth="2" />
-                <text x="105" y="136" textAnchor="middle" fontSize="14" fontFamily="Arial">1</text>
-                <polygon points="210,110 240,110 255,130 240,150 210,150 195,130" fill="white" stroke="#222" strokeWidth="2" />
-                <text x="225" y="136" textAnchor="middle" fontSize="14" fontFamily="Arial">2</text>
-                <circle cx="380" cy="130" r="30" fill="white" stroke="#222" strokeWidth="3" />
-                <polygon points="372,115 402,130 372,145" fill="white" stroke="#222" strokeWidth="2" />
-                <polygon points="520,110 550,110 565,130 550,150 520,150 505,130" fill="white" stroke="#222" strokeWidth="2" />
-                <text x="535" y="136" textAnchor="middle" fontSize="14" fontFamily="Arial">3</text>
-                <rect x="660" y="95" width="140" height="70" fill="white" stroke="#222" strokeWidth="2" />
-                <polygon points="650,205 670,205 680,220 670,235 650,235 640,220" fill="white" stroke="#222" strokeWidth="2" />
-                <text x="660" y="226" textAnchor="middle" fontSize="14" fontFamily="Arial">4</text>
-                <polygon points="800,110 830,110 845,130 830,150 800,150 785,130" fill="white" stroke="#222" strokeWidth="2" />
-                <text x="815" y="136" textAnchor="middle" fontSize="14" fontFamily="Arial">5</text>
-                ${systemConfig.chemical !== 'None' ? `
-                  <text x="180" y="60" textAnchor="middle" fontSize="12" fontFamily="Arial" fill="#b83b2e">${systemConfig.chemical} Dosing</text>
-                  <line x1="180" y1="70" x2="180" y2="110" stroke="#b83b2e" strokeWidth="2" />
-                ` : ''}
-              </svg>
+              ${generateFlowDiagramSVG()}
             </div>
+          </div>
+
+          <div class="section">
             <div class="section-title">Flow Diagram Streams</div>
-            <table>
+            <table class="flow-diagram-table">
               <thead>
                 <tr>
-                  <th>Stream No.</th>
-                  <th>Flow (${unit})</th>
-                  <th>Pressure (psi)</th>
-                  <th>TDS (mg/L)</th>
-                  <th>pH</th>
-                  <th>Econd (μS/cm)</th>
+                  <th style="width: 120px;">Stream</th>
+                  ${(projection.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map(p => `
+                    <th>${p.id}</th>
+                  `).join('')}
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>1</td>
-                  <td>${projection.feedFlow || '0.00'}</td>
-                  <td>0.00</td>
-                  <td>${rawTds.toFixed(2)}</td>
-                  <td>${Number(waterData.ph || 7).toFixed(2)}</td>
-                  <td>${toEcondString(rawTds, waterData.ph || 7)}</td>
+                  <td class="row-label">Name</td>
+                  ${(projection.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map(p => `
+                    <td>${p.name || ''}</td>
+                  `).join('')}
                 </tr>
                 <tr>
-                  <td>2</td>
-                  <td>${projection.feedFlow || '0.00'}</td>
-                  <td>0.00</td>
-                  <td>${rawTds.toFixed(2)}</td>
-                  <td>${feedPh.toFixed(2)}</td>
-                  <td>${toEcondString(rawTds, feedPh)}</td>
+                  <td class="row-label">Flow (${fUnit})</td>
+                  ${(projection.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map(p => `
+                    <td>${p.flow}</td>
+                  `).join('')}
                 </tr>
                 <tr>
-                  <td>3</td>
-                  <td>${projection.feedFlow || '0.00'}</td>
-                  <td>${projection.calcFeedPressurePsi || '0.00'}</td>
-                  <td>${rawTds.toFixed(2)}</td>
-                  <td>${feedPh.toFixed(2)}</td>
-                  <td>${toEcondString(rawTds, feedPh)}</td>
+                  <td class="row-label">Pressure (${pUnit})</td>
+                  ${(projection.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map(p => `
+                    <td>${p.pressure}</td>
+                  `).join('')}
                 </tr>
                 <tr>
-                  <td>4</td>
-                  <td>${projection.concentrateFlow || '0.00'}</td>
-                  <td>${projection.calcConcPressurePsi || '0.00'}</td>
-                  <td>${concTds.toFixed(2)}</td>
-                  <td>${concPh.toFixed(2)}</td>
-                  <td>${toEcondString(concTds, concPh)}</td>
+                  <td class="row-label">TDS (mg/L)</td>
+                  ${(projection.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map(p => `
+                    <td>${p.tds}</td>
+                  `).join('')}
                 </tr>
                 <tr>
-                  <td>5</td>
-                  <td>${projection.permeateFlow || '0.00'}</td>
-                  <td>0.00</td>
-                  <td>${permTds.toFixed(2)}</td>
-                  <td>${permPh.toFixed(2)}</td>
-                  <td>${toEcondString(permTds, permPh)}</td>
+                  <td class="row-label">pH</td>
+                  ${(projection.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map(p => `
+                    <td>${p.ph}</td>
+                  `).join('')}
+                </tr>
+                <tr>
+                  <td class="row-label">Econd (μS/cm)</td>
+                  ${(projection.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map(p => `
+                    <td>${p.ec}</td>
+                  `).join('')}
                 </tr>
               </tbody>
             </table>

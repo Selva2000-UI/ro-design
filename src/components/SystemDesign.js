@@ -507,7 +507,7 @@ const SystemDesign = ({
       { label: 'Econd (µS/cm)', key: 'ec' }
     ].map((row, rIdx) => `
       <tr>
-        <td style="border: 1px solid #c9d3de; padding: 6px; fontWeight: bold; background: #f9f9f9;">${row.label}</td>
+        <td style="border: 1px solid #c9d3de; padding: 6px; font-weight: bold; background: #f9f9f9;">${row.label}</td>
         ${flowPoints.map(p => `<td style="border: 1px solid #c9d3de; padding: 6px; ${row.key === 'name' ? 'font-size: 0.7rem; background: #f9f9f9;' : ''}">${p[row.key] || ''}</td>`).join('')}
       </tr>
     `).join('');
@@ -519,6 +519,7 @@ const SystemDesign = ({
         <td style="border: 1px solid #ccc; padding: 6px;">${row.feedPressure}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.concPressure}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.feedFlowVessel}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">${row.permeateFlowVessel}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.concFlowVessel}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.flux}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.highestFlux}</td>
@@ -552,6 +553,10 @@ const SystemDesign = ({
                 <div class="meta">
                   <div>Project name: ${waterData?.projectName || 'Project'}</div>
                   <div>Temperature: ${((Number(waterData?.temp || 25) * 9) / 5 + 32).toFixed(2)} °F</div>
+                  <div>Membrane age: ${systemConfig.membraneAge || 0} years</div>
+                  <div>Fouling factor: ${Number(systemConfig.foulingFactor || 1).toFixed(3)}</div>
+                  <div>Flux Loss: ${((1 - (Number(systemConfig.foulingFactor) || 1)) * 100).toFixed(1)}%</div>
+                  <div>Flux decline: ${systemConfig.fluxDeclinePerYear || 5} %/yr</div>
                   <div>Date: ${new Date().toLocaleDateString()}</div>
                 </div>
                 <div class="content">
@@ -579,6 +584,7 @@ const SystemDesign = ({
                       <th style="border: 1px solid #ccc; padding: 6px;">Feed (${pUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Conc (${pUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Feed per vessel (${fUnit})</th>
+                      <th style="border: 1px solid #ccc; padding: 6px;">Perm per vessel (${fUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Conc per vessel (${fUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Flux (${fluxUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest flux (${fluxUnit})</th>
@@ -1263,7 +1269,7 @@ const SystemDesign = ({
                     </thead>
                     <tbody>
                       <tr>
-                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>New Heading Name</td>
+                        <td style={{ border: '1px solid #c9d3de', padding: '6px', fontWeight: 'bold', background: '#f9f9f9' }}>Stream</td>
                         {(projection?.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map((p) => (
                           <td key={`name-${p.id}`} style={{ border: '1px solid #c9d3de', padding: '6px', fontSize: '0.7rem', background: '#f9f9f9' }}>{p.name || ''}</td>
                         ))}
@@ -1346,6 +1352,7 @@ const SystemDesign = ({
                   <th style={{ border: '1px solid #ccc' }}>Feed ({pUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Conc ({pUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Feed ({fUnit})</th>
+                  <th style={{ border: '1px solid #ccc' }}>Perm ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Conc ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Flux ({fluxUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Highest flux ({fluxUnit})</th>
@@ -1370,6 +1377,9 @@ const SystemDesign = ({
                       </td>
                       <td style={{ border: '1px solid #ccc' }}>
                         {row.feedFlowVessel}
+                      </td>
+                      <td style={{ border: '1px solid #ccc' }}>
+                        {row.permeateFlowVessel}
                       </td>
                       <td style={{ 
                         border: '1px solid #ccc', 
