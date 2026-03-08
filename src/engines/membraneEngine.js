@@ -241,7 +241,7 @@ export const MEMBRANES = {
     transport: {
       kMtRef: 200, // Aligned to Beta 1.08 @ 12 gfd
       soluteBFactors: {
-        monovalent: 1.45, // Aligned to 167 mg/l Case 5000 TDS (Low flux)
+        monovalent: 1.41, // Refined to match TDS 132.93 @ 3593 Feed / 78% Rec
         divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
@@ -264,7 +264,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.0039, // Matches 4.8 psi drop @ 40 gpm (2 elements)
+      coefficient: 0.00452, // Calibrated to 0.8 bar drop @ 10 m3/h (7 elements)
       exponent: 1.70
     },
     designFlux: {
@@ -278,8 +278,8 @@ export const MEMBRANES = {
     },
     osmoticModel: {
       type: 'industrial-linear',
-      coefficient: 0.0007925,
-      formula: 'π(bar) = 0.0007925 × TDS',
+      coefficient: 0.00079, // Aligned to 12.5 bar Osmotic @ 15820 TDS
+      formula: 'π(bar) = 0.00079 × TDS',
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {

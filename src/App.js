@@ -398,12 +398,14 @@ const App = () => {
         // Permeate branch
         elements.push('<line x1="' + (sX + stageWidth) + '" y1="' + (sY - 15) + '" x2="' + (sX + stageWidth) + '" y2="' + permY + '" stroke="#3cc7f4" stroke-width="4" />');
         
-        const pLabelId = numStages + i + 3;
-        const pY = i === 0 ? permY : (sY + permY) / 2 - 10;
-        const pX = i === 0 ? sX + stageWidth + 40 : sX + stageWidth;
-        
-        elements.push('<polygon points="' + (pX - 15) + ',' + (pY - 12) + ' ' + (pX + 15) + ',' + (pY - 12) + ' ' + (pX + 25) + ',' + pY + ' ' + (pX + 15) + ',' + (pY + 12) + ' ' + (pX - 15) + ',' + (pY + 12) + ' ' + (pX - 25) + ',' + pY + '" fill="white" stroke="#222" stroke-width="1.5" />');
-        elements.push('<text x="' + pX + '" y="' + (pY + 4) + '" text-anchor="middle" font-size="11" font-weight="bold">' + pLabelId + '</text>');
+        if (numStages > 1) {
+          const pLabelId = numStages + i + 3;
+          const pY = i === 0 ? permY : (sY + permY) / 2 - 10;
+          const pX = i === 0 ? sX + stageWidth + 40 : sX + stageWidth;
+          
+          elements.push('<polygon points="' + (pX - 15) + ',' + (pY - 12) + ' ' + (pX + 15) + ',' + (pY - 12) + ' ' + (pX + 25) + ',' + pY + ' ' + (pX + 15) + ',' + (pY + 12) + ' ' + (pX - 15) + ',' + (pY + 12) + ' ' + (pX - 25) + ',' + pY + '" fill="white" stroke="#222" stroke-width="1.5" />');
+          elements.push('<text x="' + pX + '" y="' + (pY + 4) + '" text-anchor="middle" font-size="11" font-weight="bold">' + pLabelId + '</text>');
+        }
 
         // Reject / Next Feed
         if (i < numStages - 1) {
@@ -424,7 +426,7 @@ const App = () => {
       }
 
       // Final Permeate Label
-      const finalPLab = 3 + (numStages > 1 ? 2 * numStages : numStages);
+      const finalPLab = numStages > 1 ? 3 + (2 * numStages) : 4;
       elements.push('<polygon points="' + (finalX + 45 - 15) + ',' + (permY - 12) + ' ' + (finalX + 45 + 15) + ',' + (permY - 12) + ' ' + (finalX + 45 + 25) + ',' + permY + ' ' + (finalX + 45 + 15) + ',' + (permY + 12) + ' ' + (finalX + 45 - 15) + ',' + (permY + 12) + ' ' + (finalX + 45 - 25) + ',' + permY + '" fill="white" stroke="#222" stroke-width="1.5" />');
       elements.push('<text x="' + (finalX + 45) + '" y="' + (permY + 4) + '" text-anchor="middle" font-size="11" font-weight="bold">' + finalPLab + '</text>');
 
@@ -626,11 +628,10 @@ const App = () => {
                 <tr>
                   <th>Array</th>
                   <th>Vessels</th>
-                  <th>Feed Pres (${pUnit})</th>
-                  <th>Conc Pres (${pUnit})</th>
-                  <th>Feed Flow (${fUnit})</th>
-                  <th>Perm Flow (${fUnit})</th>
-                  <th>Conc Flow (${fUnit})</th>
+                  <th>Feed (${pUnit})</th>
+                  <th>Conc (${pUnit})</th>
+                  <th>Feed (${fUnit})</th>
+                  <th>Conc (${fUnit})</th>
                   <th>Flux (${fluxUnit})</th>
                   <th>Highest flux (${fluxUnit})</th>
                   <th>Highest beta</th>
@@ -644,48 +645,29 @@ const App = () => {
                     <td>${row.feedPressure}</td>
                     <td>${row.concPressure}</td>
                     <td>${row.feedFlowVessel}</td>
-                    <td>${row.permeateFlowVessel}</td>
                     <td>${row.concFlowVessel}</td>
                     <td>${row.flux}</td>
                     <td>${row.highestFlux}</td>
                     <td>${row.highestBeta}</td>
                   </tr>
-                `).join('') || '<tr><td colspan="10">No calculation results</td></tr>'}
+                `).join('') || '<tr><td colspan="9">No calculation results</td></tr>'}
               </tbody>
             </table>
           </div>
 
           <div class="section">
             <div class="section-title">Permeate Concentration</div>
-            <table>
-              <thead>
-                <tr>
-                  <th>Ion</th>
-                  <th>Value (mg/l)</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${['ca', 'k', 'sr', 'cl', 'po4', 'co2', 'mg', 'nh4', 'hco3', 'no3', 'sio2', 'co3', 'na', 'ba', 'so4', 'f', 'b'].map(key => {
-                  const ionName = key === 'nh4' ? 'NH4' : 
-                                key === 'hco3' ? 'HCO3' :
-                                key === 'so4' ? 'SO4' :
-                                key === 'po4' ? 'PO4' :
-                                key === 'no3' ? 'NO3' :
-                                key === 'co3' ? 'CO3' :
-                                key === 'sio2' ? 'SiO2' :
-                                key === 'co2' ? 'CO2' :
-                                key.charAt(0).toUpperCase() + key.slice(1);
-                  return `
-                    <tr>
-                      <td>${ionName}</td>
-                      <td>${Number(permIons[key] || 0).toFixed(3)}</td>
-                    </tr>
-                  `;
-                }).join('')}
-                <tr><td><strong>TDS</strong></td><td><strong>${permTds.toFixed(2)}</strong></td></tr>
-                <tr><td><strong>pH</strong></td><td><strong>${permPh.toFixed(1)}</strong></td></tr>
-              </tbody>
-            </table>
+            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; font-size: 0.8rem; border: 1px solid #c9d3de; padding: 10px;">
+              ${[
+                {key: 'ca', label: 'Ca'}, {key: 'k', label: 'K'}, {key: 'sr', label: 'Sr'}, {key: 'cl', label: 'Cl'}, {key: 'po4', label: 'PO4'}, {key: 'co2', label: 'CO2'},
+                {key: 'mg', label: 'Mg'}, {key: 'nh4', label: 'NH4'}, {key: 'hco3', label: 'HCO3'}, {key: 'no3', label: 'NO3'}, {key: 'sio2', label: 'SiO2'}, {key: 'co3', label: 'CO3'},
+                {key: 'na', label: 'Na'}, {key: 'ba', label: 'Ba'}, {key: 'so4', label: 'SO4'}, {key: 'f', label: 'F'}, {key: 'b', label: 'B'}
+              ].map(item => `
+                <div><strong>${item.label}:</strong> ${Number(permIons[item.key] || 0).toFixed(3)}</div>
+              `).join('')}
+              <div><strong>pH:</strong> ${permPh.toFixed(1)}</div>
+              <div style="grid-column: span 1;"><strong>TDS:</strong> ${permTds.toFixed(2)} mg/l</div>
+            </div>
           </div>
 
           <div class="section">
@@ -764,7 +746,7 @@ const App = () => {
                   `).join('')}
                 </tr>
                 <tr>
-                  <td class="row-label">Econd (μS/cm)</td>
+                  <td class="row-label">Econd (µS/cm)</td>
                   ${(projection.flowDiagramPoints || []).slice().sort((a, b) => a.id - b.id).map(p => `
                     <td>${p.ec}</td>
                   `).join('')}

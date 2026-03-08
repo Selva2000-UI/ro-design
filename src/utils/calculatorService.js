@@ -417,9 +417,11 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     ec: calculateEC(rawFeedTds, temp, inputs.feedPh).toFixed(0) 
   });
 
+  const numStages = finalSystemRun.results.length;
+
   // Stage-wise Concentrate points (Points 3, 4, ...)
   finalSystemRun.results.forEach((stageRes, idx) => {
-    const isLast = idx === finalSystemRun.results.length - 1;
+    const isLast = idx === numStages - 1;
     flowDiagramPoints.push({
       id: 3 + idx,
       name: isLast ? 'Final Concentrate' : `Stage ${idx + 1} Concentrate`,
@@ -431,24 +433,35 @@ export const calculateSystem = (inputs, allMembranes = []) => {
     });
   });
 
-  // Calculate start ID for permeates: 3 + numStages
-  const permeateStartId = 3 + finalSystemRun.results.length;
+  // Calculate start ID for permeates
+  // For 1 stage (numStages=1): Start ID = 4
+  // For 2 stages (numStages=2): Start ID = 5
+  const permeateStartId = 3 + numStages;
 
-  // Stage-wise Permeate points
-  finalSystemRun.results.forEach((stageRes, idx) => {
-    flowDiagramPoints.push({
-      id: permeateStartId + idx,
-      name: `Stage ${idx + 1} Permeate`,
-      flow: (stageRes.Qp * trains * displayFactor).toFixed(2),
-      pressure: '0.00',
-      tds: stageRes.Cp.toFixed(2),
-      ph: stageRes.permeatePh.toFixed(2),
-      ec: calculateEC(stageRes.Cp, temp, stageRes.permeatePh).toFixed(1)
+  if (numStages > 1) {
+    // Stage-wise Permeate points (Only for multi-stage)
+    finalSystemRun.results.forEach((stageRes, idx) => {
+      flowDiagramPoints.push({
+        id: permeateStartId + idx,
+        name: `Stage ${idx + 1} Permeate`,
+        flow: (stageRes.Qp * trains * displayFactor).toFixed(2),
+        pressure: '0.00',
+        tds: stageRes.Cp.toFixed(2),
+        ph: stageRes.permeatePh.toFixed(2),
+        ec: calculateEC(stageRes.Cp, temp, stageRes.permeatePh).toFixed(1)
+      });
     });
-  });
+  }
 
   // Final Total Permeate point
-  const totalPermId = permeateStartId + finalSystemRun.results.length;
+  // For 1 stage: ID = 4
+  // For 2 stages: ID = 3 + 2*2 = 7? Wait, Benchmark for 2 stages says 7.
+  // My formula for 2 stages: permeateStartId = 5.
+  // Point 5: Stage 1 Perm
+  // Point 6: Stage 2 Perm
+  // totalPermId = 5 + 2 = 7. Correct.
+  // For 1 stage: permeateStartId = 4. totalPermId = 4. Correct.
+  const totalPermId = permeateStartId + (numStages > 1 ? numStages : 0);
   flowDiagramPoints.push({
     id: totalPermId,
     name: 'Total Permeate',

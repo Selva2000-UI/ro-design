@@ -390,11 +390,11 @@ export const calculateConcentrateTds = (feedTds, logMeanCF) => {
  * @returns {number} Estimated permeate pH
  */
 export const calculatePermeatePhSimplified = (feedPh, flux, recovery) => {
-  // Calibrated flux-dependent pH model
-  // Refined for extreme flux benchmarks (pH 3.7 @ 1121 LMH)
+  // Refined flux-dependent pH model
+  // Matches user benchmark pH 6.0 @ 20 LMH / 78% recovery
   const f = Math.max(flux, 0.1);
   const logFluxRatio = Math.log10(f / 25.2);
-  const phDrop = 1.25 + 1.25 * logFluxRatio + (recovery * 0.5);
+  const phDrop = 0.85 + 0.85 * logFluxRatio + (recovery * 0.3);
   return Math.max(Math.min(feedPh - phDrop, 9.5), 3.0);
 };
 
@@ -406,8 +406,8 @@ export const calculatePermeatePhSimplified = (feedPh, flux, recovery) => {
  */
 export const calculateConcentratePh = (feedPh, recovery) => {
   if (recovery >= 0.99) return feedPh;
-  // Refined industrial pH shift model (matches user benchmark pH 7.3 @ 56% recovery)
-  return feedPh + 0.85 * Math.log10(1 / (1 - Math.min(recovery, 0.99)));
+  // Refined industrial pH shift model (matches user benchmark pH 7.6 @ 78% recovery)
+  return Number(feedPh) + 0.92 * Math.log10(1 / (1 - Math.min(recovery, 0.99)));
 };
 
 // ============================================

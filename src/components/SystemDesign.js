@@ -519,7 +519,6 @@ const SystemDesign = ({
         <td style="border: 1px solid #ccc; padding: 6px;">${row.feedPressure}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.concPressure}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.feedFlowVessel}</td>
-        <td style="border: 1px solid #ccc; padding: 6px;">${row.permeateFlowVessel}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.concFlowVessel}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.flux}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.highestFlux}</td>
@@ -584,7 +583,6 @@ const SystemDesign = ({
                       <th style="border: 1px solid #ccc; padding: 6px;">Feed (${pUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Conc (${pUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Feed per vessel (${fUnit})</th>
-                      <th style="border: 1px solid #ccc; padding: 6px;">Perm per vessel (${fUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Conc per vessel (${fUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Flux (${fluxUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest flux (${fluxUnit})</th>
@@ -1352,7 +1350,6 @@ const SystemDesign = ({
                   <th style={{ border: '1px solid #ccc' }}>Feed ({pUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Conc ({pUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Feed ({fUnit})</th>
-                  <th style={{ border: '1px solid #ccc' }}>Perm ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Conc ({fUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Flux ({fluxUnit})</th>
                   <th style={{ border: '1px solid #ccc' }}>Highest flux ({fluxUnit})</th>
@@ -1377,9 +1374,6 @@ const SystemDesign = ({
                       </td>
                       <td style={{ border: '1px solid #ccc' }}>
                         {row.feedFlowVessel}
-                      </td>
-                      <td style={{ border: '1px solid #ccc' }}>
-                        {row.permeateFlowVessel}
                       </td>
                       <td style={{ 
                         border: '1px solid #ccc', 
