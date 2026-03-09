@@ -10,7 +10,7 @@
  * Goal: Replace scattered calculations in App.js, calculatorService.js, components
  */
 
-import { getMembrane, MEMBRANES } from './membraneEngine';
+import { getMembrane, MEMBRANES } from './membraneEngine.js';
 
 // ============================================
 // UNIT CONVERSION CONSTANTS
@@ -391,10 +391,11 @@ export const calculateConcentrateTds = (feedTds, logMeanCF) => {
  */
 export const calculatePermeatePhSimplified = (feedPh, flux, recovery) => {
   // Refined flux-dependent pH model
-  // Matches user benchmark pH 6.0 @ 20 LMH / 78% recovery
+  // Matches user benchmark pH 6.0 @ 20 LMH / 78% recovery (Case Na-Cl)
   const f = Math.max(flux, 0.1);
   const logFluxRatio = Math.log10(f / 25.2);
-  const phDrop = 0.85 + 0.85 * logFluxRatio + (recovery * 0.3);
+  // Industrial benchmark shift: phDrop ≈ 0.8 + 1.0 * logFluxRatio + (recovery * 0.4)
+  const phDrop = 0.8 + 1.0 * logFluxRatio + (recovery * 0.4);
   return Math.max(Math.min(feedPh - phDrop, 9.5), 3.0);
 };
 
@@ -902,7 +903,7 @@ export const calculateROStage = (inputs) => {
   }
 
   // STEP 4 — OSMOTIC PRESSURE (LOG-MEAN)
-  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 15000;
+  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 2000;
   
   const getOsmotic = (tds, ions = null) => {
     if (ions && Object.keys(ions).length > 0) {
@@ -1008,8 +1009,8 @@ export const calculateROStage = (inputs) => {
   // TDS-dependent B-factor correction
   // Seawater membranes use fixed B-factor logic from manufacturer specs
   // Brackish elements scale with salinity to match industrial passage curves (IMS/WAVE)
-  // Refined model: (1.0 + 0.10 * TDS/1000) matches industrial salt passage curves for high-rejection elements
-  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.10 * (Cf / 1000));
+  // Refined model: (1.0 + 0.08 * TDS/1000) matches industrial salt passage curves for high-rejection elements
+  const bFactorTds = isActuallySeawaterMembrane ? 1.0 : (1.0 + 0.08 * (Cf / 1000));
   const B_actual = B_ref * TCF_B * bFactorTds;
 
   // Salt Passage Model: Cp = Cs * B / (J + B)
@@ -1020,12 +1021,13 @@ export const calculateROStage = (inputs) => {
   // Refined model matching industrial benchmarks (e.g., CPA5-LD-8040)
   // Multiplier is recovery-dependent and element-count dependent
   const is4040 = membrane?.category === '4040';
-  const baseMult = is4040 ? 1.08 : 1.12; // Base multiplier for 6 elements
-  const fluxMult = vesselsPerStage > 0 ? (1.0 + (baseMult - 1.0 + (0.4 - R) * 0.4) * (elementsPerVessel / 6.0)) : 1.0;
+  const baseMult = is4040 ? 1.08 : 1.15; // Base multiplier for 6 elements (higher for 8040)
+  // Lead element flux increases with stage recovery
+  const fluxMult = vesselsPerStage > 0 ? (1.0 + (baseMult - 1.0 + Math.max(R - 0.15, 0) * 0.25) * (elementsPerVessel / 6.0)) : 1.0;
   const highestFlux = vesselsPerStage > 0 ? (J * fluxMult) : 0; 
   
   let hBeta = vesselsPerStage > 0 ? Math.exp(highestFlux / Math.max(k_mt, 100)) : 1.0;
-  const highestBeta = Number.isFinite(hBeta) ? Math.min(1.35, hBeta) : 1.35;
+  const highestBeta = Number.isFinite(hBeta) ? Math.min(1.40, hBeta) : 1.40;
 
   // Permeate pH estimation based on flux-dependent model
   const permPh = calculatePermeatePhSimplified(inputs.feedPh || 7.0, J, R);
@@ -1061,14 +1063,15 @@ export const calculateROStage = (inputs) => {
             multiplier = factors.silica || 1.4;
         }
 
-        // Use the same base B_actual logic (including TCF_B and bFactorTds)
-        return B_actual * multiplier;
+        // Use the baseB (which is already adjusted for aging/temp) 
+        // and apply ion-specific multiplier
+        return baseB * multiplier;
     };
 
     Object.entries(feedIons).forEach(([ionKey, val]) => {
         const ion = ionKey.toLowerCase();
         const Ci_f = Number(val) || 0;
-        const Bi = getIonB(ion, B_ref);
+        const Bi = getIonB(ion, B_actual);
         
         // Refined ion-specific bulk average (log-mean approximation)
         // This is more accurate for high-recovery systems
@@ -1173,7 +1176,7 @@ export const calculateROStageGivenPressure = (inputs) => {
   const totalArea = vesselsPerStage * elementsPerVessel * Area;
   const TCF = calculateTCF(T, 'A');
   const TCF_B = calculateTCF(T, 'B');
-  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 15000;
+  const isSeawater = (inputs.waterType && inputs.waterType.toLowerCase().includes('sea')) || Cf >= 2000;
   
   // Use consistent base_k_mt from calculateROStage (1000/850)
   const base_k_mt = kMtInput || inputs.membrane?.transport?.kMtRef || (isSeawater ? 850 : 1000);

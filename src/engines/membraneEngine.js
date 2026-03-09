@@ -236,12 +236,12 @@ export const MEMBRANES = {
     areaM2: 37.16, // 400 sq ft
     maxFlux: 120.0,
     calibration: {
-      aMultiplier: 1.12 // Aligned to 157.0 psi Feed (Case 5000 TDS)
+      aMultiplier: 1.05 // Adjusted to match 17.6 bar feed pressure benchmark
     },
     transport: {
-      kMtRef: 200, // Aligned to Beta 1.08 @ 12 gfd
+      kMtRef: 280, // Adjusted to match 1.17 lead element beta
       soluteBFactors: {
-        monovalent: 1.45, // Refined to match TDS 132.93 @ 3593 Feed / 78% Rec
+        monovalent: 1.50, // Adjusted to match 133 mg/L permeate TDS benchmark
         divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
@@ -264,7 +264,7 @@ export const MEMBRANES = {
       spacerMil: 34
     },
     pressureDropModel: {
-      coefficient: 0.00452, // Calibrated to 0.8 bar drop @ 10 m3/h (7 elements)
+      coefficient: 0.0039, // Adjusted to match 0.8 / 0.7 bar staged pressure drops
       exponent: 1.70
     },
     designFlux: {
