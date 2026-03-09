@@ -1247,10 +1247,10 @@ const SystemDesign = ({
 
                   {systemConfig.chemical !== 'None' && (
                     <>
-                      <text x="180" y="45" textAnchor="middle" fontSize="11" fontFamily="Arial" fill="#b83b2e" fontWeight="bold">
+                      <text x="180" y="45" textAnchor="middle" fontSize="11" fontFamily="Arial" fill="#1f6fb2" fontWeight="bold">
                         {systemConfig.chemical}
                       </text>
-                      <line x1="180" y1="50" x2="180" y2="80" stroke="#b83b2e" strokeWidth="2" strokeDasharray="4" />
+                      <line x1="180" y1="50" x2="180" y2="80" stroke="#1f6fb2" strokeWidth="2" strokeDasharray="4" />
                     </>
                   )}
                 </svg>
@@ -1358,41 +1358,27 @@ const SystemDesign = ({
               </thead>
               <tbody>
                 {(projection.stageResults && projection.stageResults.length > 0 ? projection.stageResults : []).map((row, idx) => {
-                  const isBetaHigh = Number(row.highestBeta) > 1.20;
-                  const flowVesselGpm = fUnit === 'gpm' ? Number(row.concFlowVessel) : (Number(row.concFlowVessel) * (1 / FLOW_CONVERSION_MAP[fUnit]) / 0.227); // approx
-                  const isFlowLow = fUnit === 'gpm' && Number(row.concFlowVessel) < 11.0; // Corrected from 12.0 to match industrial benchmarks (e.g. 11.14 gpm)
-                  
                   return (
                     <tr key={`stage-${row.stage}`}>
                       <td style={{ border: '1px solid #ccc' }}>{row.array}</td>
                       <td style={{ border: '1px solid #ccc' }}>{row.vessels}</td>
-                      <td style={{ border: '1px solid #ccc', background: Number(row.feedPressure) < 0 ? 'red' : 'transparent', color: Number(row.feedPressure) < 0 ? 'white' : 'inherit' }}>
+                      <td style={{ border: '1px solid #ccc' }}>
                         {row.feedPressure}
                       </td>
-                      <td style={{ border: '1px solid #ccc', background: Number(row.concPressure) < 0 ? 'red' : 'transparent', color: Number(row.concPressure) < 0 ? 'white' : 'inherit' }}>
+                      <td style={{ border: '1px solid #ccc' }}>
                         {row.concPressure}
                       </td>
                       <td style={{ border: '1px solid #ccc' }}>
                         {row.feedFlowVessel}
                       </td>
-                      <td style={{ 
-                        border: '1px solid #ccc', 
-                        background: isFlowLow ? 'red' : 'transparent', 
-                        color: isFlowLow ? 'white' : 'inherit',
-                        fontWeight: isFlowLow ? 'bold' : 'normal'
-                      }}>
+                      <td style={{ border: '1px solid #ccc' }}>
                         {row.concFlowVessel}
                       </td>
                       <td style={{ border: '1px solid #ccc' }}>{row.flux}</td>
-                      <td style={{ border: '1px solid #ccc', background: Number(row.highestFlux) > (fluxUnit === 'gfd' ? 20 : 34) ? 'red' : 'transparent', color: Number(row.highestFlux) > (fluxUnit === 'gfd' ? 20 : 34) ? 'white' : 'inherit' }}>
+                      <td style={{ border: '1px solid #ccc' }}>
                         {row.highestFlux}
                       </td>
-                      <td style={{ 
-                        border: '1px solid #ccc', 
-                        background: isBetaHigh ? 'red' : 'transparent', 
-                        color: isBetaHigh ? 'white' : 'inherit',
-                        fontWeight: isBetaHigh ? 'bold' : 'normal'
-                      }}>
+                      <td style={{ border: '1px solid #ccc' }}>
                         {row.highestBeta}
                       </td>
                     </tr>
@@ -1438,12 +1424,9 @@ const SystemDesign = ({
               <div>Ca3(PO4)2: {projection.concentrateSaturation?.ca3po42 ?? '0.00'}%</div>
               <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.00'}%</div>
               {(() => {
-                const lastStage = projection.stageResults?.[projection.stageResults.length - 1];
-                const concP = Number(lastStage?.concPressure) || 0;
                 const osmP = Number(projection.concentrateParameters?.osmoticPressure || 0);
-                const isNdpLow = (concP - osmP) < 5.0;
                 return (
-                  <div style={{ background: isNdpLow ? 'red' : 'transparent', color: isNdpLow ? 'white' : 'inherit', padding: '2px' }}>
+                  <div>
                     Osmotic pressure: {osmP.toFixed(1)} {pUnit}
                   </div>
                 );
@@ -1454,17 +1437,6 @@ const SystemDesign = ({
               <div>TDS: {Number(projection.concentrateParameters?.tds || 0).toFixed(1)} mg/L</div>
             </div>
           </div>
-
-          {projection.designWarnings?.length > 0 && (
-            <div style={{ marginTop: '15px', padding: '10px', background: '#f8d7da', border: '1px solid #f5c6cb', borderRadius: '4px', color: '#721c24', fontSize: '0.8rem', fontWeight: 'bold' }}>
-              <p style={{ margin: 0 }}>⚠️ Design Warnings:</p>
-              <ul style={{ margin: '5px 0 0 20px', padding: 0 }}>
-                {projection.designWarnings.map((warning, index) => (
-                  <li key={index}>{warning}</li>
-                ))}
-              </ul>
-            </div>
-          )}
         </div>
       )}
     </div>

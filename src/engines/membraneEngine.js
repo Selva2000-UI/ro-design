@@ -241,7 +241,7 @@ export const MEMBRANES = {
     transport: {
       kMtRef: 200, // Aligned to Beta 1.08 @ 12 gfd
       soluteBFactors: {
-        monovalent: 1.41, // Refined to match TDS 132.93 @ 3593 Feed / 78% Rec
+        monovalent: 1.45, // Refined to match TDS 132.93 @ 3593 Feed / 78% Rec
         divalent: 0.1,
         silica: 0.8,
         boron: 1.4,

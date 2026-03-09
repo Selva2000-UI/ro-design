@@ -6,7 +6,6 @@ import PostTreatment from './components/PostTreatment';
 import Report from './components/Report';
 import MembraneEditor from './components/MembraneEditor';
 import DesignGuidelines from './components/DesignGuidelines';
-import ValidationBanner from './components/ValidationBanner';
 import { calculateSystem, calculateEC, applyTdsProfile } from './utils/calculatorService';
 import { getAllMembranes } from './engines/membraneEngine';
 import { EQ_WEIGHTS } from './components/WaterAnalysis';
@@ -431,8 +430,8 @@ const App = () => {
       elements.push('<text x="' + (finalX + 45) + '" y="' + (permY + 4) + '" text-anchor="middle" font-size="11" font-weight="bold">' + finalPLab + '</text>');
 
       if (systemConfig.chemical !== 'None') {
-        elements.push('<text x="180" y="45" text-anchor="middle" font-size="11" font-family="Arial" fill="#b83b2e" font-weight="bold">' + systemConfig.chemical + '</text>');
-        elements.push('<line x1="180" y1="50" x2="180" y2="80" stroke="#b83b2e" stroke-width="2" stroke-dasharray="4" />');
+        elements.push('<text x="180" y="45" text-anchor="middle" font-size="11" font-family="Arial" fill="#1f6fb2" font-weight="bold">' + systemConfig.chemical + '</text>');
+        elements.push('<line x1="180" y1="50" x2="180" y2="80" stroke="#1f6fb2" stroke-width="2" stroke-dasharray="4" />');
       }
 
       const viewWidth = Math.max(900, 250 + (numStages * horizontalGap) + 100);
@@ -445,11 +444,6 @@ const App = () => {
     const permIons = projection.permeateParameters?.ions || {};
     const concIons = projection.concentrateParameters?.ions || {};
     
-    const validationAlerts = (projection.designValidation?.issues || []).map(issue => `
-      <div style="background: #fff5f5; color: #c53030; padding: 8px; margin-bottom: 5px; border-left: 4px solid #c53030; font-size: 12px; font-weight: bold;">
-        ${issue}
-      </div>
-    `).join('');
 
     const printWindow = window.open('', '_blank', 'width=1200,height=900');
     if (!printWindow) return;
@@ -754,10 +748,6 @@ const App = () => {
               </tbody>
             </table>
           </div>
-          <div class="section">
-            <div class="section-title">Design Alerts</div>
-            ${validationAlerts || '<div>No design warnings</div>'}
-          </div>
         </body>
       </html>
     `);
@@ -953,7 +943,6 @@ const App = () => {
         </div>
       </header>
 
-      <ValidationBanner projection={projection} systemConfig={systemConfig} waterData={waterData} />
 
       <main style={{ padding: '20px', flex: 1, overflowY: 'auto' }}>
         {activeTab === 'dashboard' && (
