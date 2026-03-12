@@ -233,10 +233,12 @@ const App = () => {
           if (normalized.includes('lfc3ld4040')) return 'lfc3ld4040';
           if (normalized.includes('lfc3ld8040')) return 'lfc3ld8040';
           if (normalized.includes('espa2ld4040')) return 'espa2ld4040';
-          if (normalized.includes('espa2ld8040')) return 'espa2ld';
+          if (normalized.includes('espa2ld')) return 'espa2ld4040';
           if (normalized.includes('swtds32k8040')) return 'swtds32k8040';
           if (normalized.includes('swc5ld8040')) return 'swc5ld8040';
+          if (normalized.includes('swc5ld')) return 'swc5ld8040';
           if (normalized.includes('proxr18040')) return 'proxr18040';
+          if (normalized.includes('proxr1')) return 'proxr18040';
           if (normalized.includes('bwtds10kfr8040')) return 'bwtds10kfr8040';
           if (normalized.includes('cpa5ld')) return 'cpa5ld8040';
           if (normalized.includes('cpa3')) return 'cpa3';

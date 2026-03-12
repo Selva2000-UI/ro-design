@@ -137,8 +137,8 @@ export const MEMBRANES = {
   
 
   calibration: {
-    aMultiplier: 1.48,
-    bFactorTdsCoeff: 0.015
+    aMultiplier: 1.455,
+    bFactorTdsCoeff: 0.011
   },
 
   transport: {
@@ -147,7 +147,7 @@ export const MEMBRANES = {
     kMtRef: 280,
 
     soluteBFactors: {
-      monovalent: 1.59,
+      monovalent: 1.635,
       divalent: 0.45,
       silica: 0.85,
       boron: 1.4,
@@ -162,7 +162,7 @@ export const MEMBRANES = {
     tds: 2000,
     recovery: 0.15,
     fluxLMH: 40.4,
-    rejection: 0.993
+    rejection: 0.9932
   },
 
   hydraulics: {
@@ -243,13 +243,13 @@ export const MEMBRANES = {
     areaM2: 37.16,
     maxFlux: 42,
     calibration: {
-      aMultiplier: 1.50,
-      bFactorTdsCoeff: 0.008
+      aMultiplier: 1.42,
+      bFactorTdsCoeff: 0.001
     },
     transport: {
       kMtRef: 620,
       soluteBFactors: {
-        monovalent: 1.59,
+        monovalent: 1.575,
         divalent: 0.45,
         silica: 0.8,
         boron: 1.4,
@@ -263,7 +263,7 @@ export const MEMBRANES = {
       tds: 32000,
       recovery: 0.10,
       fluxLMH: 38.2,
-      rejection: 0.9982
+      rejection: 0.9986
     },
     hydraulics: {
       maxFeedFlowM3H: 19.3,
@@ -310,8 +310,8 @@ export const MEMBRANES = {
     areaM2: 37.2,
     maxFlux: 55,
     calibration: {
-      aMultiplier: 0.77,
-      bFactorTdsCoeff: 0.014
+      aMultiplier: 0.81,
+      bFactorTdsCoeff: 0.013
     },
     transport: {
       kMtRef: 410,
@@ -378,8 +378,8 @@ export const MEMBRANES = {
     areaM2: 7.432,
     maxFlux: 50.0,
     calibration: {
-      aMultiplier: 1.04,
-      bFactorTdsCoeff: 0.015
+      aMultiplier: 1.09,
+      bFactorTdsCoeff: 0.10
     },
     transport: {
       kMtRef: 450,
@@ -443,16 +443,16 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
-    rejection: 0.996,
+    rejection: 0.9961,
     maxFlux: 51.8,
     calibration: {
-      aMultiplier: 1.00,
-      bFactorTdsCoeff: 0.022
+      aMultiplier: 0.939,
+      bFactorTdsCoeff: 0.011
     },
     transport: {
       kMtRef: 340,
       soluteBFactors: {
-        monovalent: 1.63, 
+        monovalent: 1.622, 
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
@@ -517,21 +517,15 @@ export const MEMBRANES = {
   maxFlux: 35,
 
   calibration: {
-    aMultiplier: 2.14,
-    bFactorTdsCoeff: 0.025
+    aMultiplier: 1.77,
+    bFactorTdsCoeff: 0.012
   },
 
   transport: {
     kMtRef: 280,
 
-    saltPermeability: {
-      B: 0.16,
-      unit: 'LMH',
-      referenceTemp: 25
-    },
-
     soluteBFactors: {
-      monovalent: 1.43,
+      monovalent: 1.28,
       divalent: 0.40,
       silica: 0.8,
       boron: 1.4,
@@ -546,7 +540,7 @@ export const MEMBRANES = {
     tds: 1500,
     recovery: 0.15,
     fluxLMH: 25,
-    rejection: 0.997
+    rejection: 0.9932
   },
 
   hydraulics: {
@@ -558,8 +552,8 @@ export const MEMBRANES = {
   },
 
   pressureDropModel: {
-    coefficient: 0.0075,
-    exponent: 1.55
+    coefficient: 0.006,
+    exponent: 1.5
   },
 
   designFlux: {
@@ -619,8 +613,8 @@ export const MEMBRANES = {
     areaM2: 7.432,
     maxFlux: 48.0,
     calibration: {
-      aMultiplier: 1.0,
-      bFactorTdsCoeff: 0.015
+      aMultiplier: 0.75,
+      bFactorTdsCoeff: 0.16
     },
     transport: {
       kMtRef: 750,
@@ -685,13 +679,13 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.LOW_FOULING,
     areaM2: 37.16,
     calibration: {
-      aMultiplier: 1.01,
-      bFactorTdsCoeff: 0.115
+      aMultiplier: 0.965,
+      bFactorTdsCoeff: 0.090
     },
     transport: {
-      kMtRef: 420,
+      kMtRef: 400,
       soluteBFactors: {
-        monovalent: 1.69,
+        monovalent: 1.75,
         divalent: 0.45,
         silica: 0.8,
         boron: 1.4,
@@ -719,12 +713,6 @@ export const MEMBRANES = {
   pressureDropModel: {
     coefficient: 0.0065,
     exponent: 1.55
-  },
-
-  designFlux: {
-    min: 12,
-    max: 28,
-    recommended: 18
   },
 
   agingModel: {
@@ -767,16 +755,17 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
     calibration: {
-      aMultiplier: 1.38,
-      bFactorTdsCoeff: 0.015
+      aMultiplier: 1.475,
+      bFactorTdsCoeff: 0.011
     },
     transport: {
       kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.0, 
-        divalent: 0.4,
-        silica: 0.8,
+        monovalent: 1.59, 
+        divalent: 0.45,
+        silica: 0.85,
         boron: 1.4,
+        alkalinity: 1.2,
         co2: 999
       }
     },
@@ -799,11 +788,7 @@ export const MEMBRANES = {
       coefficient: 0.0030, // Calibrated for high-flow 8040 vessel
       exponent: 1.20
     },
-    designFlux: {
-      min: 12,
-      max: 25,
-      recommended: 18
-    },
+   
     agingModel: {
       annualFluxDecline: 0.05,
       foulingFactorDefault: 1.0
@@ -835,8 +820,8 @@ export const MEMBRANES = {
   areaM2: 37.2,
 
   calibration: {
-    aMultiplier: 1.38,
-    bFactorTdsCoeff: 0.015
+    aMultiplier: 1.475,
+    bFactorTdsCoeff: 0.011
   },
 
   transport: {
@@ -844,10 +829,11 @@ export const MEMBRANES = {
     kMtRef: 450,
 
     soluteBFactors: {
-      monovalent: 1.0,
-      divalent: 0.4,
-      silica: 0.8,
+      monovalent: 1.59,
+      divalent: 0.45,
+      silica: 0.85,
       boron: 1.4,
+      alkalinity: 1.2,
       co2: 999
     }
   },
@@ -885,15 +871,6 @@ export const MEMBRANES = {
     coefficient: 0.0032,
 
     exponent: 1.70
-  },
-
-  designFlux: {
-
-    min: 12,
-
-    max: 28,
-
-    recommended: 18
   },
 
   agingModel: {
@@ -938,7 +915,7 @@ export const MEMBRANES = {
   maxFlux: 14,
 
   calibration: {
-    aMultiplier: 1.09,
+    aMultiplier: 0.98,
     bFactorTdsCoeff: 0
   },
 
@@ -947,7 +924,7 @@ export const MEMBRANES = {
     kMtRef: 380,
 
     soluteBFactors: {
-      monovalent: 1.00,
+      monovalent: 0.95,
       divalent: 0.6,
       silica: 0.8,
       boron: 1.4,
@@ -968,7 +945,7 @@ export const MEMBRANES = {
 
     fluxLMH: 34.7,
 
-    rejection: 0.998
+    rejection: 0.9982
   },
 
   hydraulics: {
@@ -989,15 +966,6 @@ export const MEMBRANES = {
     coefficient: 0.012,
 
     exponent: 1.22
-  },
-
-  designFlux: {
-
-    min: 6,
-
-    max: 12,
-
-    recommended: 9
   },
 
   agingModel: {

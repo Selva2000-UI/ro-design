@@ -47,12 +47,12 @@ const SystemDesign = ({
     // Initialize with only Stage 1 active (vessels > 0), others have 0
     const stage1Vessels = systemConfig.stage1Vessels || 3;
     return [
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: stage1Vessels },
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
-      { membraneModel: systemConfig.membraneModel || 'espa2ld', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 }
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: stage1Vessels },
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 },
+      { membraneModel: systemConfig.membraneModel || 'cpa3', elementsPerVessel: systemConfig.elementsPerVessel || 7, vessels: 0 }
     ];
   };
 
