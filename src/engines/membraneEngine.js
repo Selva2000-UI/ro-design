@@ -238,7 +238,7 @@ export const MEMBRANES = {
     transport: {
       kMtRef: 620,
       soluteBFactors: {
-        monovalent: 1.575,
+        monovalent: 1.10,
         divalent: 0.45,
         silica: 0.8,
         boron: 1.4,
@@ -247,14 +247,6 @@ export const MEMBRANES = {
       }
     },
     testConditions: {
-<<<<<<< HEAD
-      pressureBar: 55.16,
-      temperatureC: 25,
-      tds: 32000,
-      recovery: 0.10,
-      fluxLMH: 38.2,
-      rejection: 0.9986
-=======
     pressureBar: 55,
     temperatureC: 25,
     tds: 32000,
@@ -262,7 +254,6 @@ export const MEMBRANES = {
     fluxLMH: 38.2,
     rejection: 0.998
 
->>>>>>> 5d951558cb162f397e30cb45e95c1e087f1cc8da
     },
     hydraulics: {
       maxFeedFlowM3H: 19.3,
@@ -439,20 +430,15 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
-<<<<<<< HEAD
-    rejection: 0.9961,
-    maxFlux: 51.8,
-=======
     rejection: 0.996,
->>>>>>> 5d951558cb162f397e30cb45e95c1e087f1cc8da
     calibration: {
-      aMultiplier: 0.939,
+      aMultiplier: 0.93,
       bFactorTdsCoeff: 0.011
     },
     transport: {
       kMtRef: 340,
       soluteBFactors: {
-        monovalent: 1.622, 
+        monovalent: 2.17, 
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
@@ -510,15 +496,15 @@ export const MEMBRANES = {
   type: MEMBRANE_TYPES.BRACKISH,
   areaM2: 37.16,
   calibration: {
-    aMultiplier: 1.77,
-    bFactorTdsCoeff: 0.012
+    aMultiplier: 1.05,
+    bFactorTdsCoeff: 0.015
   },
 
   transport: {
-    kMtRef: 280,
+    kMtRef: 240,
 
     soluteBFactors: {
-      monovalent: 1.28,
+      monovalent: 1.62,
       divalent: 0.40,
       silica: 0.8,
       boron: 1.4,
@@ -532,13 +518,8 @@ export const MEMBRANES = {
     temperatureC: 25,
     tds: 1500,
     recovery: 0.15,
-<<<<<<< HEAD
-    fluxLMH: 25,
-    rejection: 0.9932
-=======
     fluxLMH: 46.7,
     rejection: 0.997
->>>>>>> 5d951558cb162f397e30cb45e95c1e087f1cc8da
   },
 
   hydraulics: {
@@ -552,7 +533,7 @@ export const MEMBRANES = {
   },
 
   pressureDropModel: {
-    coefficient: 0.006,
+    coefficient: 0.0068,
     exponent: 1.5
   },
   agingModel: {
@@ -564,11 +545,11 @@ export const MEMBRANES = {
 
     type: 'vanthoff-corrected',
 
-    coefficient: 0.000792,
+    coefficient: 0.00081,
 
     temperatureCorrection: true,
 
-    formula: 'π(bar) = 0.000792 × TDS × (T/298.15)'
+    formula: 'π(bar) = 0.00081 × TDS × (T/298.15)'
   },
 
   limits: {
@@ -775,10 +756,6 @@ export const MEMBRANES = {
       coefficient: 0.0030, // Calibrated for high-flow 8040 vessel
       exponent: 1.20
     },
-<<<<<<< HEAD
-   
-=======
->>>>>>> 5d951558cb162f397e30cb45e95c1e087f1cc8da
     agingModel: {
       annualFluxDecline: 0.05,
       foulingFactorDefault: 1.0
@@ -862,10 +839,6 @@ export const MEMBRANES = {
 
     exponent: 1.70
   },
-<<<<<<< HEAD
-
-=======
->>>>>>> 5d951558cb162f397e30cb45e95c1e087f1cc8da
   agingModel: {
 
     annualFluxDecline: 0.05,
