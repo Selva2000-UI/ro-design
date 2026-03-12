@@ -19,7 +19,7 @@ export const MEMBRANE_CATEGORIES = {
 
 export const WATER_TYPE_TO_MEMBRANES = {
   [WATER_TYPES.BRACKISH_WELL_NON_FOULING]: {
-    recommended: ['cpa3', 'bwtds2k8040', 'bwtds5k8040', 'espa2ld4040', 'cpa5ld8040'],
+    recommended: ['cpa3', 'bwtds2k8040', 'bwtds5k8040', 'espa2ld4040', 'cpa5ld8040', 'proxr18040', 'bwtds10kfr8040'],
     category: MEMBRANE_CATEGORIES.BRACKISH,
     description: 'Low to moderate fouling potential, standard brackish water treatment',
     sdiMax: 5,
@@ -43,7 +43,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     pretreatmentRequired: ['Coagulation', 'Filtration', 'Ultra Filtration']
   },
   [WATER_TYPES.SEA_WELL]: {
-    recommended: ['swtds32k8040', 'swc5ld'],
+    recommended: ['swtds32k8040', 'swc5ld', 'swc5ld8040'],
     category: MEMBRANE_CATEGORIES.SEAWATER,
     description: 'Seawater from subsurface wells, relatively stable composition',
     sdiMax: 3,
@@ -59,7 +59,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     pretreatmentRequired: ['Coagulation', 'Multi-Media Filter', 'Ultra Filtration']
   },
   [WATER_TYPES.MUNICIPAL_WASTE]: {
-    recommended: ['lfc3ld8040', 'lfc3ld4040', 'bwtds10kfr8040'],
+    recommended: ['lfc3ld8040', 'lfc3ld4040', 'bwtds10kfr8040', 'proxr18040'],
     category: MEMBRANE_CATEGORIES.LOW_FOULING,
     description: 'Treated municipal wastewater, requires low-fouling membrane',
     sdiMax: 2,
@@ -67,7 +67,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     pretreatmentRequired: ['Ultra Filtration', 'Cartridge Filter']
   },
   [WATER_TYPES.INDUSTRIAL_WASTE]: {
-    recommended: ['lfc3ld8040', 'lfc3ld4040', 'bwtds10kfr8040'],
+    recommended: ['lfc3ld8040', 'lfc3ld4040', 'bwtds10kfr8040', 'proxr18040'],
     category: MEMBRANE_CATEGORIES.LOW_FOULING,
     description: 'Industrial wastewater recycle, high fouling potential',
     sdiMax: 2,
@@ -75,7 +75,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     pretreatmentRequired: ['Ultra Filtration', 'Cartridge Filter', 'Pre-treatment specific to industry']
   },
   [WATER_TYPES.RO_PERMEATE]: {
-    recommended: ['cpa3', 'lfc3ld4040', 'espa2ld4040'],
+    recommended: ['cpa3', 'lfc3ld4040', 'espa2ld4040', 'proxr18040'],
     category: MEMBRANE_CATEGORIES.BRACKISH,
     description: 'RO permeate reprocessing for polishing, minimal fouling risk',
     sdiMax: 5,
@@ -83,7 +83,7 @@ export const WATER_TYPE_TO_MEMBRANES = {
     pretreatmentRequired: []
   },
   [WATER_TYPES.WELL_WATER]: {
-    recommended: ['cpa3', 'bwtds2k8040', 'bwtds5k8040', 'espa2ld4040'],
+    recommended: ['cpa3', 'bwtds2k8040', 'bwtds5k8040', 'espa2ld4040', 'proxr18040', 'bwtds10kfr8040'],
     category: MEMBRANE_CATEGORIES.BRACKISH,
     description: 'Standard groundwater treatment',
     sdiMax: 5,
@@ -234,6 +234,23 @@ export const MEMBRANE_SPECIFICATIONS = {
     classification: MEMBRANE_CATEGORIES.SEAWATER,
     suitableFor: [WATER_TYPES.SEA_WELL, WATER_TYPES.SEA_SURFACE],
     constraints: { maxTds: 45000, maxTemp: 45, maxPressure: 1200, maxFlow: 70 }
+  },
+  swc5ld8040: {
+    name: 'SWC5-LD',
+    size: '8"',
+    area: 400,
+    areaM2: 37.2,
+    ratedFlow: 1.68,
+    ratedFlowM3h: 6.36,
+    saltRejection: 99.8,
+    classification: MEMBRANE_CATEGORIES.SEAWATER,
+    suitableFor: [WATER_TYPES.SEA_WELL, WATER_TYPES.SEA_SURFACE],
+    constraints: {
+      maxTds: 45000,
+      maxTemp: 45,
+      maxPressure: 1200,
+      maxFlow: 70
+    }
   }
 };
 

@@ -3,9 +3,11 @@
   { "id": "cpa3", "name": "CPA3-8040", "type": "Brackish", "area": 400, "areaM2": 37.16, "rejection": 99.7, "description": "Standard high rejection." },
   { "id": "cpa5ld8040", "name": "CPA5-LD-8040", "type": "Brackish", "area": 400, "areaM2": 37.16, "rejection": 99.7, "description": "High rejection, low fouling." },
   { "id": "lfc3ld4040", "name": "LFC3-LD-4040", "type": "Low Fouling", "area": 80, "areaM2": 7.432, "rejection": 99.7, "description": "Neutral charge, low fouling (4040)." },
-  { "id": "lfc3ld8040", "name": "LFC3-LD-8040", "type": "Low Fouling", "area": 400, "areaM2": 37.16, "rejection": 99.7, "description": "Neutral charge, low fouling." },
+  { "id": "lfc3ld8040", "name": "LFC3-LD-8040", "type": "Low Fouling", "area": 400, "areaM2": 37.16, "rejection": 99.7, "description": "Neutral charge, high rejection low fouling." },
   { "id": "bwtds2k8040", "name": "BW-TDS-2K-8040", "type": "Brackish", "area": 400, "areaM2": 37.16, "rejection": 99.35, "description": "Brackish water RO element." },
   { "id": "bwtds5k8040", "name": "BW-TDS-5K-8040", "type": "Brackish", "area": 400, "areaM2": 37.16, "rejection": 99.35, "description": "High TDS brackish water RO element." },
-  { "id": "bwtds10kfr8040", "name": "BW-TDS-10K-FR-8040", "type": "Fouling Resistant", "area": 400, "areaM2": 37.16, "rejection": 99.35, "description": "Fouling resistant RO element." },
-  { "id": "swtds32k8040", "name": "SW-TDS-32K-8040", "type": "Seawater", "area": 400, "areaM2": 37.16, "rejection": 99.8, "description": "High rejection seawater element." }
+  { "id": "bwtds10kfr8040", "name": "BW-TDS-10K-FR-8040", "type": "Fouling Resistant", "area": 400, "areaM2": 37.16, "rejection": 99.4, "description": "High-flux fouling resistant RO element." },
+  { "id": "swtds32k8040", "name": "SW-TDS-32K-8040", "type": "Seawater", "area": 400, "areaM2": 37.16, "rejection": 99.8, "description": "High rejection seawater element." },
+  { "id": "swc5ld8040", "name": "SWC5-LD", "type": "Seawater", "area": 400, "areaM2": 37.2, "rejection": 99.8, "description": "High rejection seawater element (SWC5-LD)." },
+  { "id": "proxr18040", "name": "PRO-XR1", "type": "Brackish", "area": 400, "areaM2": 37.2, "rejection": 99.8, "description": "High rejection, fouling resistant (PRO-XR1)." }
 ]

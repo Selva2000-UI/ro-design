@@ -56,7 +56,13 @@ export const WaterAnalysis = ({ waterData, setWaterData, handleApplyTdsProfile }
     const cationMeq = cationKeys.reduce((sum, key) => sum + calcMeq(key), 0);
     const anionMeq = anionKeys.reduce((sum, key) => sum + calcMeq(key), 0);
 
-    const stats = calculateWaterSaturations(waterData, Number(waterData.temp) || 25, Number(waterData.ph) || 7.5);
+    const stats = calculateWaterSaturations(
+      waterData, 
+      Number(waterData.temp) || 25, 
+      Number(waterData.ph) || 7.5,
+      0.000792,
+      Number(waterData.calculatedTds) || null
+    );
 
     return {
       calculatedTds: stats.tds,

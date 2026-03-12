@@ -43,12 +43,12 @@ export const MEMBRANE_SPECIFIC_CONSTRAINTS = {
   },
   'lfc3ld8040': {
     fluxMin: 8,
-    fluxMax: 35,
-    recoveryMin: 40,
-    recoveryMax: 85,
+    fluxMax: 120,
+    recoveryMin: 5,
+    recoveryMax: 50,
     pressureMin: 100,
     pressureMax: 600,
-    optimalFlux: 18
+    optimalFlux: 112
   },
   'swtds32k8040': {
     fluxMin: 8,
@@ -58,6 +58,33 @@ export const MEMBRANE_SPECIFIC_CONSTRAINTS = {
     pressureMin: 800,
     pressureMax: 1200,
     optimalFlux: 10
+  },
+  'swc5ld8040': {
+    fluxMin: 8,
+    fluxMax: 14,
+    recoveryMin: 8,
+    recoveryMax: 12,
+    pressureMin: 600,
+    pressureMax: 1200,
+    optimalFlux: 10
+  },
+  'proxr18040': {
+    fluxMin: 16,
+    fluxMax: 30,
+    recoveryMin: 10,
+    recoveryMax: 18,
+    pressureMin: 100,
+    pressureMax: 600,
+    optimalFlux: 22
+  },
+  'bwtds10kfr8040': {
+    fluxMin: 10,
+    fluxMax: 500,
+    recoveryMin: 5,
+    recoveryMax: 50,
+    pressureMin: 100,
+    pressureMax: 1200,
+    optimalFlux: 144
   }
 };
 

@@ -77,7 +77,7 @@ export const iteratePressureForRecovery = (params) => {
     tolerance = 0.01
   } = params;
 
-  const isSeawater = feedConc >= 2000;
+  const isSeawater = feedConc >= 10000;
   const totalArea = membrane.areaM2 * elementsPerVessel * vessels;
   const aValue = calculateDynamicAValue({
     aValue25: membrane.transport.aValueRef,
@@ -163,7 +163,7 @@ export const diagnosticNDPError = (params) => {
     reportedRejection = 0.9538
   } = params;
 
-  const isSeawater = feedTDS >= 2000;
+  const isSeawater = feedTDS >= 10000;
 
   const feedOsmotic = calculateOsmoticPressure(feedTDS, 'bar', isSeawater);
   const osmData = calculateAverageOsmoticPressureLogMean(feedTDS, recovery, 'bar', isSeawater);

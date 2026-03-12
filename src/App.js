@@ -235,6 +235,11 @@ const App = () => {
           if (normalized.includes('espa2ld4040')) return 'espa2ld4040';
           if (normalized.includes('espa2ld8040')) return 'espa2ld';
           if (normalized.includes('swtds32k8040')) return 'swtds32k8040';
+          if (normalized.includes('swc5ld8040')) return 'swc5ld8040';
+          if (normalized.includes('proxr18040')) return 'proxr18040';
+          if (normalized.includes('bwtds10kfr8040')) return 'bwtds10kfr8040';
+          if (normalized.includes('cpa5ld')) return 'cpa5ld8040';
+          if (normalized.includes('cpa3')) return 'cpa3';
           return model;
         };
 
@@ -356,7 +361,8 @@ const App = () => {
     const balanceErrorPct = meqTotal > 0 ? ((cationMeq - anionMeq) / meqTotal) * 100 : 0;
 
     const rawTds = Number(waterData.calculatedTds) || 0;
-    const toEcondString = (tds, ph) => calculateEC(tds, ph).toFixed(2);
+    const systemTemp = Number(waterData.temp) || 25;
+    const toEcondString = (tds, ph) => calculateEC(tds, systemTemp, ph).toFixed(2);
 
     const generateFlowDiagramSVG = () => {
       const numStages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);

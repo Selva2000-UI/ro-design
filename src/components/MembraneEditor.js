@@ -12,7 +12,8 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
     membraneB: 0.14,
     dpExponent: 1.22,
     nominalFlowDP: 15.5,
-    osmoticCoeff: 0.00077
+    osmoticCoeff: 0.00077,
+    bFactorTdsCoeff: 0.015
   });
 
   const handleAdd = (e) => {
@@ -31,6 +32,10 @@ const MembraneEditor = ({ membranes, setMembranes, systemConfig, setSystemConfig
     const membraneToAdd = {
       ...newMembrane,
       areaM2: newMembrane.area * 0.092903,
+      calibration: {
+        aMultiplier: 1.0,
+        bFactorTdsCoeff: newMembrane.bFactorTdsCoeff || (newMembrane.type === 'Seawater' ? 0.0 : 0.015)
+      },
       transport: {
         aValueRef: newMembrane.aValue,
         membraneBRef: newMembrane.membraneB,

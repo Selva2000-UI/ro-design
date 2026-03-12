@@ -5,7 +5,8 @@ import {
   getAllMembranes, 
   getAValue, 
   getMembraneB,
-  getArea
+  getArea,
+  getBFactorCoeff
 } from '../engines/membraneEngine';
 import { 
   calculateOsmoticPressure, 
@@ -100,7 +101,8 @@ const ROCalculator = () => {
     if (mode === 'normalization' || !membrane) {
       // Calculate actual A and B from observed data
       const aActual = calculateA(fluxLMH, feedPressureBar, osmoticPressureBar, osmoticCoeff);
-      const bActual = estimateMembraneB(fluxLMH, feedTDS, rejection / 100, recoveryFraction, isSeawater);
+      const bFactorCoeff = getBFactorCoeff(membrane);
+      const bActual = estimateMembraneB(fluxLMH, feedTDS, rejection / 100, recoveryFraction, isSeawater, null, bFactorCoeff);
       
       // Normalize to 25C for standardized reporting
       aValue = aActual / tcfA;
@@ -122,14 +124,14 @@ const ROCalculator = () => {
     const beta = Math.exp(fluxLMH / k_mt);
     
     // Physical B corrected for temperature and salinity
-    const bFactorTds = isSeawater ? 1.0 : 1.0 + 0.10 * (feedTDS / 1000);
+    const bFactorCoeff = getBFactorCoeff(membrane);
+    const bFactorTds = 1.0 + bFactorCoeff * (feedTDS / 1000);
     const B_operating = bValue * tcfB * bFactorTds;
     
     // Avg concentration at membrane surface
     const c_avg = feedTDS * cf_avg * beta;
     
-    // Salt transport equation: Js = B * (Cm - Cp)
-    // Permeate TDS (Cp) = (B * Cm) / (Flux + B)
+    // Salt transport equation: Solution-Diffusion Cp = Cm * B / (J + B)
     const predictedPermeateTDS = (B_operating * c_avg) / (fluxLMH + B_operating);
     
     // 7. Feed Pressure Verification (Prediction Mode)

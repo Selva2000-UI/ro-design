@@ -126,6 +126,27 @@ const SystemDesign = ({
   const fluxConst = getFluxConstant();
 
   const handleInputChange = (key, value) => {
+    // Basic sanitization for numeric fields
+    let sanitizedValue = value;
+    const numericFields = [
+      'feedFlow', 'averageFlux', 'permeateFlow', 'recovery', 
+      'concentrateFlow', 'numTrains', 'elementsPerVessel', 
+      'stage1Vessels', 'stage2Vessels', 'feedPressure',
+      'membraneAge', 'fluxDeclinePerYear', 'spIncreasePerYear',
+      'chemicalDose', 'chemicalConcentration', 'permeatePressure'
+    ];
+
+    if (numericFields.includes(key)) {
+      // Remove any characters that aren't digits or decimal points
+      // Allow single decimal point and leading minus (though minus usually not needed here)
+      sanitizedValue = value.replace(/[^0-9.]/g, '');
+      // Ensure only one decimal point
+      const parts = sanitizedValue.split('.');
+      if (parts.length > 2) {
+        sanitizedValue = parts[0] + '.' + parts.slice(1).join('');
+      }
+    }
+
     const resetsDesign = [
       'feedFlow',
       'averageFlux',
@@ -140,7 +161,7 @@ const SystemDesign = ({
       'feedPressure'
     ].includes(key);
 
-    let updates = { ...systemConfig, [key]: value, ...(resetsDesign ? { designCalculated: false } : {}) };
+    let updates = { ...systemConfig, [key]: sanitizedValue, ...(resetsDesign ? { designCalculated: false } : {}) };
 
     if (key === 'flowUnit') {
       const oldUnit = systemConfig.flowUnit || 'gpm';
@@ -167,7 +188,7 @@ const SystemDesign = ({
     }
 
     // --- Apply RO Membrane Formulas ---
-    const numValue = Number(value) || 0;
+    const numValue = Number(sanitizedValue) || 0;
     const trains = Math.max(Number(updates.numTrains) || 1, 1);
     const flowUnit = updates.flowUnit || 'gpm';
     const factor = FLOW_CONVERSION_MAP[flowUnit] || 1;
@@ -224,7 +245,7 @@ const SystemDesign = ({
 
     // If user enters Feed Pressure, we don't force recovery to 52.5 anymore
     // This allows testing specific cases like the user benchmarks (40% recovery)
-    if (key === 'feedPressure' && value !== '' && Number(value) > 0) {
+    if (key === 'feedPressure' && sanitizedValue !== '' && Number(sanitizedValue) > 0) {
       // updates.recovery = 52.5; // REMOVED: Don't force recovery
       const qf = Number(updates.feedFlow) || 0;
       const rec = (Number(updates.recovery) || 40) / 100;
@@ -1020,20 +1041,7 @@ const SystemDesign = ({
             </div>
           </div>
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <button onClick={() => {
-              setSystemConfig({
-                ...systemConfig,
-                pass1Stages: 1,
-                stages: (systemConfig.stages || stages).map((stage, index) =>
-                  index === 0 ? stage : { ...stage, vessels: 0 }
-                ),
-                stage1Vessels: 3,
-                stage2Vessels: 0,
-                elementsPerVessel: 7,
-                membraneModel: 'espa2ld',
-                designCalculated: false
-              });
-            }} style={{
+            <button onClick={onRun} style={{
               background: 'linear-gradient(#bdc3c7, #95a5a6)', color: 'white', padding: '10px 30px',
               borderRadius: '20px', border: '1px solid #7f8c8d', cursor: 'pointer', fontWeight: 'bold',
               alignSelf: 'flex-start'
@@ -1337,8 +1345,8 @@ const SystemDesign = ({
         </div>
       )}
 
-      {/* BOTTOM SECTION: CALCULATION RESULTS (VISIBLE ONLY AFTER RUN) */}
-      {systemConfig.designCalculated && projection && (
+      {/* BOTTOM SECTION: CALCULATION RESULTS (VISIBLE WHENEVER RESULTS EXIST) */}
+      {projection && projection.stageResults && projection.stageResults.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <div style={{ ...panelStyle, background: '#d9e4f0' }}>
             <div style={headerStyle}>Calculation Results(All flows are per vessel)</div>
