@@ -190,17 +190,7 @@ export const MEMBRANES = {
     coefficient: 0.0039,
     exponent: 1.72
   },
-
-  designFlux: {
-
-    // Recommended design window
-    min: 10,
-    max: 25,
-    recommended: 16
-  },
-
   agingModel: {
-
     // Typical BWRO flux decline
     annualFluxDecline: 0.06,
 
@@ -241,7 +231,6 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.SEAWATER,
     areaM2: 37.16,
-    maxFlux: 42,
     calibration: {
       aMultiplier: 1.50,
       bFactorTdsCoeff: 0.008
@@ -258,28 +247,26 @@ export const MEMBRANES = {
       }
     },
     testConditions: {
-      pressureBar: 55.16,
-      temperatureC: 25,
-      tds: 32000,
-      recovery: 0.10,
-      fluxLMH: 38.2,
-      rejection: 0.9982
+    pressureBar: 55,
+    temperatureC: 25,
+    tds: 32000,
+    recovery: 0.10,
+    fluxLMH: 38.2,
+    rejection: 0.998
+
     },
     hydraulics: {
       maxFeedFlowM3H: 19.3,
-      minConcentrateFlowM3H: 2.7,
-      maxElementRecovery: 0.15,
-      maxPressureDropBar: 1.03,
-      spacerMil: 34
+    maxFeedFlowGPM: 85,
+    minConcentrateFlowM3H: 3.0,
+    maxElementRecovery: 0.12,
+    maxPressureDropBar: 1.0,
+    spacerMil: 34
+
     },
     pressureDropModel: {
       coefficient: 0.0078,
       exponent: 1.45
-    },
-    designFlux: {
-      min: 8,
-      max: 18,
-      recommended: 11
     },
     agingModel: {
       annualFluxDecline: 0.05,
@@ -292,9 +279,12 @@ export const MEMBRANES = {
       formula: 'π(bar) = 0.00074 × TDS × (T/298.15)'
     },
     limits: {
-      maxTds: 45000,
-      maxTemp: 45,
-      maxPressure: 1200
+       maxTds: 45000,
+    maxTemp: 45,
+    maxPressure: 1200,
+    maxChlorinePPM: 0.1,
+    maxTurbidityNTU: 1,
+    maxSDI: 5
     },
     compatibleWaterTypes: [
       'Seawater',
@@ -308,7 +298,6 @@ export const MEMBRANES = {
     category: '8040',
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.2,
-    maxFlux: 55,
     calibration: {
       aMultiplier: 0.77,
       bFactorTdsCoeff: 0.014
@@ -335,18 +324,13 @@ export const MEMBRANES = {
     hydraulics: {
       maxFeedFlowM3H: 19.3,
       minConcentrateFlowM3H: 2.7,
-      maxElementRecovery: 0.18,
+      maxElementRecovery: 0.20,
       maxPressureDropBar: 1.03,
       spacerMil: 34
     },
     pressureDropModel: {
       coefficient: 0.0076,
       exponent: 1.27
-    },
-    designFlux: {
-      min: 16,
-      max: 30,
-      recommended: 22
     },
     agingModel: {
       annualFluxDecline: 0.04,
@@ -359,9 +343,13 @@ export const MEMBRANES = {
       formula: 'π(bar) = 0.00079 × TDS × (T/298.15)'
     },
     limits: {
-      maxTds: 10000,
-      maxTemp: 45,
-      maxPressure: 41.4
+       maxTds: 5000,
+    maxTemp: 45,
+    maxPressure: 600,
+    maxChlorinePPM: 0.1,
+    maxTurbidityNTU: 1,
+    maxSDI: 5
+
     },
     compatibleWaterTypes: [
       'Brackish Water',
@@ -376,7 +364,6 @@ export const MEMBRANES = {
     category: '4040',
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 7.432,
-    maxFlux: 50.0,
     calibration: {
       aMultiplier: 1.04,
       bFactorTdsCoeff: 0.015
@@ -393,27 +380,24 @@ export const MEMBRANES = {
     },
     testConditions: {
       pressureBar: 10.3,
-      temperatureC: 25,
-      tds: 1500,
-      recovery: 0.15,
-      fluxLMH: 40.3,
-      rejection: 0.996
+    temperatureC: 25,
+    tds: 1500,
+    recovery: 0.15,
+    fluxLMH: 42.4,
+    rejection: 0.996
+
     },
     hydraulics: {
-      maxFeedFlowM3H: 3.6,
-      minConcentrateFlowM3H: 0.7,
-      maxElementRecovery: 0.15,
-      maxPressureDropBar: 1.0,
-      spacerMil: 34
+      maxFeedFlowM3H: 19.3,
+    minConcentrateFlowM3H: 2.7,
+    maxElementRecovery: 0.15,
+    maxPressureDropBar: 1.0,
+    spacerMil: 34
+
     },
     pressureDropModel: {
       coefficient: 0.117, // Calibrated for 4040 vessels
       exponent: 1.20
-    },
-    designFlux: {
-      min: 20,
-      max: 40,
-      recommended: 28
     },
     agingModel: {
       annualFluxDecline: 0.05,
@@ -426,9 +410,12 @@ export const MEMBRANES = {
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
-      maxTds: 2000,
-      maxTemp: 45,
-      maxPressure: 600
+        maxTds: 2000,
+    maxTemp: 45,
+    maxPressure: 600,
+    maxChlorinePPM: 0.1,
+    maxTurbidityNTU: 1,
+    maxSDI: 5
     },
     compatibleWaterTypes: [
       'Brackish Well Non-Fouling',
@@ -444,7 +431,6 @@ export const MEMBRANES = {
     type: MEMBRANE_TYPES.BRACKISH,
     areaM2: 37.16,
     rejection: 0.996,
-    maxFlux: 51.8,
     calibration: {
       aMultiplier: 1.00,
       bFactorTdsCoeff: 0.022
@@ -462,27 +448,24 @@ export const MEMBRANES = {
     },
     testConditions: {
       pressureBar: 15.5,
-      temperatureC: 25,
-      tds: 1500,
-      recovery: 0.15,
-      fluxLMH: 46.7,
-      rejection: 0.996
+    temperatureC: 25,
+    tds: 1500,
+    recovery: 0.15,
+    fluxLMH: 46.7,
+    rejection: 0.997
+
     },
     hydraulics: {
-      maxFeedFlowM3H: 16,
-      minConcentrateFlowM3H: 3,
-      maxElementRecovery: 0.20,
-      maxPressureDropBar: 1.0,
-      spacerMil: 34
+       maxFeedFlowM3H: 17.0,
+    minConcentrateFlowM3H: 3.0,
+    maxElementRecovery: 0.20,
+    maxPressureDropBar: 1.0,
+    spacerMil: 31
+
     },
     pressureDropModel: {
       coefficient: 0.0040, // Calibrated for CPA3 8040 vessel
       exponent: 1.70
-    },
-    designFlux: {
-      min: 18,
-      max: 35,
-      recommended: 28
     },
     agingModel: {
       annualFluxDecline: 0.05,
@@ -511,11 +494,7 @@ export const MEMBRANES = {
   name: 'CPA5-LD-8040',
   category: '8040',
   type: MEMBRANE_TYPES.BRACKISH,
-
   areaM2: 37.16,
-
-  maxFlux: 35,
-
   calibration: {
     aMultiplier: 2.14,
     bFactorTdsCoeff: 0.025
@@ -541,40 +520,30 @@ export const MEMBRANES = {
   },
 
   testConditions: {
-    pressureBar: 15.5,
+       pressureBar: 15.5,
     temperatureC: 25,
     tds: 1500,
     recovery: 0.15,
-    fluxLMH: 25,
+    fluxLMH: 46.7,
     rejection: 0.997
   },
 
   hydraulics: {
     maxFeedFlowM3H: 19.3,
-    minConcentrateFlowM3H: 2.7,
-    maxElementRecovery: 0.15,
-    maxPressureDropBar: 1.03,
+    maxFeedFlowGPM: 85,
+    minConcentrateFlowM3H: 3.0,
+    maxElementRecovery: 0.20,
+    maxPressureDropBar: 1.0,
     spacerMil: 34
+
   },
 
   pressureDropModel: {
     coefficient: 0.0075,
     exponent: 1.55
   },
-
-  designFlux: {
-
-    min: 12,
-
-    max: 30,
-
-    recommended: 20
-  },
-
   agingModel: {
-
     annualFluxDecline: 0.05,
-
     foulingFactorDefault: 1.0
   },
 
@@ -617,7 +586,6 @@ export const MEMBRANES = {
     category: '4040',
     type: MEMBRANE_TYPES.LOW_FOULING,
     areaM2: 7.432,
-    maxFlux: 48.0,
     calibration: {
       aMultiplier: 1.0,
       bFactorTdsCoeff: 0.015
@@ -633,28 +601,25 @@ export const MEMBRANES = {
       }
     },
     testConditions: {
-      pressureBar: 10.3,
-      temperatureC: 25,
-      tds: 1500,
-      recovery: 0.15,
-      fluxLMH: 38.2,
-      rejection: 0.9970
+       pressureBar: 15.5,
+    temperatureC: 25,
+    tds: 1500,
+    recovery: 0.15,
+    fluxLMH: 44.6,
+    rejection: 0.997
+
     },
     hydraulics: {
       maxFeedFlowM3H: 3.6,
-      minConcentrateFlowM3H: 0.7,
-      maxElementRecovery: 0.15,
-      maxPressureDropBar: 1.0,
-      spacerMil: 34
+    maxFeedFlowGPM: 16,
+    minConcentrateFlowM3H: 0.7,
+    maxElementRecovery: 0.15,
+    maxPressureDropBar: 1.0,
+    spacerMil: 34
     },
     pressureDropModel: {
       coefficient: 0.117, // Calibrated for 4040 vessels
       exponent: 1.20
-    },
-    designFlux: {
-      min: 20,
-      max: 40,
-      recommended: 28
     },
     agingModel: {
       annualFluxDecline: 0.05,
@@ -667,9 +632,12 @@ export const MEMBRANES = {
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
-      maxTds: 2000,
-      maxTemp: 45,
-      maxPressure: 600
+       maxTds: 2000,
+    maxTemp: 45,
+    maxPressure: 600,
+    maxChlorinePPM: 0.1,
+    maxTurbidityNTU: 1,
+    maxSDI: 5
     },
     compatibleWaterTypes: [
       'Brackish Well Non-Fouling',
@@ -719,12 +687,6 @@ export const MEMBRANES = {
   pressureDropModel: {
     coefficient: 0.0065,
     exponent: 1.55
-  },
-
-  designFlux: {
-    min: 12,
-    max: 28,
-    recommended: 18
   },
 
   agingModel: {
@@ -798,11 +760,6 @@ export const MEMBRANES = {
     pressureDropModel: {
       coefficient: 0.0030, // Calibrated for high-flow 8040 vessel
       exponent: 1.20
-    },
-    designFlux: {
-      min: 12,
-      max: 25,
-      recommended: 18
     },
     agingModel: {
       annualFluxDecline: 0.05,
@@ -886,16 +843,6 @@ export const MEMBRANES = {
 
     exponent: 1.70
   },
-
-  designFlux: {
-
-    min: 12,
-
-    max: 28,
-
-    recommended: 18
-  },
-
   agingModel: {
 
     annualFluxDecline: 0.05,
@@ -932,11 +879,7 @@ export const MEMBRANES = {
   name: 'SW-TDS-32K-8040',
   category: '8040',
   type: MEMBRANE_TYPES.SEAWATER,
-
   areaM2: 37.2,
-
-  maxFlux: 14,
-
   calibration: {
     aMultiplier: 1.09,
     bFactorTdsCoeff: 0
@@ -989,15 +932,6 @@ export const MEMBRANES = {
     coefficient: 0.012,
 
     exponent: 1.22
-  },
-
-  designFlux: {
-
-    min: 6,
-
-    max: 12,
-
-    recommended: 9
   },
 
   agingModel: {
