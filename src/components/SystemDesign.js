@@ -1146,7 +1146,7 @@ const SystemDesign = ({
         </div>
       )}
 
-      {showFlowDiagram && (
+      {showFlowDiagram && flowDiagramReady && (
         <div style={{
           position: 'fixed',
           top: 0,
@@ -1345,8 +1345,8 @@ const SystemDesign = ({
         </div>
       )}
 
-      {/* BOTTOM SECTION: CALCULATION RESULTS (VISIBLE WHENEVER RESULTS EXIST) */}
-      {projection && projection.stageResults && projection.stageResults.length > 0 && (
+      {/* BOTTOM SECTION: CALCULATION RESULTS (VISIBLE ONLY AFTER RUN) */}
+      {systemConfig.designCalculated && projection && projection.stageResults && projection.stageResults.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <div style={{ ...panelStyle, background: '#d9e4f0' }}>
             <div style={headerStyle}>Calculation Results(All flows are per vessel)</div>
