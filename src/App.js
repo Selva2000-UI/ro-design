@@ -71,12 +71,12 @@ const App = () => {
   }), []);
 
   // --- 1. STATE MANAGEMENT ---
-  const [snapshots, setSnapshots] = useState([]); 
-  const [membranes, setMembranes] = useState(DEFAULT_MEMBRANES); 
-  
-  const [projectNotes, setProjectNotes] = useState(""); 
+  const [snapshots, setSnapshots] = useState([]);
+  const [membranes, setMembranes] = useState(DEFAULT_MEMBRANES);
+
+  const [projectNotes, setProjectNotes] = useState("");
   const createProjectId = () => `proj_${Date.now()}`;
-  
+
   const mergeMembranes = (savedMembranes) => {
     // Industrial Protocol: Only allow membranes defined in the engine
     return DEFAULT_MEMBRANES;
@@ -99,25 +99,25 @@ const App = () => {
   const [pretreatment, setPretreatment] = useState({ antiscalantDose: 3.5, sbsDose: 2.0 });
   const [postTreatment, setPostTreatment] = useState({ causticDose: 2.0 });
 
-  
-  
+
+
   const handleApplyTdsProfile = (tdsValue) => {
     const updated = applyTdsProfile(tdsValue, waterData);
     setWaterData(updated);
   };
-  const [projection, setProjection] = useState({ 
-    fluxGFD: 0, pumpPressure: 0, monthlyEnergyCost: 0, permeateFlow: 0 
+  const [projection, setProjection] = useState({
+    fluxGFD: 0, pumpPressure: 0, monthlyEnergyCost: 0, permeateFlow: 0
   });
   const [recentProjects, setRecentProjects] = useState([]);
   const [selectedProjectIds, setSelectedProjectIds] = useState([]);
-  
+
   // --- 2. MASTER CALCULATION ENGINE ---
   useEffect(() => {
     const activePass1Stages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);
     const activeStages = systemConfig.stages?.slice(0, activePass1Stages) || [];
 
     const isImperialFlow = ['gpm', 'gpd', 'mgd', 'migd'].includes((systemConfig.flowUnit || '').toLowerCase().trim().replace('/', ''));
-    
+
     const calculationInputs = {
       ...systemConfig,
       pressureUnit: isImperialFlow ? 'psi' : 'bar',
@@ -150,10 +150,10 @@ const App = () => {
 
     try {
       const results = calculateSystem(calculationInputs, membranes);
-      
+
       const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes((systemConfig.flowUnit || '').toLowerCase().trim().replace('/', ''));
       const fluxUnitLabel = isImperial ? 'gfd' : 'lmh';
-      
+
       setProjection({
         ...results.results,
         stageResults: results.stageResults,
@@ -180,7 +180,7 @@ const App = () => {
       console.warn('Calculation failed:', error.message);
     }
   }, [systemConfig, waterData, membranes]);
-    
+
 
   // --- 3. PERSISTENCE ---
 
@@ -335,7 +335,7 @@ const App = () => {
     const feedPh = Number(systemConfig.feedPh) || Number(waterData.ph) || 7.0;
     const tempF = ((Number(waterData.temp) || 25) * 9) / 5 + 32;
     const reportDate = new Date().toLocaleDateString();
-    
+
     const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes((unit || '').toLowerCase().trim().replace('/', ''));
     const pUnit = isImperial ? 'psi' : 'bar';
     const fluxUnit = isImperial ? 'gfd' : 'lmh';
@@ -345,9 +345,9 @@ const App = () => {
     const concTds = Number(projection?.concentrateParameters?.tds ?? 0);
     const permPh = Number(projection?.permeateParameters?.ph ?? feedPh);
     const concPh = Number(projection?.concentrateParameters?.ph ?? feedPh);
-    
+
     const toNumber = (value) => Number(value) || 0;
-    
+
     const formatCaCO3 = (key, value) => {
       const eq = EQ_WEIGHTS[key];
       if (!eq) return '0.00';
@@ -356,7 +356,7 @@ const App = () => {
 
     const cationKeys = ['ca', 'mg', 'na', 'k', 'nh4', 'ba', 'sr'];
     const anionKeys = ['co3', 'hco3', 'so4', 'cl', 'f', 'no3', 'po4'];
-    
+
     const cationMeq = cationKeys.reduce((sum, key) => sum + (toNumber(waterData[key]) / (EQ_WEIGHTS[key] || 1)), 0);
     const anionMeq = anionKeys.reduce((sum, key) => sum + (toNumber(waterData[key]) / (EQ_WEIGHTS[key] || 1)), 0);
     const meqTotal = cationMeq + anionMeq;
@@ -373,7 +373,7 @@ const App = () => {
       const stageWidth = 100;
       const horizontalGap = 150;
       const verticalGap = 80;
-      
+
       let elements = [];
 
       // 1. Feed line and Pump
@@ -404,12 +404,12 @@ const App = () => {
 
         // Permeate branch
         elements.push('<line x1="' + (sX + stageWidth) + '" y1="' + (sY - 15) + '" x2="' + (sX + stageWidth) + '" y2="' + permY + '" stroke="#3cc7f4" stroke-width="4" />');
-        
+
         if (numStages > 1) {
           const pLabelId = numStages + i + 3;
           const pY = i === 0 ? permY : (sY + permY) / 2 - 10;
           const pX = i === 0 ? sX + stageWidth + 40 : sX + stageWidth;
-          
+
           elements.push('<polygon points="' + (pX - 15) + ',' + (pY - 12) + ' ' + (pX + 15) + ',' + (pY - 12) + ' ' + (pX + 25) + ',' + pY + ' ' + (pX + 15) + ',' + (pY + 12) + ' ' + (pX - 15) + ',' + (pY + 12) + ' ' + (pX - 25) + ',' + pY + '" fill="white" stroke="#222" stroke-width="1.5" />');
           elements.push('<text x="' + pX + '" y="' + (pY + 4) + '" text-anchor="middle" font-size="11" font-weight="bold">' + pLabelId + '</text>');
         }
@@ -444,14 +444,14 @@ const App = () => {
 
       const viewWidth = Math.max(900, 250 + (numStages * horizontalGap) + 100);
       const viewHeight = Math.max(260, 100 + (numStages * verticalGap));
-      
+
       return '<svg viewBox="0 0 ' + viewWidth + ' ' + viewHeight + '" width="100%" height="' + viewHeight + '">' + elements.join('') + '</svg>';
     };
 
     const ionFeed = waterData;
     const permIons = projection.permeateParameters?.ions || {};
     const concIons = projection.concentrateParameters?.ions || {};
-    
+
 
     const printWindow = window.open('', '_blank', 'width=1200,height=900');
     if (!printWindow) return;
@@ -661,10 +661,10 @@ const App = () => {
             <div class="section-title">Permeate Concentration</div>
             <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; font-size: 0.8rem; border: 1px solid #c9d3de; padding: 10px;">
               ${[
-                {key: 'ca', label: 'Ca'}, {key: 'k', label: 'K'}, {key: 'sr', label: 'Sr'}, {key: 'cl', label: 'Cl'}, {key: 'po4', label: 'PO4'}, {key: 'co2', label: 'CO2'},
-                {key: 'mg', label: 'Mg'}, {key: 'nh4', label: 'NH4'}, {key: 'hco3', label: 'HCO3'}, {key: 'no3', label: 'NO3'}, {key: 'sio2', label: 'SiO2'}, {key: 'co3', label: 'CO3'},
-                {key: 'na', label: 'Na'}, {key: 'ba', label: 'Ba'}, {key: 'so4', label: 'SO4'}, {key: 'f', label: 'F'}, {key: 'b', label: 'B'}
-              ].map(item => `
+        { key: 'ca', label: 'Ca' }, { key: 'k', label: 'K' }, { key: 'sr', label: 'Sr' }, { key: 'cl', label: 'Cl' }, { key: 'po4', label: 'PO4' }, { key: 'co2', label: 'CO2' },
+        { key: 'mg', label: 'Mg' }, { key: 'nh4', label: 'NH4' }, { key: 'hco3', label: 'HCO3' }, { key: 'no3', label: 'NO3' }, { key: 'sio2', label: 'SiO2' }, { key: 'co3', label: 'CO3' },
+        { key: 'na', label: 'Na' }, { key: 'ba', label: 'Ba' }, { key: 'so4', label: 'SO4' }, { key: 'f', label: 'F' }, { key: 'b', label: 'B' }
+      ].map(item => `
                 <div><strong>${item.label}:</strong> ${Number(permIons[item.key] || 0).toFixed(3)}</div>
               `).join('')}
               <div><strong>pH:</strong> ${permPh.toFixed(1)}</div>
@@ -893,14 +893,77 @@ const App = () => {
     }
     setSelectedProjectIds([]);
   };
-  
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f4f7f9', display: 'flex', flexDirection: 'column' }}>
-      
+
       {/* GLOBAL HEADER */}
-      <header style={{ backgroundColor: '#002f5d', color: '#fff', padding: '10px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
-        <h2 style={{ margin: 0, fontSize: '1.35rem', lineHeight: 1.2 }}>Morris-Jenkins IMS Design Pro 3.0</h2>
-        
+      <header style={{ backgroundColor: '#002f5d', color: '#fff', padding: '10px 20px', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          width: '100%',
+          padding: '10px 0'
+        }}>
+
+          {/* LEFT SIDE TITLE */}
+          <h2 style={{
+            margin: 0,
+            fontSize: '1.35rem',
+            lineHeight: 1.2
+          }}>
+            Morris-Jenkins IMS Design Pro 3.0
+          </h2>
+
+          {/* RIGHT SIDE BUTTONS */}
+          <div style={{
+            display: 'flex',
+            gap: '8px'
+          }}>
+
+            <button onClick={takeSnapshot} style={{ background: '#8e44ad', border: '1px solid #7d3c98', color: 'white', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>
+              📸 Snapshot
+            </button>
+
+            <button onClick={handleSaveToFile} style={{ background: '#27ae60', border: '1px solid #229954', color: 'white', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>
+              💾 Save
+            </button>
+
+            <button onClick={() => fileInputRef.current.click()} style={{ background: '#3498db', border: '1px solid #2e86c1', color: 'white', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>
+              📁 Load
+            </button>
+
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleLoadFromFile} />
+
+            <button
+              onClick={handleDeleteSelectedProjects}
+              disabled={selectedProjectIds.length === 0}
+              style={{
+                background: selectedProjectIds.length === 0 ? '#7f8c8d' : '#c0392b',
+                border: selectedProjectIds.length === 0 ? '1px solid #6c7a89' : '1px solid #a93226',
+                color: 'white',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                cursor: selectedProjectIds.length === 0 ? 'not-allowed' : 'pointer',
+                fontSize: '0.78rem',
+                fontWeight: 'bold'
+              }}
+            >
+              🗑 Delete
+            </button>
+
+            <button onClick={handlePrintDesignReport} style={{ background: '#f39c12', border: '1px solid #d68910', color: 'white', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>
+              🖨 Print
+            </button>
+
+            <button onClick={handleReset} style={{ background: '#e74c3c', border: '1px solid #cb4335', color: 'white', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>
+              Reset
+            </button>
+
+          </div>
+        </div>
+
         <nav style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.08)', padding: '4px', borderRadius: '10px' }}>
           {['dashboard', 'analysis', 'pretreatment', 'design', 'post', 'report', 'database'].map(t => (
             <button
@@ -924,31 +987,7 @@ const App = () => {
           ))}
         </nav>
 
-        {/* ACTION MENU GROUP */}
-        <div style={{ display: 'flex', gap: '8px', marginLeft: '16px' }}>
-          <button onClick={takeSnapshot} style={{ background: '#8e44ad', border: '1px solid #7d3c98', color: 'white', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>📸 Snapshot</button>
-          <button onClick={handleSaveToFile} style={{ background: '#27ae60', border: '1px solid #229954', color: 'white', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>💾 Save</button>
-          <button onClick={() => fileInputRef.current.click()} style={{ background: '#3498db', border: '1px solid #2e86c1', color: 'white', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>📁 Load</button>
-          <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={handleLoadFromFile} />
-          <button
-            onClick={handleDeleteSelectedProjects}
-            disabled={selectedProjectIds.length === 0}
-            style={{
-              background: selectedProjectIds.length === 0 ? '#7f8c8d' : '#c0392b',
-              border: selectedProjectIds.length === 0 ? '1px solid #6c7a89' : '1px solid #a93226',
-              color: 'white',
-              padding: '8px 12px',
-              borderRadius: '8px',
-              cursor: selectedProjectIds.length === 0 ? 'not-allowed' : 'pointer',
-              fontSize: '0.78rem',
-              fontWeight: 'bold'
-            }}
-          >
-            🗑️ Delete
-          </button>
-          <button onClick={handlePrintDesignReport} style={{ background: '#f39c12', border: '1px solid #d68910', color: 'white', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>🖨️ Print</button>
-          <button onClick={handleReset} style={{ background: '#e74c3c', border: '1px solid #cb4335', color: 'white', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 'bold' }}>Reset</button>
-        </div>
+
       </header>
 
 
@@ -956,44 +995,44 @@ const App = () => {
         {activeTab === 'dashboard' && (
           <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: '20px' }}>
             <div style={{ background: '#fff', borderRadius: '8px', border: '1px solid #c2d1df', padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <h3 style={{ margin: 0, color: '#002f5d' }}>My Projects</h3>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                onClick={handleDeleteSelectedProjects}
-                disabled={selectedProjectIds.length === 0}
-                style={{
-                  background: selectedProjectIds.length === 0 ? '#bdc3c7' : '#e74c3c',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '8px 12px',
-                  borderRadius: '4px',
-                  cursor: selectedProjectIds.length === 0 ? 'not-allowed' : 'pointer',
-                  fontSize: '0.8rem',
-                  fontWeight: 'bold'
-                }}
-              >
-                🗑️ Delete Selected
-              </button>
-              <button
-                onClick={handleNewProject}
-                style={{ background: '#3498db', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
-              >
-                + New Project
-              </button>
-            </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    onClick={handleDeleteSelectedProjects}
+                    disabled={selectedProjectIds.length === 0}
+                    style={{
+                      background: selectedProjectIds.length === 0 ? '#bdc3c7' : '#e74c3c',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '8px 12px',
+                      borderRadius: '4px',
+                      cursor: selectedProjectIds.length === 0 ? 'not-allowed' : 'pointer',
+                      fontSize: '0.8rem',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    🗑️ Delete Selected
+                  </button>
+                  <button
+                    onClick={handleNewProject}
+                    style={{ background: '#3498db', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                  >
+                    + New Project
+                  </button>
+                </div>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                 <thead>
                   <tr style={{ background: '#f4f7f9' }}>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea', width: '32px' }}>
-                  <input
-                    type="checkbox"
-                    checked={recentProjects.length > 0 && selectedProjectIds.length === recentProjects.length}
-                    onChange={handleToggleSelectAllProjects}
-                  />
-                </th>
-                <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea' }}>Project</th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea', width: '32px' }}>
+                      <input
+                        type="checkbox"
+                        checked={recentProjects.length > 0 && selectedProjectIds.length === recentProjects.length}
+                        onChange={handleToggleSelectAllProjects}
+                      />
+                    </th>
+                    <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea' }}>Project</th>
                     <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea' }}>Client</th>
                     <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea' }}>Water Type</th>
                     <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #e1e5ea' }}>Modified</th>
@@ -1003,18 +1042,18 @@ const App = () => {
                 <tbody>
                   {recentProjects.length === 0 && (
                     <tr>
-                  <td colSpan={6} style={{ padding: '12px', color: '#666' }}>No recent projects yet.</td>
+                      <td colSpan={6} style={{ padding: '12px', color: '#666' }}>No recent projects yet.</td>
                     </tr>
                   )}
                   {recentProjects.map((project) => (
                     <tr key={project.id}>
-                  <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>
-                    <input
-                      type="checkbox"
-                      checked={selectedProjectIds.includes(project.id)}
-                      onChange={() => handleToggleProjectSelect(project.id)}
-                    />
-                  </td>
+                      <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedProjectIds.includes(project.id)}
+                          onChange={() => handleToggleProjectSelect(project.id)}
+                        />
+                      </td>
                       <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>{project.name}</td>
                       <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>{project.clientName}</td>
                       <td style={{ padding: '8px', borderBottom: '1px solid #f0f0f0' }}>{project.waterType}</td>
@@ -1059,7 +1098,7 @@ const App = () => {
           <SystemDesign
             membranes={membranes}
             systemConfig={systemConfig}
-            setWaterData={setWaterData} 
+            setWaterData={setWaterData}
             setSystemConfig={setSystemConfig}
             projection={projection}
             applyTdsProfile={handleApplyTdsProfile}
@@ -1069,16 +1108,16 @@ const App = () => {
         )}
         {activeTab === 'post' && <PostTreatment projection={projection} postTreatment={postTreatment} setPostTreatment={setPostTreatment} systemConfig={systemConfig} />}
         {activeTab === 'report' && (
-          <Report 
-            waterData={waterData} 
-            systemConfig={systemConfig} 
-            applyTdsProfile={handleApplyTdsProfile} 
-            projection={projection} 
+          <Report
+            waterData={waterData}
+            systemConfig={systemConfig}
+            applyTdsProfile={handleApplyTdsProfile}
+            projection={projection}
             pretreatment={pretreatment}
             postTreatment={postTreatment}
-            projectNotes={projectNotes} 
-            setProjectNotes={setProjectNotes} 
-            snapshots={snapshots} 
+            projectNotes={projectNotes}
+            setProjectNotes={setProjectNotes}
+            snapshots={snapshots}
             setSnapshots={setSnapshots}
           />
         )}

@@ -46,7 +46,7 @@ const DEFAULT_OSMOTIC_COEFF_SEAWATER = 0.00085;
 export const calculateA = (fluxLMH, pressureBar, tds, osmoticCoeff = null, recovery = 0.15, isSeawater = false, tempC = 25) => {
   const T = tempC + 273.15;
   const coeff = osmoticCoeff || (isSeawater ? DEFAULT_OSMOTIC_COEFF_SEAWATER : DEFAULT_OSMOTIC_COEFF_BRACKISH);
-
+  
   // Professional RO simulators use average concentration along the membrane for A-value calibration
   const cf = 1 / Math.max(0.001, 1 - recovery);
   const cf_avg = recovery > 0.005 ? (cf - 1) / Math.log(cf) : (1 + cf) / 2;
@@ -93,8 +93,8 @@ export const estimateMembraneB = (
   const cf = 1 / Math.max(0.001, 1 - recoveryFraction);
 
   // Log mean concentration factor
-  const cf_avg = recoveryFraction > 0.005
-    ? (cf - 1) / Math.log(cf)
+  const cf_avg = recoveryFraction > 0.005 
+    ? (cf - 1) / Math.log(cf) 
     : (1 + cf) / 2;
 
   // Mass transfer coefficient (User requested defaults)
@@ -111,7 +111,7 @@ export const estimateMembraneB = (
   // Solution-Diffusion Model: Cp = Cm * B / (J + B)
   // SP_intrinsic = Cp / Cm = B / (J + B)
   // B = (SP_int * J) / (1 - SP_int)
-
+  
   const sp_int = Math.max(0.0001, saltPassage / Math.max(0.1, cf_avg * beta));
   const B_actual = (sp_int * Math.max(fluxLMH, 0.1)) / (1 - sp_int);
 
@@ -126,115 +126,115 @@ export const estimateMembraneB = (
  */
 export const MEMBRANES = {
   bwtds10kfr8040: {
-    id: "bwtds10kfr8040",
-    name: "BW-TDS-10K-FR-8040",
-    category: "8040",
-    type: MEMBRANE_TYPES.FOULING_RESISTANT,
+  id: "bwtds10kfr8040",
+  name: "BW-TDS-10K-FR-8040",
+  category: "8040",
+  type: MEMBRANE_TYPES.FOULING_RESISTANT,
 
-    // Membrane area
-    areaM2: 37.16,
+  // Membrane area
+  areaM2: 37.16,
 
+  
 
-
-    calibration: {
-      aMultiplier: 1.455,
-      bFactorTdsCoeff: 0.011
-    },
-
-    transport: {
-
-      // Mass transfer reference for 34 mil spacer
-      kMtRef: 280,
-
-      soluteBFactors: {
-        monovalent: 1.635,
-        divalent: 0.45,
-        silica: 0.85,
-        boron: 1.4,
-        alkalinity: 1.2,
-        co2: 999
-      }
-    },
-
-    testConditions: {
-      pressureBar: 15.5,
-      temperatureC: 25,
-      tds: 2000,
-      recovery: 0.15,
-      fluxLMH: 40.4,
-      rejection: 0.9932
-    },
-
-    hydraulics: {
-
-      // Maximum feed flow per 8040 element
-      maxFeedFlowM3H: 16,
-
-      // Minimum concentrate flow to avoid scaling
-      minConcentrateFlowM3H: 3,
-
-      // Maximum recovery per element
-      maxElementRecovery: 0.18,
-
-      // Maximum allowable pressure drop per element
-      maxPressureDropBar: 1.0,
-
-      // Feed spacer thickness
-      spacerMil: 34
-    },
-
-    pressureDropModel: {
-
-      // Hydraulic correlation for 34 mil spacer
-      // ΔP = K × Q^n
-      coefficient: 0.0039,
-      exponent: 1.72
-    },
-
-    designFlux: {
-
-      // Recommended design window
-      min: 10,
-      max: 25,
-      recommended: 16
-    },
-
-    agingModel: {
-
-      // Typical BWRO flux decline
-      annualFluxDecline: 0.06,
-
-      // Default fouling factor
-      foulingFactorDefault: 0.95
-    },
-
-    osmoticModel: {
-
-      type: "vanthoff-corrected",
-
-      coefficient: 0.00079,
-
-      temperatureCorrection: true,
-
-      formula: "π(bar) = 0.00079 × TDS × (T/298.15)"
-    },
-
-    limits: {
-
-      maxTds: 10000,
-
-      maxTemp: 45,
-
-      maxPressure: 41
-    },
-
-    compatibleWaterTypes: [
-      "Brackish Well Non-Fouling",
-      "Brackish Surface",
-      "Municipal Waste",
-      "Industrial Waste"
-    ]
+  calibration: {
+    aMultiplier: 1.455,
+    bFactorTdsCoeff: 0.011
   },
+
+  transport: {
+
+    // Mass transfer reference for 34 mil spacer
+    kMtRef: 280,
+
+    soluteBFactors: {
+      monovalent: 1.635,
+      divalent: 0.45,
+      silica: 0.85,
+      boron: 1.4,
+      alkalinity: 1.2,
+      co2: 999
+    }
+  },
+
+  testConditions: {
+    pressureBar: 15.5,
+    temperatureC: 25,
+    tds: 2000,
+    recovery: 0.15,
+    fluxLMH: 40.4,
+    rejection: 0.9932
+  },
+
+  hydraulics: {
+
+    // Maximum feed flow per 8040 element
+    maxFeedFlowM3H: 16,
+
+    // Minimum concentrate flow to avoid scaling
+    minConcentrateFlowM3H: 3,
+
+    // Maximum recovery per element
+    maxElementRecovery: 0.18,
+
+    // Maximum allowable pressure drop per element
+    maxPressureDropBar: 1.0,
+
+    // Feed spacer thickness
+    spacerMil: 34
+  },
+
+  pressureDropModel: {
+
+    // Hydraulic correlation for 34 mil spacer
+    // ΔP = K × Q^n
+    coefficient: 0.0039,
+    exponent: 1.72
+  },
+
+  designFlux: {
+
+    // Recommended design window
+    min: 10,
+    max: 25,
+    recommended: 16
+  },
+
+  agingModel: {
+
+    // Typical BWRO flux decline
+    annualFluxDecline: 0.06,
+
+    // Default fouling factor
+    foulingFactorDefault: 0.95
+  },
+
+  osmoticModel: {
+
+    type: "vanthoff-corrected",
+
+    coefficient: 0.00079,
+
+    temperatureCorrection: true,
+
+    formula: "π(bar) = 0.00079 × TDS × (T/298.15)"
+  },
+
+  limits: {
+
+    maxTds: 10000,
+
+    maxTemp: 45,
+
+    maxPressure: 41
+  },
+
+  compatibleWaterTypes: [
+    "Brackish Well Non-Fouling",
+    "Brackish Surface",
+    "Municipal Waste",
+    "Industrial Waste"
+  ]
+},
   swc5ld8040: {
     id: 'swc5ld8040',
     name: 'SWC5-LD',
@@ -378,13 +378,13 @@ export const MEMBRANES = {
     areaM2: 7.432,
     maxFlux: 50.0,
     calibration: {
-      aMultiplier: 1.09,
+      aMultiplier: 1.00,
       bFactorTdsCoeff: 0.10
     },
     transport: {
       kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.0,
+        monovalent: 0.96,
         divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
@@ -452,7 +452,7 @@ export const MEMBRANES = {
     transport: {
       kMtRef: 340,
       soluteBFactors: {
-        monovalent: 1.622,
+        monovalent: 1.622, 
         divalent: 0.6,
         silica: 0.8,
         boron: 1.4,
@@ -507,103 +507,103 @@ export const MEMBRANES = {
   },
 
   cpa5ld8040: {
-    id: 'cpa5ld8040',
-    name: 'CPA5-LD-8040',
-    category: '8040',
-    type: MEMBRANE_TYPES.BRACKISH,
+  id: 'cpa5ld8040',
+  name: 'CPA5-LD-8040',
+  category: '8040',
+  type: MEMBRANE_TYPES.BRACKISH,
 
-    areaM2: 37.16,
+  areaM2: 37.16,
 
-    maxFlux: 35,
+  maxFlux: 35,
 
-    calibration: {
-      aMultiplier: 1.77,
-      bFactorTdsCoeff: 0.012
-    },
-
-    transport: {
-      kMtRef: 280,
-
-      soluteBFactors: {
-        monovalent: 1.28,
-        divalent: 0.40,
-        silica: 0.8,
-        boron: 1.4,
-        alkalinity: 1.1,
-        co2: 999
-      }
-    },
-
-    testConditions: {
-      pressureBar: 15.5,
-      temperatureC: 25,
-      tds: 1500,
-      recovery: 0.15,
-      fluxLMH: 25,
-      rejection: 0.9932
-    },
-
-    hydraulics: {
-      maxFeedFlowM3H: 19.3,
-      minConcentrateFlowM3H: 2.7,
-      maxElementRecovery: 0.15,
-      maxPressureDropBar: 1.03,
-      spacerMil: 34
-    },
-
-    pressureDropModel: {
-      coefficient: 0.006,
-      exponent: 1.5
-    },
-
-    designFlux: {
-
-      min: 12,
-
-      max: 30,
-
-      recommended: 20
-    },
-
-    agingModel: {
-
-      annualFluxDecline: 0.05,
-
-      foulingFactorDefault: 1.0
-    },
-
-    osmoticModel: {
-
-      type: 'vanthoff-corrected',
-
-      coefficient: 0.000792,
-
-      temperatureCorrection: true,
-
-      formula: 'π(bar) = 0.000792 × TDS × (T/298.15)'
-    },
-
-    limits: {
-
-      maxTds: 5000,
-
-      maxTemp: 45,
-
-      maxPressure: 41,
-
-      maxBeta: 1.20,
-
-      minConcentrateFlowGpm: 12,
-
-      minNdpPsi: 5
-    },
-
-    compatibleWaterTypes: [
-      'Brackish Well Non-Fouling',
-      'Brackish Surface',
-      'Municipal'
-    ]
+  calibration: {
+    aMultiplier: 1.78,
+    bFactorTdsCoeff: 0.012
   },
+
+  transport: {
+    kMtRef: 280,
+
+    soluteBFactors: {
+      monovalent: 1.34,
+      divalent: 0.40,
+      silica: 0.8,
+      boron: 1.4,
+      alkalinity: 1.1,
+      co2: 999
+    }
+  },
+
+  testConditions: {
+    pressureBar: 15.5,
+    temperatureC: 25,
+    tds: 1500,
+    recovery: 0.15,
+    fluxLMH: 25,
+    rejection: 0.9932
+  },
+
+  hydraulics: {
+    maxFeedFlowM3H: 19.3,
+    minConcentrateFlowM3H: 2.7,
+    maxElementRecovery: 0.15,
+    maxPressureDropBar: 1.03,
+    spacerMil: 34
+  },
+
+  pressureDropModel: {
+    coefficient: 0.006,
+    exponent: 1.5
+  },
+
+  designFlux: {
+
+    min: 12,
+
+    max: 30,
+
+    recommended: 20
+  },
+
+  agingModel: {
+
+    annualFluxDecline: 0.05,
+
+    foulingFactorDefault: 1.0
+  },
+
+  osmoticModel: {
+
+    type: 'vanthoff-corrected',
+
+    coefficient: 0.000792,
+
+    temperatureCorrection: true,
+
+    formula: 'π(bar) = 0.000792 × TDS × (T/298.15)'
+  },
+
+  limits: {
+
+    maxTds: 5000,
+
+    maxTemp: 45,
+
+    maxPressure: 41,
+
+    maxBeta: 1.20,
+
+    minConcentrateFlowGpm: 12,
+
+    minNdpPsi: 5
+  },
+
+  compatibleWaterTypes: [
+    'Brackish Well Non-Fouling',
+    'Brackish Surface',
+    'Municipal'
+  ]
+},
 
   lfc3ld4040: {
     id: 'lfc3ld4040',
@@ -613,13 +613,13 @@ export const MEMBRANES = {
     areaM2: 7.432,
     maxFlux: 48.0,
     calibration: {
-      aMultiplier: 0.75,
+      aMultiplier: 0.70,
       bFactorTdsCoeff: 0.16
     },
     transport: {
       kMtRef: 750,
       soluteBFactors: {
-        monovalent: 1.0,
+        monovalent: 0.97,
         divalent: 0.6,
         silica: 0.75,
         boron: 1.3,
@@ -702,51 +702,51 @@ export const MEMBRANES = {
       rejection: 0.9975
     },
 
-    hydraulics: {
-      maxFeedFlowM3H: 19.3,
-      minConcentrateFlowM3H: 2.7,
-      maxElementRecovery: 0.15,
-      maxPressureDropBar: 1.0,
-      spacerMil: 34
-    },
-
-    pressureDropModel: {
-      coefficient: 0.0065,
-      exponent: 1.55
-    },
-
-    agingModel: {
-
-      annualFluxDecline: 0.04,
-
-      foulingFactorDefault: 0.96
-    },
-
-    osmoticModel: {
-
-      type: "vanthoff-corrected",
-
-      coefficient: 0.00079,
-
-      formula: "π(bar) = 0.00079 × TDS × (T/298.15)"
-    },
-
-    limits: {
-
-      maxTds: 10000,
-
-      maxTemp: 45,
-
-      maxPressure: 41
-    },
-
-    compatibleWaterTypes: [
-      "Brackish Well",
-      "Brackish Surface",
-      "Municipal Waste",
-      "Industrial Waste"
-    ]
+  hydraulics: {
+    maxFeedFlowM3H: 19.3,
+    minConcentrateFlowM3H: 2.7,
+    maxElementRecovery: 0.15,
+    maxPressureDropBar: 1.0,
+    spacerMil: 34
   },
+
+  pressureDropModel: {
+    coefficient: 0.0065,
+    exponent: 1.55
+  },
+
+  agingModel: {
+
+    annualFluxDecline: 0.04,
+
+    foulingFactorDefault: 0.96
+  },
+
+  osmoticModel: {
+
+    type: "vanthoff-corrected",
+
+    coefficient: 0.00079,
+
+    formula: "π(bar) = 0.00079 × TDS × (T/298.15)"
+  },
+
+  limits: {
+
+    maxTds: 10000,
+
+    maxTemp: 45,
+
+    maxPressure: 41
+  },
+
+  compatibleWaterTypes: [
+    "Brackish Well",
+    "Brackish Surface",
+    "Municipal Waste",
+    "Industrial Waste"
+  ]
+},
 
   bwtds2k8040: {
     id: 'bwtds2k8040',
@@ -761,7 +761,7 @@ export const MEMBRANES = {
     transport: {
       kMtRef: 450,
       soluteBFactors: {
-        monovalent: 1.59,
+        monovalent: 1.59, 
         divalent: 0.45,
         silica: 0.85,
         boron: 1.4,
@@ -788,7 +788,7 @@ export const MEMBRANES = {
       coefficient: 0.0030, // Calibrated for high-flow 8040 vessel
       exponent: 1.20
     },
-
+   
     agingModel: {
       annualFluxDecline: 0.05,
       foulingFactorDefault: 1.0
@@ -797,7 +797,7 @@ export const MEMBRANES = {
       type: 'industrial-linear',
       coefficient: 0.00079,
 
-      formula: 'π(bar) = 0.00079 × TDS',
+      formula: 'π(bar) = 0.00079 × TDS',  
       note: 'Calculated via calculateOsmoticPressure(tds, "bar")'
     },
     limits: {
@@ -812,193 +812,193 @@ export const MEMBRANES = {
   },
 
   bwtds5k8040: {
-    id: 'bwtds5k8040',
-    name: 'BW-TDS-5K-8040',
-    category: '8040',
-    type: MEMBRANE_TYPES.BRACKISH,
+  id: 'bwtds5k8040',
+  name: 'BW-TDS-5K-8040',
+  category: '8040',
+  type: MEMBRANE_TYPES.BRACKISH,
 
-    areaM2: 37.2,
+  areaM2: 37.2,
 
-    calibration: {
-      aMultiplier: 1.475,
-      bFactorTdsCoeff: 0.011
-    },
-
-    transport: {
-
-      kMtRef: 450,
-
-      soluteBFactors: {
-        monovalent: 1.59,
-        divalent: 0.45,
-        silica: 0.85,
-        boron: 1.4,
-        alkalinity: 1.2,
-        co2: 999
-      }
-    },
-
-    testConditions: {
-
-      pressureBar: 15.5,
-
-      temperatureC: 25,
-
-      tds: 2000,
-
-      recovery: 0.15,
-
-      fluxLMH: 40.4,
-
-      rejection: 0.9970
-    },
-
-    hydraulics: {
-
-      maxFeedFlowM3H: 16,
-
-      minConcentrateFlowM3H: 3,
-
-      maxElementRecovery: 0.20,
-
-      maxPressureDropBar: 1.03,
-
-      spacerMil: 34
-    },
-
-    pressureDropModel: {
-
-      coefficient: 0.0032,
-
-      exponent: 1.70
-    },
-
-    agingModel: {
-
-      annualFluxDecline: 0.05,
-
-      foulingFactorDefault: 1.0
-    },
-
-    osmoticModel: {
-
-      type: 'industrial-linear',
-
-      coefficient: 0.00079,
-
-      formula: 'π(bar) = 0.00079 × TDS'
-    },
-
-    limits: {
-
-      maxTds: 5000,
-
-      maxTemp: 45,
-
-      maxPressure: 41
-    },
-
-    compatibleWaterTypes: [
-      'Brackish Well Non-Fouling',
-      'Brackish Surface'
-    ]
+  calibration: {
+    aMultiplier: 1.475,
+    bFactorTdsCoeff: 0.011
   },
 
+  transport: {
+
+    kMtRef: 450,
+
+    soluteBFactors: {
+      monovalent: 1.59,
+      divalent: 0.45,
+      silica: 0.85,
+      boron: 1.4,
+      alkalinity: 1.2,
+      co2: 999
+    }
+  },
+
+  testConditions: {
+
+    pressureBar: 15.5,
+
+    temperatureC: 25,
+
+    tds: 2000,
+
+    recovery: 0.15,
+
+    fluxLMH: 40.4,
+
+    rejection: 0.9970
+  },
+
+  hydraulics: {
+
+    maxFeedFlowM3H: 16,
+
+    minConcentrateFlowM3H: 3,
+
+    maxElementRecovery: 0.20,
+
+    maxPressureDropBar: 1.03,
+
+    spacerMil: 34
+  },
+
+  pressureDropModel: {
+
+    coefficient: 0.0032,
+
+    exponent: 1.70
+  },
+
+  agingModel: {
+
+    annualFluxDecline: 0.05,
+
+    foulingFactorDefault: 1.0
+  },
+
+  osmoticModel: {
+
+    type: 'industrial-linear',
+
+    coefficient: 0.00079,
+
+    formula: 'π(bar) = 0.00079 × TDS'
+  },
+
+  limits: {
+
+    maxTds: 5000,
+
+    maxTemp: 45,
+
+    maxPressure: 41
+  },
+
+  compatibleWaterTypes: [
+    'Brackish Well Non-Fouling',
+    'Brackish Surface'
+  ]
+},
+
   swtds32k8040: {
-    id: 'swtds32k8040',
-    name: 'SW-TDS-32K-8040',
-    category: '8040',
-    type: MEMBRANE_TYPES.SEAWATER,
+  id: 'swtds32k8040',
+  name: 'SW-TDS-32K-8040',
+  category: '8040',
+  type: MEMBRANE_TYPES.SEAWATER,
 
-    areaM2: 37.2,
+  areaM2: 37.2,
 
-    maxFlux: 14,
+  maxFlux: 14,
 
-    calibration: {
-      aMultiplier: 0.98,
-      bFactorTdsCoeff: 0
-    },
+  calibration: {
+    aMultiplier: 0.98,
+    bFactorTdsCoeff: 0
+  },
 
-    transport: {
+  transport: {
 
-      kMtRef: 380,
+    kMtRef: 380,
 
-      soluteBFactors: {
-        monovalent: 0.95,
-        divalent: 0.6,
-        silica: 0.8,
-        boron: 1.4,
-        alkalinity: 1.8,
-        co2: 999
-      }
-    },
+    soluteBFactors: {
+      monovalent: 0.95,
+      divalent: 0.6,
+      silica: 0.8,
+      boron: 1.4,
+      alkalinity: 1.8,
+      co2: 999
+    }
+  },
 
-    testConditions: {
+  testConditions: {
 
-      pressureBar: 55.2,
+    pressureBar: 55.2,
 
-      temperatureC: 25,
+    temperatureC: 25,
 
-      tds: 32000,
+    tds: 32000,
 
-      recovery: 0.10,
+    recovery: 0.10,
 
-      fluxLMH: 34.7,
+    fluxLMH: 34.7,
 
-      rejection: 0.9982
-    },
+    rejection: 0.9982
+  },
 
-    hydraulics: {
+  hydraulics: {
 
-      maxFeedFlowM3H: 19.3,
+    maxFeedFlowM3H: 19.3,
 
-      minConcentrateFlowM3H: 3,
+    minConcentrateFlowM3H: 3,
 
-      maxElementRecovery: 0.10,
+    maxElementRecovery: 0.10,
 
-      maxPressureDropBar: 1.03,
+    maxPressureDropBar: 1.03,
 
-      spacerMil: 34
-    },
+    spacerMil: 34
+  },
 
-    pressureDropModel: {
+  pressureDropModel: {
 
-      coefficient: 0.012,
+    coefficient: 0.012,
 
-      exponent: 1.22
-    },
+    exponent: 1.22
+  },
 
-    agingModel: {
+  agingModel: {
 
-      annualFluxDecline: 0.05,
+    annualFluxDecline: 0.05,
 
-      foulingFactorDefault: 0.95
-    },
+    foulingFactorDefault: 0.95
+  },
 
-    osmoticModel: {
+  osmoticModel: {
 
-      type: 'seawater-linear',
+    type: 'seawater-linear',
 
-      coefficient: 0.00085,
+    coefficient: 0.00085,
 
-      formula: 'π(bar) = 0.00085 × TDS'
-    },
+    formula: 'π(bar) = 0.00085 × TDS'
+  },
 
-    limits: {
+  limits: {
 
-      maxTds: 40000,
+    maxTds: 40000,
 
-      maxTemp: 45,
+    maxTemp: 45,
 
-      maxPressure: 83
-    },
+    maxPressure: 83
+  },
 
-    compatibleWaterTypes: [
-      'Seawater',
-      'Sea Well',
-      'Sea Surface'
-    ]
-  }
+  compatibleWaterTypes: [
+    'Seawater',
+    'Sea Well',
+    'Sea Surface'
+  ]
+}
 };
 
 // ============================================
@@ -1012,17 +1012,17 @@ export const MEMBRANES = {
  */
 export const getMembrane = (membraneId) => {
   if (!membraneId) return null;
-
+  
   // 1. Direct match
   if (MEMBRANES[membraneId]) return MEMBRANES[membraneId];
-
+  
   // 2. Normalized match (lowercase, no dashes)
   const id = membraneId.toLowerCase().replace(/-/g, '');
   if (MEMBRANES[id]) return MEMBRANES[id];
-
+  
   // 3. Search by name or normalized ID in values
-  return Object.values(MEMBRANES).find(m =>
-    m.id.toLowerCase().replace(/-/g, '') === id ||
+  return Object.values(MEMBRANES).find(m => 
+    m.id.toLowerCase().replace(/-/g, '') === id || 
     m.name.toLowerCase().replace(/-/g, '') === id
   ) || null;
 };
@@ -1060,14 +1060,14 @@ export const getMembranesByCategory = (category) => {
  */
 export const getArea = (membrane) => {
   if (!membrane) return 37.16;
-
-  const is4040 =
-    (membrane.id && membrane.id.toLowerCase().includes('4040')) ||
+  
+  const is4040 = 
+    (membrane.id && membrane.id.toLowerCase().includes('4040')) || 
     (membrane.name && membrane.name.toLowerCase().includes('4040')) ||
     membrane.category === '4040';
 
-  const is8040 =
-    (membrane.id && membrane.id.toLowerCase().includes('8040')) ||
+  const is8040 = 
+    (membrane.id && membrane.id.toLowerCase().includes('8040')) || 
     (membrane.name && membrane.name.toLowerCase().includes('8040')) ||
     membrane.category === '8040';
 
@@ -1076,13 +1076,13 @@ export const getArea = (membrane) => {
 
   // Use area property (sq ft) if present
   if (membrane.area) {
-    const areaVal = Number(membrane.area);
-    // If it's a 4040 but area is 400, it's a mismatch in the data, it should be ~80
-    if (is4040 && areaVal > 300) return 7.432;
-    if (is8040 && areaVal < 300) return 37.16;
-    return areaVal * 0.09290304;
+     const areaVal = Number(membrane.area);
+     // If it's a 4040 but area is 400, it's a mismatch in the data, it should be ~80
+     if (is4040 && areaVal > 300) return 7.432; 
+     if (is8040 && areaVal < 300) return 37.16;
+     return areaVal * 0.09290304;
   }
-
+  
   if (is4040) return 7.432;
   return 37.16;
 };
@@ -1094,22 +1094,22 @@ export const getArea = (membrane) => {
  */
 export const getAValue = (membrane) => {
   if (!membrane) return 3.40;
-
+  
   // 1. Try explicit reference value
-  let a = Number(membrane.transport?.waterPermeability?.A) ||
-    Number(membrane.transport?.aValueRef) ||
-    Number(membrane.aValue);
-
+  let a = Number(membrane.transport?.waterPermeability?.A) || 
+          Number(membrane.transport?.aValueRef) || 
+          Number(membrane.aValue);
+  
   // 2. Dynamic calibration from test conditions if reference missing
   if ((isNaN(a) || a <= 0) && membrane.testConditions) {
     const tc = membrane.testConditions;
     const isSeawater = membrane.type === MEMBRANE_TYPES.SEAWATER;
     const osmoticCoeff = membrane.osmoticModel?.coefficient || (isSeawater ? DEFAULT_OSMOTIC_COEFF_SEAWATER : DEFAULT_OSMOTIC_COEFF_BRACKISH);
     const aMultiplier = membrane.calibration?.aMultiplier || 1.0;
-
+    
     a = calculateA(tc.fluxLMH, tc.pressureBar, tc.tds, osmoticCoeff, tc.recovery, isSeawater) * aMultiplier;
   }
-
+  
   if (isNaN(a) || a <= 0) {
     return membrane.category === '4040' ? 3.11 : 3.40;
   }
@@ -1124,11 +1124,11 @@ export const getAValue = (membrane) => {
  */
 export const getMembraneB = (membrane, inputs = null) => {
   if (!membrane) return 0.14;
-
-  const bRef = membrane?.transport?.saltPermeability?.B ||
-    membrane?.transport?.membraneBRef ||
-    membrane?.membraneB;
-
+  
+  const bRef = membrane?.transport?.saltPermeability?.B || 
+               membrane?.transport?.membraneBRef || 
+               membrane?.membraneB;
+  
   // If it's a function (dynamic calibrator), call it with inputs or defaults
   if (typeof bRef === 'function') {
     const A = getAValue(membrane);
@@ -1149,13 +1149,13 @@ export const getMembraneB = (membrane, inputs = null) => {
     const isSeawater = membrane.type === MEMBRANE_TYPES.SEAWATER;
     const kMtRef = membrane.transport?.kMtRef || (isSeawater ? 720 : 1000);
     const bFactorTdsCoeff = getBFactorCoeff(membrane);
-
+    
     const B_calibrated = estimateMembraneB(
-      tc.fluxLMH,
-      tc.tds,
-      tc.rejection,
-      tc.recovery,
-      isSeawater,
+      tc.fluxLMH, 
+      tc.tds, 
+      tc.rejection, 
+      tc.recovery, 
+      isSeawater, 
       kMtRef,
       bFactorTdsCoeff
     );
@@ -1169,7 +1169,7 @@ export const getMembraneB = (membrane, inputs = null) => {
 
     return B_calibrated;
   }
-
+  
   return 0.14;
 };
 
@@ -1182,7 +1182,7 @@ export const getMembraneB = (membrane, inputs = null) => {
 export const getIonBFactor = (membrane, ionKey) => {
   const factors = membrane?.transport?.soluteBFactors || {};
   const ionLower = ionKey.toLowerCase();
-
+  
   if (ionLower === 'co2') return factors.co2 || 999;
   if (['hco3', 'co3'].includes(ionLower)) {
     return factors.alkalinity || factors.monovalent || 1.0;
@@ -1196,7 +1196,7 @@ export const getIonBFactor = (membrane, ionKey) => {
   if (['boron', 'h3bo3', 'b'].includes(ionLower)) {
     return factors.boron || 1.4;
   }
-
+  
   return factors.monovalent || 1.0;
 };
 
@@ -1212,12 +1212,12 @@ export const calculateActualAValue = (membrane, testPressureBar, testOsmoticBar)
   if (!membrane?.testConditions) {
     return getAValue(membrane);
   }
-
+  
   const testFlux = Number(membrane.testConditions.fluxLMH) || 28;
   const testNdp = testPressureBar - testOsmoticBar;
-
+  
   if (testNdp <= 0) return getAValue(membrane);
-
+  
   return testFlux / testNdp;
 };
 
@@ -1253,7 +1253,7 @@ export const getHydraulicLimits = (membrane) => {
  */
 export const isMembraneSuitableForWaterType = (membrane, waterType) => {
   if (!membrane) return false;
-
+  
   const compatible = membrane?.compatibleWaterTypes || [];
   return compatible.includes(waterType) || compatible.includes('All');
 };
@@ -1280,28 +1280,28 @@ export const getRecommendedMembranes = (waterType, tds = 0) => {
 export const validateMembraneConditions = (membrane, conditions = {}) => {
   const critical = [];
   const warnings = [];
-
+  
   if (!membrane) {
     critical.push('Membrane not found');
     return { valid: false, critical, warnings };
   }
-
+  
   const limits = membrane.limits || {};
   const hydraulics = membrane.hydraulics || {};
   const designFlux = membrane.designFlux || {};
-
+  
   if (conditions.tds && limits.maxTds && conditions.tds > limits.maxTds) {
     critical.push(`TDS (${conditions.tds}) exceeds max (${limits.maxTds})`);
   }
-
+  
   if (conditions.temp && limits.maxTemp && conditions.temp > limits.maxTemp) {
     critical.push(`Temperature (${conditions.temp}°C) exceeds max (${limits.maxTemp}°C)`);
   }
-
+  
   if (conditions.pressure && limits.maxPressure && conditions.pressure > limits.maxPressure) {
     critical.push(`Pressure (${conditions.pressure}) exceeds max (${limits.maxPressure})`);
   }
-
+  
   if (conditions.flux) {
     if (conditions.flux < 3) {
       critical.push(`Flux ${conditions.flux} LMH: Below minimum 3 LMH`);
@@ -1316,19 +1316,19 @@ export const validateMembraneConditions = (membrane, conditions = {}) => {
       warnings.push(`Flux ${conditions.flux} above design maximum ${designFlux.max} LMH`);
     }
   }
-
+  
   if (conditions.feedFlowM3h && hydraulics.maxFeedFlowM3H && conditions.feedFlowM3h > hydraulics.maxFeedFlowM3H) {
     critical.push(`Feed flow ${conditions.feedFlowM3h} m³/h exceeds max ${hydraulics.maxFeedFlowM3H} m³/h`);
   }
-
+  
   if (conditions.elementRecovery && hydraulics.maxElementRecovery && conditions.elementRecovery > hydraulics.maxElementRecovery) {
     critical.push(`Element recovery ${(conditions.elementRecovery * 100).toFixed(1)}% exceeds max ${(hydraulics.maxElementRecovery * 100).toFixed(0)}%`);
   }
-
+  
   if (conditions.pressureDrop && hydraulics.maxPressureDropBar && conditions.pressureDrop > hydraulics.maxPressureDropBar) {
     critical.push(`Pressure drop ${conditions.pressureDrop} bar exceeds max ${hydraulics.maxPressureDropBar} bar per element`);
   }
-
+  
   return {
     valid: critical.length === 0,
     critical,
@@ -1345,7 +1345,7 @@ export const createCustomMembrane = (spec) => {
   if (!spec.id || !spec.name) {
     throw new Error('Membrane must have id and name');
   }
-
+  
   return {
     id: spec.id,
     name: spec.name,
@@ -1415,33 +1415,33 @@ export const createCustomMembrane = (spec) => {
  */
 export const compareMembranes = (mem1, mem2) => {
   if (!mem1 || !mem2) return null;
-
+  
   return {
     name1: mem1.name,
     name2: mem2.name,
-    aValue: {
-      mem1: getAValue(mem1),
-      mem2: getAValue(mem2),
-      winner: getAValue(mem1) > getAValue(mem2) ? 'mem1' : 'mem2'
+    aValue: { 
+      mem1: getAValue(mem1), 
+      mem2: getAValue(mem2), 
+      winner: getAValue(mem1) > getAValue(mem2) ? 'mem1' : 'mem2' 
     },
-    membraneB: {
-      mem1: getMembraneB(mem1),
-      mem2: getMembraneB(mem2),
-      winner: getMembraneB(mem1) < getMembraneB(mem2) ? 'mem1' : 'mem2'
+    membraneB: { 
+      mem1: getMembraneB(mem1), 
+      mem2: getMembraneB(mem2), 
+      winner: getMembraneB(mem1) < getMembraneB(mem2) ? 'mem1' : 'mem2' 
     },
-    area: {
-      mem1: mem1.areaM2,
-      mem2: mem2.areaM2,
-      winner: mem1.areaM2 > mem2.areaM2 ? 'mem1' : 'mem2'
+    area: { 
+      mem1: mem1.areaM2, 
+      mem2: mem2.areaM2, 
+      winner: mem1.areaM2 > mem2.areaM2 ? 'mem1' : 'mem2' 
     },
-    designFlux: {
-      mem1: mem1.designFlux?.recommended,
-      mem2: mem2.designFlux?.recommended
+    designFlux: { 
+      mem1: mem1.designFlux?.recommended, 
+      mem2: mem2.designFlux?.recommended 
     },
-    maxTds: {
-      mem1: mem1.limits?.maxTds,
-      mem2: mem2.limits?.maxTds,
-      winner: mem1.limits?.maxTds > mem2.limits?.maxTds ? 'mem1' : 'mem2'
+    maxTds: { 
+      mem1: mem1.limits?.maxTds, 
+      mem2: mem2.limits?.maxTds, 
+      winner: mem1.limits?.maxTds > mem2.limits?.maxTds ? 'mem1' : 'mem2' 
     }
   };
 };
@@ -1454,11 +1454,11 @@ export const compareMembranes = (mem1, mem2) => {
 export const getKdp = (membrane) => {
   if (!membrane) return 0.0042;
   if (membrane.pressureDropModel?.coefficient) return membrane.pressureDropModel.coefficient;
-
+  
   // High-fidelity fallback based on category
   const category = membrane.category || '';
   if (category === '4040') return 0.082; // Standard 4040 calibrated coefficient
-
+  
   if (membrane.nominalFlowDP) {
     const exp = getPExp(membrane);
     return membrane.nominalFlowDP / Math.pow(16.0, exp);
@@ -1496,7 +1496,7 @@ export const getOsmoticCoefficient = (membrane) => {
 export const getPExp = (m) => {
   if (m?.pressureDropModel?.exponent) return m.pressureDropModel.exponent;
   if (m?.dpExponent) return m.dpExponent;
-
+  
   const category = m?.category || '';
   if (category === '4040') return 1.40; // Standard 4040 calibrated exponent
   return 1.22;
@@ -1517,7 +1517,7 @@ export const calculateIonTransport = (membrane, feedIons, fluxLMH, beta = 1.0, r
 
   const baseB = getMembraneB(membrane);
   const results = {};
-
+  
   // Account for concentration factor along the element
   const cf = 1 / Math.max(0.001, 1 - recovery);
   const cf_avg = recovery > 0.005 ? (cf - 1) / Math.log(cf) : (1 + cf) / 2;
@@ -1585,7 +1585,7 @@ export const calculateIonTransport = (membrane, feedIons, fluxLMH, beta = 1.0, r
  */
 export const validateIonTransportResult = (transportResult, membrane) => {
   const warnings = [];
-
+  
   if (membrane.type === MEMBRANE_TYPES.SEAWATER) {
     if (getMembraneB(membrane) > 0.15) {
       warnings.push("Seawater B too high (>0.15) — rejection may fall below 97%");
@@ -1594,11 +1594,11 @@ export const validateIonTransportResult = (transportResult, membrane) => {
       warnings.push("Seawater rejection unusually low. Check B scaling or flux.");
     }
   }
-
+  
   if (membrane.type === MEMBRANE_TYPES.BRACKISH && transportResult.averageRejection < 0.85) {
     warnings.push("Brackish rejection unusually low. Verify feed water quality.");
   }
-
+  
   return {
     safe: warnings.length === 0,
     warnings

@@ -311,7 +311,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
 
   // Iterate startPfeed to hit target recovery (Bisection method)
   let lowP = 0.1;
-  let highP = isSeawaterSystem ? 85 : 45; // Increased to handle extreme designs (e.g. 532 bar in user benchmark)
+  let highP = isSeawaterSystem ? 120 : 100; // Increased to handle extreme designs (e.g. 69 bar in user benchmark)
   let finalSystemRun = null;
   
   for (let i = 0; i < 50; i++) {
