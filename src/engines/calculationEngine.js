@@ -936,15 +936,16 @@ export const calculateDynamicAValue = (params) => {
   } = params;
   
   const tcf = calculateTCF(tempCelsius, 'A');
-  const agingFactor = 1 - (fluxDeclinePercent / 100) * membraneAgeYears;
+  // Geometric aging: (1 - decline)^age
+  const agingFactor = Math.pow(1 - (fluxDeclinePercent / 100), membraneAgeYears);
   
-  return aValue25 * tcf * Math.max(agingFactor, 0.7) * foulingFactor;
+  return aValue25 * tcf * Math.max(agingFactor, 0.5) * foulingFactor;
 };
 
 /**
  * Calculate dynamic B-value with temperature correction (INDUSTRIAL GRADE)
- * Includes ionic weighting for different solutes
- * @param {object} params - {bValue25, tempCelsius, ionicWeighting, foulingFactor}
+ * Includes ionic weighting and salt passage aging
+ * @param {object} params - {bValue25, tempCelsius, ionicWeighting, foulingFactor, spIncreasePercent, membraneAgeYears}
  * @returns {number} Actual B-value at operating conditions
  */
 export const calculateDynamicBValue = (params) => {
@@ -952,11 +953,16 @@ export const calculateDynamicBValue = (params) => {
     bValue25,
     tempCelsius = 25,
     ionicWeighting = 1.0,
-    foulingFactor = 1.0
+    foulingFactor = 1.0,
+    spIncreasePercent = 0,
+    membraneAgeYears = 0
   } = params;
   
   const tcf = calculateTCF(tempCelsius, 'B');
-  return bValue25 * tcf * ionicWeighting * foulingFactor;
+  // Geometric SP aging: (1 + increase)^age
+  const agingFactor = Math.pow(1 + (spIncreasePercent / 100), membraneAgeYears);
+  
+  return bValue25 * tcf * ionicWeighting * foulingFactor * agingFactor;
 };
 
 /**
@@ -1522,6 +1528,7 @@ export const designMultiStageSystem = (params) => {
     elementsPerVessel = 6,
     vesselsPerStage = [4, 2, 1],
     fluxDeclinePercent = 0,
+    spIncreasePercent = 0,
     membraneAgeYears = 0,
     foulingFactor = 1.0
   } = params;
@@ -1556,7 +1563,7 @@ export const designMultiStageSystem = (params) => {
       R: stageRecovery,
       T: tempCelsius,
       A_ref: aValueCorrected / calculateTCF(tempCelsius, 'A'), // calculateROStage will re-apply TCF
-      B_ref: (membrane.membraneB || membrane.transport?.membraneBRef || 0.14) * Math.pow(1.07, membraneAgeYears), // SP increase 7%/yr
+    B_ref: (membrane.membraneB || membrane.transport?.membraneBRef || 0.14) * Math.pow(1 + (Number(spIncreasePercent || 7) / 100), Number(membraneAgeYears)), 
       Area: membrane.areaM2 || 37.16,
       Pfeed: currentPressure,
       vesselsPerStage: vessels,

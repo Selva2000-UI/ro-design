@@ -147,11 +147,11 @@ export const MEMBRANES = {
     kMtRef: 280,
 
     soluteBFactors: {
-      monovalent: 1.635,
-      divalent: 0.45,
+      monovalent: 1.645,
+      divalent: 0.1,
       silica: 0.85,
       boron: 1.4,
-      alkalinity: 1.2,
+      alkalinity: 0.1,
       co2: 999
     }
   },
@@ -250,10 +250,10 @@ export const MEMBRANES = {
       kMtRef: 620,
       soluteBFactors: {
         monovalent: 1.575,
-        divalent: 0.45,
+        divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
-        alkalinity: 1.2,
+        alkalinity: 0.1,
         co2: 999
       }
     },
@@ -316,11 +316,11 @@ export const MEMBRANES = {
     transport: {
       kMtRef: 410,
       soluteBFactors: {
-        monovalent: 1.2,
-        divalent: 0.55,
+        monovalent: 1.22,
+        divalent: 0.1,
         silica: 0.8,
         boron: 1.3,
-        alkalinity: 1.7,
+        alkalinity: 0.1,
         co2: 999
       }
     },
@@ -388,6 +388,7 @@ export const MEMBRANES = {
         divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
+        alkalinity: 0.1,
         co2: 999
       }
     },
@@ -452,11 +453,11 @@ export const MEMBRANES = {
     transport: {
       kMtRef: 340,
       soluteBFactors: {
-        monovalent: 1.622, 
-        divalent: 0.6,
+        monovalent: 1.635, 
+        divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
-        alkalinity: 1.2,
+        alkalinity: 0.1,
         co2: 999
       }
     },
@@ -525,11 +526,11 @@ export const MEMBRANES = {
     kMtRef: 280,
 
     soluteBFactors: {
-      monovalent: 1.28,
-      divalent: 0.40,
+      monovalent: 1.42,
+      divalent: 0.1,
       silica: 0.8,
       boron: 1.4,
-      alkalinity: 1.1,
+      alkalinity: 0.1,
       co2: 999
     }
   },
@@ -620,9 +621,10 @@ export const MEMBRANES = {
       kMtRef: 750,
       soluteBFactors: {
         monovalent: 1.0, 
-        divalent: 0.6,
+        divalent: 0.1,
         silica: 0.75,
         boron: 1.3,
+        alkalinity: 0.1,
         co2: 999
       }
     },
@@ -685,11 +687,11 @@ export const MEMBRANES = {
     transport: {
       kMtRef: 400,
       soluteBFactors: {
-        monovalent: 1.75,
-        divalent: 0.45,
+        monovalent: 1.764,
+        divalent: 0.1,
         silica: 0.8,
         boron: 1.4,
-        alkalinity: 1.2,
+        alkalinity: 0.1,
         co2: 999
       }
     },
@@ -762,10 +764,10 @@ export const MEMBRANES = {
       kMtRef: 450,
       soluteBFactors: {
         monovalent: 1.59, 
-        divalent: 0.45,
+        divalent: 0.1,
         silica: 0.85,
         boron: 1.4,
-        alkalinity: 1.2,
+        alkalinity: 0.1,
         co2: 999
       }
     },
@@ -830,10 +832,10 @@ export const MEMBRANES = {
 
     soluteBFactors: {
       monovalent: 1.59,
-      divalent: 0.45,
+      divalent: 0.1,
       silica: 0.85,
       boron: 1.4,
-      alkalinity: 1.2,
+      alkalinity: 0.1,
       co2: 999
     }
   },
@@ -924,11 +926,11 @@ export const MEMBRANES = {
     kMtRef: 380,
 
     soluteBFactors: {
-      monovalent: 0.95,
-      divalent: 0.6,
+      monovalent: 0.97,
+      divalent: 0.1,
       silica: 0.8,
       boron: 1.4,
-      alkalinity: 1.8,
+      alkalinity: 0.1,
       co2: 999
     }
   },
