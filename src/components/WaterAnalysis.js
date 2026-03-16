@@ -1,3 +1,6 @@
+
+
+
 import React, { useMemo } from 'react';
 import { calculateWaterSaturations, calculateCarbonateEquilibrium, calculateFeedTds, calculateIonicStrength } from '../engines/calculationEngine';
 
@@ -58,7 +61,7 @@ export const WaterAnalysis = ({ waterData, setWaterData, handleApplyTdsProfile }
       waterData, 
       Number(waterData.temp) || 25, 
       Number(waterData.ph) || 7.5,
-      0.000792,
+      null,
       Number(waterData.calculatedTds) || null
     );
 

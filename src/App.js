@@ -379,7 +379,7 @@ const App = () => {
 
     const rawTds = Number(waterData.calculatedTds) || 0;
     const systemTemp = Number(waterData.temp) || 25;
-    const toEcondString = (tds, ph) => calculateEC(tds, systemTemp, ph).toFixed(2);
+    const toEcondString = (tds, ph) => calculateEC(tds, systemTemp, ph, waterData).toFixed(2);
 
     const generateFlowDiagramSVG = () => {
       const numStages = Math.min(Math.max(Number(systemConfig.pass1Stages) || 1, 1), 6);
