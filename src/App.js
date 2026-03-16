@@ -6,6 +6,7 @@ import PostTreatment from './components/PostTreatment';
 import Report from './components/Report';
 import MembraneEditor from './components/MembraneEditor';
 import DesignGuidelines from './components/DesignGuidelines';
+import Loading from './components/Loading';
 import { calculateSystem, calculateEC, applyTdsProfile } from './utils/calculatorService';
 import { getAllMembranes } from './engines/membraneEngine';
 import { EQ_WEIGHTS } from './components/WaterAnalysis';
@@ -15,6 +16,7 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isLoaded, setIsLoaded] = useState(false);
   const [isGuidelineOpen, setIsGuidelineOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const fileInputRef = useRef(null);
 
   const DEFAULT_MEMBRANES = useMemo(() => {
@@ -69,6 +71,14 @@ const App = () => {
     // Economics
     energyCostPerKwh: 0.12
   }), []);
+
+  const handleTabChange = (tab) => {
+    setIsLoading(true);
+    setTimeout(() => {
+      setActiveTab(tab);
+      setIsLoading(false);
+    }, 1000); // 2000ms loading
+  };
 
   // --- 1. STATE MANAGEMENT ---
   const [snapshots, setSnapshots] = useState([]);
@@ -896,6 +906,7 @@ const App = () => {
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f4f7f9', display: 'flex', flexDirection: 'column' }}>
+      {isLoading && <Loading />}
 
       {/* GLOBAL HEADER */}
       <header style={{ backgroundColor: '#002f5d', color: '#fff', padding: '10px 20px', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
@@ -968,7 +979,7 @@ const App = () => {
           {['dashboard', 'analysis', 'pretreatment', 'design', 'post', 'report', 'database'].map(t => (
             <button
               key={t}
-              onClick={() => setActiveTab(t)}
+              onClick={() => handleTabChange(t)}
               style={{
                 padding: '8px 14px',
                 background: activeTab === t ? '#f39c12' : 'transparent',
