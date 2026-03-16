@@ -7,7 +7,7 @@ import Report from './components/Report';
 import MembraneEditor from './components/MembraneEditor';
 import DesignGuidelines from './components/DesignGuidelines';
 import Loading from './components/Loading';
-import { calculateSystem, calculateEC, applyTdsProfile } from './utils/calculatorService';
+import { calculateSystem, calculateEC, applyTdsProfile, BAR_TO_PSI, M3H_TO_GPM, LMH_TO_GFD, FLOW_CONVERSION_MAP } from './utils/calculatorService';
 import { getAllMembranes } from './engines/membraneEngine';
 import { EQ_WEIGHTS } from './components/WaterAnalysis';
 
@@ -349,7 +349,12 @@ const App = () => {
     const isImperial = ['gpm', 'gpd', 'mgd', 'migd'].includes((unit || '').toLowerCase().trim().replace('/', ''));
     const pUnit = isImperial ? 'psi' : 'bar';
     const fluxUnit = isImperial ? 'gfd' : 'lmh';
+    const usePsi = isImperial;
+    const useGfd = isImperial;
     const fUnit = unit; // Use the actual selected unit
+
+    const unitFactor = FLOW_CONVERSION_MAP[unit] || 1;
+    const displayFactor = 1 / unitFactor;
 
     const permTds = Number(projection?.permeateParameters?.tds ?? 0);
     const concTds = Number(projection?.concentrateParameters?.tds ?? 0);
@@ -704,6 +709,71 @@ const App = () => {
                 <tr><td>Ca3(PO4)2 SI</td><td>${projection.concentrateParameters?.saturation?.saturations?.ca3po42 ?? '0.00'}</td><td></td></tr>
                 <tr><td>CaF2, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.caF2 ?? '0'}</td><td>%</td></tr>
                 <tr><td>Langelier</td><td>${projection.concentrateParameters?.saturation?.lsi ?? '0.00'}</td><td></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section" style="page-break-before: always;">
+            <div class="section-title">Element-by-Element Analysis</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Pass-Stage</th>
+                  <th>Element</th>
+                  <th>Feed Pressure (${pUnit})</th>
+                  <th>Pressure Drop (${pUnit})</th>
+                  <th>Conc Osmo. (${pUnit})</th>
+                  <th>NDP (${pUnit})</th>
+                  <th>Perm Flow (${fUnit})</th>
+                  <th>Flux (${fluxUnit})</th>
+                  <th>Beta</th>
+                  <th>TDS (mg/l)</th>
+                  <th>Perm Ca</th>
+                  <th>Perm Mg</th>
+                  <th>Perm Na</th>
+                  <th>Perm Cl</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(projection.stageResults || []).flatMap((stage) => {
+                  let cumQp = 0;
+                  let cumSalt = { ca: 0, mg: 0, na: 0, cl: 0, total: 0 };
+                  
+                  return (stage.elements || []).map((el, elIdx) => {
+                    const ions = el.ions || {};
+                    cumQp += el.Qp;
+                    cumSalt.ca += el.Qp * (ions.ca || 0);
+                    cumSalt.mg += el.Qp * (ions.mg || 0);
+                    cumSalt.na += el.Qp * (ions.na || 0);
+                    cumSalt.cl += el.Qp * (ions.cl || 0);
+                    cumSalt.total += el.Qp * el.Cp;
+
+                    const displayTds = cumSalt.total / cumQp;
+                    const displayCa = cumSalt.ca / cumQp;
+                    const displayMg = cumSalt.mg / cumQp;
+                    const displayNa = cumSalt.na / cumQp;
+                    const displayCl = cumSalt.cl / cumQp;
+
+                    return `
+                      <tr>
+                        <td>${stage.array}</td>
+                        <td>${elIdx + 1}</td>
+                        <td>${(usePsi ? el.Pf * BAR_TO_PSI : el.Pf).toFixed(2)}</td>
+                        <td>${(usePsi ? el.dP * BAR_TO_PSI : el.dP).toFixed(2)}</td>
+                        <td>${(usePsi ? el.pi_f * BAR_TO_PSI : el.pi_f).toFixed(2)}</td>
+                        <td>${(usePsi ? el.NDP * BAR_TO_PSI : el.NDP).toFixed(2)}</td>
+                        <td>${(el.Qp * displayFactor).toFixed(2)}</td>
+                        <td>${(isImperial ? el.J * LMH_TO_GFD : el.J).toFixed(2)}</td>
+                        <td>${el.beta.toFixed(2)}</td>
+                        <td>${displayTds.toFixed(2)}</td>
+                        <td>${displayCa.toFixed(3)}</td>
+                        <td>${displayMg.toFixed(3)}</td>
+                        <td>${displayNa.toFixed(3)}</td>
+                        <td>${displayCl.toFixed(3)}</td>
+                      </tr>
+                    `;
+                  });
+                }).join('')}
               </tbody>
             </table>
           </div>

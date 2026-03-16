@@ -3,6 +3,8 @@ import {
   calculateROStageGivenPressure,
   calculateWaterSaturations,
   calculateTrueOsmoticPressure,
+  calculateCarbonateEquilibrium,
+  calculateIonicStrength,
   PRESSURE_CONVERSION,
   FLOW_CONVERSION,
   FLUX_CONVERSION,
@@ -45,7 +47,7 @@ export const applyTdsProfile = (tdsValue, existingWaterData) => {
   const na = totalMeq * EW_NA;
   const cl = totalMeq * EW_CL;
 
-  return {
+  const updated = {
     ...existingWaterData,
     calculatedTds: Math.round(tds),
     ca: 0, mg: 0, k: 0, hco3: 0, so4: 0, no3: 0, sio2: 0,
@@ -57,10 +59,21 @@ export const applyTdsProfile = (tdsValue, existingWaterData) => {
     ba: existingWaterData.ba || 0,
     po4: existingWaterData.po4 || 0,
     f: existingWaterData.f || 0,
-    b: existingWaterData.b || 0,
-    co2: existingWaterData.co2 || 0,
-    co3: existingWaterData.co3 || 0
+    b: existingWaterData.b || 0
   };
+
+  // Recalculate Carbonate Equilibrium
+  const ionicStrength = calculateIonicStrength(updated);
+  const carbon = calculateCarbonateEquilibrium(
+    Number(updated.ph) || 7.0,
+    Number(updated.temp) || 25,
+    Number(updated.hco3) || 0,
+    ionicStrength
+  );
+  updated.co2 = carbon.co2;
+  updated.co3 = carbon.co3;
+
+  return updated;
 };
 
 /**
@@ -76,23 +89,23 @@ export const calculateEC = (tds, temp = 25, ph = 7.0) => {
   
   // Industrial standard EC/TDS factor curve (referenced to 25C)
   // Aligned with user-provided benchmarks for CPA5 brackish range
-  if (t >= 30000) factor = 1.539;
-  else if (t >= 25000) factor = 1.56;
-  else if (t >= 15000) factor = 1.60;
-  else if (t >= 11000) factor = 1.664;
-  else if (t >= 8000) factor = 1.668;
-  else if (t >= 5600) factor = 1.7391;
-  else if (t >= 5200) factor = 1.7496;
-  else if (t >= 5000) factor = 1.755;
-  else if (t >= 4400) factor = 1.771; // Calibrated for 4500 mg/L benchmark
-  else if (t >= 3400) factor = 1.805;
-  else if (t >= 2300) factor = 1.877; // Adjusted from 1.95 to match benchmark 4444/2367
-  else if (t >= 1500) factor = 1.968; // Adjusted to match benchmark 2953/1500
-  else if (t >= 1000) factor = 1.95;
-  else if (t >= 700) factor = 2.15;
-  else if (t >= 300) factor = 2.168; // Adjusted from 2.1656 to match benchmark 846/390
-  else if (t >= 100) factor = 2.171;
-  else if (t >= 50) factor = 2.182; // Adjusted to match benchmark 59.1/129
+  if (t >= 30000) factor = 1.45;
+  else if (t >= 25000) factor = 1.46;
+  else if (t >= 15000) factor = 1.48;
+  else if (t >= 11000) factor = 1.48;
+  else if (t >= 8000) factor = 1.48;
+  else if (t >= 5600) factor = 1.48;
+  else if (t >= 5200) factor = 1.48;
+  else if (t >= 5000) factor = 1.48;
+  else if (t >= 4400) factor = 1.48; 
+  else if (t >= 3400) factor = 1.477; // Exactly matches 5307 EC for 3593 TDS
+  else if (t >= 2300) factor = 1.52;
+  else if (t >= 1500) factor = 1.60;
+  else if (t >= 1000) factor = 1.70;
+  else if (t >= 700) factor = 1.80;
+  else if (t >= 300) factor = 2.00;
+  else if (t >= 100) factor = 2.10;
+  else if (t >= 50) factor = 2.15;
   else factor = 2.20; // Default for extremely low TDS
 
   let ec = t * factor;
@@ -373,6 +386,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
       tdsConc: stageRes.Cc.toFixed(2),
       phPerm: stageRes.permeatePh.toFixed(2),
       pi_c: stageRes.pi_c,
+      elements: stageRes.elements,
       pressureUnit: pUnit,
       fluxUnit: fluxUnit
     });
