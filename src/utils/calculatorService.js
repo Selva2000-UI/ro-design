@@ -11,6 +11,7 @@ import {
   validateMultiStageDesign
 } from '../engines/calculationEngine.js';
 import * as MembraneEngine from '../engines/membraneEngine.js';
+import { validateDesignWithWaterType } from './designValidator.js';
 
 const { 
   getMembrane,
@@ -280,11 +281,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
         Pfeed: Math.max(currentPfeed, 0.1),
         T: toNum(temp, 25),
         A_ref: getAValue(membrane) * calculatedFoulingFactor,
-        B_ref: getMembraneB(membrane, { 
-          tds: currentFeedTds, 
-          feedPressure: currentPfeed,
-          recovery: toNum(recovery) / 100 
-        }) * calculatedSpFactor,
+        B_ref: getMembraneB(membrane) * calculatedSpFactor,
         Area: actualArea,
         membrane: membrane,
         elementsPerVessel: elements,
@@ -403,10 +400,7 @@ export const calculateSystem = (inputs, allMembranes = []) => {
   const firstMembraneObj = (allMembranes && allMembranes.length > 0)
     ? allMembranes.find(m => m.id === firstMembraneModel) || getMembrane(firstMembraneModel)
     : getMembrane(firstMembraneModel);
-  const designValidation = validateMultiStageDesign(finalSystemRun.results, systemRecovery, 0, firstMembraneObj);
-
-  const avgFluxLMH = totalAreaM2 > 0 ? (totalPermeateM3h * 1000) / totalAreaM2 : 0;
-
+  
   const permeateIons = {};
   const allIonKeys = [
     'ca', 'mg', 'na', 'k', 'nh4', 'ba', 'sr', 
@@ -456,6 +450,22 @@ export const calculateSystem = (inputs, allMembranes = []) => {
   const concPh = Number(inputs.feedPh || 7.0) + (Math.log10(cfActual) * 0.92);
   const concSaturations = calculateWaterSaturations(concIons, temp, concPh, osmoticCoeff, systemConcentrateTds);
   const permSaturations = calculateWaterSaturations(permeateIons, temp, 7.0, osmoticCoeff, permeateTds);
+
+  // High-fidelity validation based on Design Guidelines
+  const avgFluxLMH = totalAreaM2 > 0 ? (totalPermeateM3h * 1000) / totalAreaM2 : 0;
+  const highestFlux = Math.max(...stageResults.map(s => parseFloat(s.highestFlux)));
+  const highestBeta = Math.max(...stageResults.map(s => parseFloat(s.highestBeta)));
+  
+  // We'll prepare a pseudo-results object for the validator
+  const validationResults = {
+    avgFluxLMH,
+    highestFlux,
+    highestBeta,
+    concentrateSaturation: concSaturations,
+    concentrateParameters: { langelier: parseFloat(concPh) } // Simple LSI proxy
+  };
+
+  const designValidation = validateDesignWithWaterType(inputs, validationResults, waterType);
 
   const firstStagePfeed = finalSystemRun.results.length > 0 ? finalSystemRun.results[0].Pfeed : 0;
 

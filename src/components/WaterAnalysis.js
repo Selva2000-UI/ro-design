@@ -22,7 +22,7 @@ export const EQ_WEIGHTS = {
   po4: 32.00  // Aligned with benchmark: 0.16 mg/L -> 0.25 mg/L as CaCO3
 };
 
-export const WaterAnalysis = ({ waterData, setWaterData, handleApplyTdsProfile }) => {
+export const WaterAnalysis = ({ waterData, setWaterData, handleApplyTdsProfile, projection }) => {
   
   // --- LOGIC: IONIC BALANCE CALCULATION ---
   const balanceResults = useMemo(() => {
@@ -358,7 +358,12 @@ export const WaterAnalysis = ({ waterData, setWaterData, handleApplyTdsProfile }
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span>Ca3(PO4)2 SI</span>
-                    <span style={{ background: '#f8fbff', border: '1px solid #c2d1df', padding: '2px 6px' }}>{analysisTotals.ca3po42.toFixed(2)}</span>
+                    <span style={{ 
+                      background: projection?.designValidation?.fieldErrors?.ca3po42 ? '#ffcccc' : '#f8fbff', 
+                      border: projection?.designValidation?.fieldErrors?.ca3po42 ? '1px solid red' : '1px solid #c2d1df', 
+                      padding: '2px 6px',
+                      color: projection?.designValidation?.fieldErrors?.ca3po42 ? 'red' : 'inherit'
+                    }}>{analysisTotals.ca3po42.toFixed(2)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span>CCPP</span>
@@ -366,29 +371,59 @@ export const WaterAnalysis = ({ waterData, setWaterData, handleApplyTdsProfile }
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>LSI</span>
-                    <span style={{ background: '#f8fbff', border: '1px solid #c2d1df', padding: '2px 6px' }}>{analysisTotals.lsi.toFixed(2)}</span>
+                    <span style={{ 
+                      background: projection?.designValidation?.fieldErrors?.lsi ? '#ffcccc' : '#f8fbff', 
+                      border: projection?.designValidation?.fieldErrors?.lsi ? '1px solid red' : '1px solid #c2d1df', 
+                      padding: '2px 6px',
+                      color: projection?.designValidation?.fieldErrors?.lsi ? 'red' : 'inherit'
+                    }}>{analysisTotals.lsi.toFixed(2)}</span>
                   </div>
                 </div>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span>CaSO4</span>
-                    <span style={{ background: '#f8fbff', border: '1px solid #c2d1df', padding: '2px 6px' }}>{analysisTotals.caSo4.toFixed(1)} %</span>
+                    <span style={{ 
+                      background: projection?.designValidation?.fieldErrors?.caSo4 ? '#ffcccc' : '#f8fbff', 
+                      border: projection?.designValidation?.fieldErrors?.caSo4 ? '1px solid red' : '1px solid #c2d1df', 
+                      padding: '2px 6px',
+                      color: projection?.designValidation?.fieldErrors?.caSo4 ? 'red' : 'inherit'
+                    }}>{analysisTotals.caSo4.toFixed(1)} %</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span>BaSO4</span>
-                    <span style={{ background: '#f8fbff', border: '1px solid #c2d1df', padding: '2px 6px' }}>{analysisTotals.baSo4.toFixed(1)} %</span>
+                    <span style={{ 
+                      background: projection?.designValidation?.fieldErrors?.baSo4 ? '#ffcccc' : '#f8fbff', 
+                      border: projection?.designValidation?.fieldErrors?.baSo4 ? '1px solid red' : '1px solid #c2d1df', 
+                      padding: '2px 6px',
+                      color: projection?.designValidation?.fieldErrors?.baSo4 ? 'red' : 'inherit'
+                    }}>{analysisTotals.baSo4.toFixed(1)} %</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span>SrSO4</span>
-                    <span style={{ background: '#f8fbff', border: '1px solid #c2d1df', padding: '2px 6px' }}>{analysisTotals.srSo4.toFixed(1)} %</span>
+                    <span style={{ 
+                      background: projection?.designValidation?.fieldErrors?.srSo4 ? '#ffcccc' : '#f8fbff', 
+                      border: projection?.designValidation?.fieldErrors?.srSo4 ? '1px solid red' : '1px solid #c2d1df', 
+                      padding: '2px 6px',
+                      color: projection?.designValidation?.fieldErrors?.srSo4 ? 'red' : 'inherit'
+                    }}>{analysisTotals.srSo4.toFixed(1)} %</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span>CaF2</span>
-                    <span style={{ background: '#f8fbff', border: '1px solid #c2d1df', padding: '2px 6px' }}>{analysisTotals.caF2.toFixed(1)} %</span>
+                    <span style={{ 
+                      background: projection?.designValidation?.fieldErrors?.caF2 ? '#ffcccc' : '#f8fbff', 
+                      border: projection?.designValidation?.fieldErrors?.caF2 ? '1px solid red' : '1px solid #c2d1df', 
+                      padding: '2px 6px',
+                      color: projection?.designValidation?.fieldErrors?.caF2 ? 'red' : 'inherit'
+                    }}>{analysisTotals.caF2.toFixed(1)} %</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>SiO2</span>
-                    <span style={{ background: '#f8fbff', border: '1px solid #c2d1df', padding: '2px 6px' }}>{analysisTotals.sio2.toFixed(1)} %</span>
+                    <span style={{ 
+                      background: projection?.designValidation?.fieldErrors?.sio2 ? '#ffcccc' : '#f8fbff', 
+                      border: projection?.designValidation?.fieldErrors?.sio2 ? '1px solid red' : '1px solid #c2d1df', 
+                      padding: '2px 6px',
+                      color: projection?.designValidation?.fieldErrors?.sio2 ? 'red' : 'inherit'
+                    }}>{analysisTotals.sio2.toFixed(1)} %</span>
                   </div>
                 </div>
               </div>

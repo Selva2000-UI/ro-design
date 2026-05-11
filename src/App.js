@@ -16,7 +16,15 @@ const App = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isLoaded, setIsLoaded] = useState(false);
   const [isGuidelineOpen, setIsGuidelineOpen] = useState(false);
+  const [guidelineParameter, setGuidelineParameter] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [lastNotifiedField, setLastNotifiedField] = useState(null);
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationData, setNotificationData] = useState(null);
+  const [projection, setProjection] = useState({
+    fluxGFD: 0, pumpPressure: 0, monthlyEnergyCost: 0, permeateFlow: 0
+  });
+
   const fileInputRef = useRef(null);
 
   const DEFAULT_MEMBRANES = useMemo(() => {
@@ -72,6 +80,25 @@ const App = () => {
     energyCostPerKwh: 0.12
   }), []);
 
+  const handleRunCalculation = () => {
+    setSystemConfig(c => ({ ...c, designCalculated: true }));
+    
+    // Check for validation errors and trigger popup if found
+    if (projection?.designValidation?.fieldErrors) {
+      const fieldErrors = projection.designValidation.fieldErrors;
+      const errorKeys = Object.keys(fieldErrors);
+      
+      if (errorKeys.length > 0) {
+        // Find the first error to display in the popup
+        const firstErrorField = errorKeys[0];
+        setNotificationData(fieldErrors[firstErrorField]);
+        setShowNotification(true);
+      } else {
+        setShowNotification(false);
+      }
+    }
+  };
+
   const handleTabChange = (tab) => {
     setIsLoading(true);
     setTimeout(() => {
@@ -115,9 +142,6 @@ const App = () => {
     const updated = applyTdsProfile(tdsValue, waterData);
     setWaterData(updated);
   };
-  const [projection, setProjection] = useState({
-    fluxGFD: 0, pumpPressure: 0, monthlyEnergyCost: 0, permeateFlow: 0
-  });
   const [recentProjects, setRecentProjects] = useState([]);
   const [selectedProjectIds, setSelectedProjectIds] = useState([]);
 
@@ -467,6 +491,12 @@ const App = () => {
     const permIons = projection.permeateParameters?.ions || {};
     const concIons = projection.concentrateParameters?.ions || {};
 
+    // Calculate Membrane Details
+    const systemStages = projection.system?.stages || [];
+    const mainMembrane = systemStages[0]?.membrane || 'N/A';
+    const mainElementsPerVessel = systemStages[0]?.elementsPerVessel || 'N/A';
+    const totalElements = systemStages.reduce((sum, s) => sum + (Number(s.vessels) * Number(s.elementsPerVessel)), 0);
+    const vesselConfig = systemStages.filter(s => Number(s.vessels) > 0).map(s => `${s.vessels} x ${s.elementsPerVessel}`).join(' + ');
 
     const printWindow = window.open('', '_blank', 'width=1200,height=900');
     if (!printWindow) return;
@@ -500,6 +530,10 @@ const App = () => {
             <div><strong>Client Name:</strong> ${waterData.clientName || ''}</div>
             <div><strong>Calculated by:</strong> ${waterData.calculatedBy || ''}</div>
             <div><strong>Calculated TDS:</strong> ${waterData.calculatedTds || ''}</div>
+            <div><strong>Membrane Type:</strong> ${mainMembrane}</div>
+            <div><strong>Membranes/Vessel:</strong> ${mainElementsPerVessel}</div>
+            <div><strong>Element Quantity:</strong> ${totalElements}</div>
+            <div><strong>Vessel Configuration:</strong> ${vesselConfig}</div>
             <div><strong>Permeate flow/train:</strong> ${projection.permeateFlow || '0.00'} ${unit}</div>
             <div><strong>Raw water flow/train:</strong> ${projection.feedFlow || '0.00'} ${unit}</div>
             <div><strong>Permeate recovery:</strong> ${Number(systemConfig.recovery || 0).toFixed(2)} %</div>
@@ -652,10 +686,13 @@ const App = () => {
                   <th>Flux (${fluxUnit})</th>
                   <th>Highest flux (${fluxUnit})</th>
                   <th>Highest beta</th>
+                  <th>Element Type</th>
+                  <th>Element Quantity</th>
+                  <th>PV# x Elem #</th>
                 </tr>
               </thead>
               <tbody>
-                ${(projection.stageResults || []).map((row) => `
+                ${(projection.stageResults || []).map((row, idx) => `
                   <tr>
                     <td>${row.array}</td>
                     <td>${row.vessels}</td>
@@ -666,8 +703,11 @@ const App = () => {
                     <td>${row.flux}</td>
                     <td>${row.highestFlux}</td>
                     <td>${row.highestBeta}</td>
+                    <td>${row.membrane}</td>
+                    <td>${Number(row.vessels) * Number(row.elements)}</td>
+                    <td>${row.vessels} x ${row.elements}</td>
                   </tr>
-                `).join('') || '<tr><td colspan="9">No calculation results</td></tr>'}
+                `).join('') || '<tr><td colspan="12">No calculation results</td></tr>'}
               </tbody>
             </table>
           </div>
@@ -708,7 +748,7 @@ const App = () => {
                 <tr><td>TDS</td><td>${projection.concentrateParameters?.tds?.toFixed(1) ?? '0.0'}</td><td>mg/l</td></tr>
                 <tr><td>Ca3(PO4)2 SI</td><td>${projection.concentrateParameters?.saturation?.saturations?.ca3po42 ?? '0.00'}</td><td></td></tr>
                 <tr><td>CaF2, %</td><td>${projection.concentrateParameters?.saturation?.saturations?.caF2 ?? '0'}</td><td>%</td></tr>
-                <tr><td>Langelier</td><td>${projection.concentrateParameters?.saturation?.lsi ?? '0.00'}</td><td></td></tr>
+                <tr><td>{projection.concentrateParameters?.saturation?.sdsi != null ? 'SDSI' : 'Langelier'}</td><td>${projection.concentrateParameters?.saturation?.sdsi != null ? projection.concentrateParameters.saturation.sdsi : (projection.concentrateParameters?.saturation?.lsi ?? '0.00')}</td><td></td></tr>
               </tbody>
             </table>
           </div>
@@ -974,6 +1014,11 @@ const App = () => {
     setSelectedProjectIds([]);
   };
 
+  const openGuideline = (parameter) => {
+    setGuidelineParameter(parameter);
+    setIsGuidelineOpen(true);
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f4f7f9', display: 'flex', flexDirection: 'column' }}>
       {isLoading && <Loading />}
@@ -1045,7 +1090,7 @@ const App = () => {
           </div>
         </div>
 
-        <nav style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.08)', padding: '4px', borderRadius: '10px' }}>
+        <nav style={{ display: 'flex', gap: '6px', background: 'rgba(255,255,255,0.08)', padding: '4px', borderRadius: '10px', alignItems: 'center' }}>
           {['dashboard', 'analysis', 'pretreatment', 'design', 'post', 'report', 'database'].map(t => (
             <button
               key={t}
@@ -1066,6 +1111,27 @@ const App = () => {
               {t}
             </button>
           ))}
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)', margin: '0 4px' }}></div>
+          <button
+            onClick={() => {
+              setGuidelineParameter(null);
+              setIsGuidelineOpen(true);
+            }}
+            style={{
+              padding: '8px 14px',
+              background: 'transparent',
+              color: '#f39c12',
+              border: '1px solid #f39c12',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              fontSize: '0.72rem',
+              letterSpacing: '0.4px',
+              borderRadius: '8px'
+            }}
+          >
+            📖 Design Guidelines
+          </button>
         </nav>
 
 
@@ -1173,7 +1239,7 @@ const App = () => {
             </div>
           </div>
         )}
-        {activeTab === 'analysis' && <WaterAnalysis waterData={waterData} setWaterData={setWaterData} handleApplyTdsProfile={handleApplyTdsProfile} />}
+        {activeTab === 'analysis' && <WaterAnalysis waterData={waterData} setWaterData={setWaterData} handleApplyTdsProfile={handleApplyTdsProfile} projection={projection} />}
         {activeTab === 'pretreatment' && <PreTreatment waterData={waterData} pretreatment={pretreatment} setPretreatment={setPretreatment} systemConfig={systemConfig} />}
         {activeTab === 'design' && (
           <SystemDesign
@@ -1184,7 +1250,8 @@ const App = () => {
             projection={projection}
             applyTdsProfile={handleApplyTdsProfile}
             waterData={waterData}
-            onRun={() => setSystemConfig(c => ({ ...c, designCalculated: true }))}
+            onRun={handleRunCalculation}
+            openGuideline={openGuideline}
           />
         )}
         {activeTab === 'post' && <PostTreatment projection={projection} postTreatment={postTreatment} setPostTreatment={setPostTreatment} systemConfig={systemConfig} />}
@@ -1218,7 +1285,65 @@ const App = () => {
         <span>Temp: <strong>{waterData.temp}°C</strong></span>
       </footer>
 
-      <DesignGuidelines isOpen={isGuidelineOpen} onClose={() => setIsGuidelineOpen(false)} currentWaterType={waterData.waterType} />
+      <DesignGuidelines 
+        isOpen={isGuidelineOpen} 
+        onClose={() => setIsGuidelineOpen(false)} 
+        currentWaterType={waterData.waterType} 
+        parameter={guidelineParameter}
+      />
+
+      {/* Floating Popup Notification for Design Guidelines */}
+      {showNotification && notificationData && (
+        <div 
+          onClick={() => {
+            openGuideline(notificationData.parameter);
+            setShowNotification(false);
+          }}
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            width: '320px',
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.25)',
+            zIndex: 10001,
+            cursor: 'pointer',
+            border: '2px solid #e74c3c',
+            overflow: 'hidden',
+            animation: 'slideIn 0.5s ease-out'
+          }}
+        >
+          <div style={{ background: '#e74c3c', color: 'white', padding: '10px 15px', fontWeight: 'bold', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>⚠️ Design Limit Exceeded</span>
+            <span onClick={(e) => { 
+              e.stopPropagation(); 
+              setShowNotification(false); 
+            }} style={{ fontSize: '1.2rem', lineHeight: '1', padding: '5px' }}>✕</span>
+          </div>
+          <div style={{ padding: '15px' }}>
+            <div style={{ fontSize: '0.85rem', marginBottom: '12px', color: '#333', lineHeight: '1.5' }}>
+              <strong>{notificationData.parameter}</strong> limit exceeded!
+              <div style={{ marginTop: '8px', padding: '8px', background: '#fdf2f2', borderLeft: '3px solid #e74c3c', fontSize: '0.75rem' }}>
+                Value: <strong>{notificationData.value}</strong><br/>
+                Limit: <strong>{notificationData.limit}</strong>
+              </div>
+              <div style={{ marginTop: '10px', color: '#e74c3c', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                Click to view full Design Guidelines details.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>
+        {`
+          @keyframes slideIn {
+            from { transform: translateX(120%); }
+            to { transform: translateX(0); }
+          }
+        `}
+      </style>
     </div>
   );
 };

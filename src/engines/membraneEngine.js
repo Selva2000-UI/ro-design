@@ -1129,18 +1129,18 @@ export const getAValue = (membrane) => {
  * @param {object} inputs - Optional simulation inputs for dynamic calibration {tds, feedPressure, recovery, flux}
  * @returns {number} Membrane B value
  */
-export const getMembraneB = (membrane, inputs = null) => {
+export const getMembraneB = (membrane) => {
   if (!membrane) return 0.14;
   
   const bRef = membrane?.transport?.saltPermeability?.B || 
                membrane?.transport?.membraneBRef || 
                membrane?.membraneB;
   
-  // If it's a function (dynamic calibrator), call it with inputs or defaults
+  // If it's a function (dynamic calibrator), call it with defaults
   if (typeof bRef === 'function') {
     const A = getAValue(membrane);
-    const pressure = inputs?.feedPressure ? Number(inputs.feedPressure) : (membrane?.testConditions?.pressureBar || 55.16);
-    const tds = inputs?.tds ? Number(inputs.tds) : (membrane?.testConditions?.tds || 32000);
+    const pressure = membrane?.testConditions?.pressureBar || 55.16;
+    const tds = membrane?.testConditions?.tds || 32000;
     const rejection = membrane.rejection || membrane?.testConditions?.rejection || 0.9985;
     return bRef(A, pressure, tds, rejection);
   }
@@ -1166,13 +1166,6 @@ export const getMembraneB = (membrane, inputs = null) => {
       kMtRef,
       bFactorTdsCoeff
     );
-
-    // Dynamic correction for actual operating TDS
-    if (inputs?.tds) {
-      const actualTds = Number(inputs.tds);
-      const bFactorTdsActual = 1.0 + bFactorTdsCoeff * (actualTds / 1000);
-      return B_calibrated * bFactorTdsActual;
-    }
 
     return B_calibrated;
   }

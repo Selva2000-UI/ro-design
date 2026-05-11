@@ -90,85 +90,132 @@ export const MEMBRANE_SPECIFIC_CONSTRAINTS = {
 
 export const DESIGN_CONSTRAINTS_BY_WATER_TYPE = {
   'Brackish Well Non-Fouling': {
-    fluxMin: 10,
-    fluxMax: 25,
-    recoveryMin: 45,
+    avgFluxMax: 27,
+    elementFluxMax: 46,
+    fluxDeclineTypical: 5,
+    saltPassageIncreaseTypical: 7,
+    betaStandard: 1.2,
+    betaFullFit: 1.5,
     recoveryMax: 75,
-    pressureMin: 150,
-    pressureMax: 600,
-    pretreatmentRequired: ['Cartridge Filter', 'Softener']
+    lsiMax: 2.5,
+    caSo4Max: 400,
+    srSo4Max: 1200,
+    baSo4Max: 10000,
+    ca3po42Max: 2.4,
+    sio2Max: 140,
+    caF2Max: 50000
   },
   'Brackish Well High-Fouling': {
-    fluxMin: 8,
-    fluxMax: 18,
-    recoveryMin: 40,
+    avgFluxMax: 22,
+    elementFluxMax: 32,
+    fluxDeclineTypical: 7,
+    saltPassageIncreaseTypical: 7,
+    betaStandard: 1.2,
+    betaFullFit: 1.5,
     recoveryMax: 65,
-    pressureMin: 150,
-    pressureMax: 600,
-    pretreatmentRequired: ['Ultra Filtration', 'Cartridge Filter', 'Activated Carbon']
+    lsiMax: 2.5,
+    caSo4Max: 400,
+    srSo4Max: 1200,
+    baSo4Max: 10000,
+    ca3po42Max: 2.4,
+    sio2Max: 140,
+    caF2Max: 50000
   },
   'Brackish Surface': {
-    fluxMin: 8,
-    fluxMax: 16,
-    recoveryMin: 40,
+    avgFluxMax: 20,
+    elementFluxMax: 31,
+    fluxDeclineTypical: 7,
+    saltPassageIncreaseTypical: 10,
+    betaStandard: 1.2,
+    betaFullFit: 1.5,
     recoveryMax: 60,
-    pressureMin: 150,
-    pressureMax: 600,
-    pretreatmentRequired: ['Coagulation', 'Filtration', 'Ultra Filtration']
+    lsiMax: 2.5,
+    caSo4Max: 400,
+    srSo4Max: 1200,
+    baSo4Max: 10000,
+    ca3po42Max: 2.4,
+    sio2Max: 140,
+    caF2Max: 50000
   },
   'Sea Well': {
-    fluxMin: 12,
-    fluxMax: 20,
-    recoveryMin: 35,
+    avgFluxMax: 17,
+    elementFluxMax: 42,
+    fluxDeclineTypical: 5,
+    saltPassageIncreaseTypical: 7,
+    betaStandard: 1.2,
+    betaFullFit: 1.5,
     recoveryMax: 50,
-    pressureMin: 800,
-    pressureMax: 1200,
-    pretreatmentRequired: ['Multi-Media Filter', 'Ultra Filtration', 'Cartridge Filter']
+    lsiMax: 2.5,
+    caSo4Max: 400,
+    srSo4Max: 1200,
+    baSo4Max: 10000,
+    ca3po42Max: 2.4,
+    sio2Max: 140,
+    caF2Max: 50000
   },
   'Sea Surface': {
-    fluxMin: 10,
-    fluxMax: 18,
-    recoveryMin: 30,
+    avgFluxMax: 14,
+    elementFluxMax: 34,
+    fluxDeclineTypical: 7,
+    saltPassageIncreaseTypical: 10,
+    betaStandard: 1.2,
+    betaFullFit: 1.5,
     recoveryMax: 45,
-    pressureMin: 800,
-    pressureMax: 1200,
-    pretreatmentRequired: ['Coagulation', 'Multi-Media Filter', 'Ultra Filtration']
+    lsiMax: 2.5,
+    caSo4Max: 400,
+    srSo4Max: 1200,
+    baSo4Max: 10000,
+    ca3po42Max: 2.4,
+    sio2Max: 140,
+    caF2Max: 50000
   },
   'Municipal Waste': {
-    fluxMin: 8,
-    fluxMax: 15,
-    recoveryMin: 40,
+    avgFluxMax: 17,
+    elementFluxMax: 26,
+    fluxDeclineTypical: 15,
+    saltPassageIncreaseTypical: 12,
+    betaStandard: 1.2,
+    betaFullFit: 1.3,
     recoveryMax: 60,
-    pressureMin: 150,
-    pressureMax: 600,
-    pretreatmentRequired: ['Ultra Filtration', 'Cartridge Filter']
-  },
-  'Industrial Waste': {
-    fluxMin: 6,
-    fluxMax: 12,
-    recoveryMin: 35,
-    recoveryMax: 55,
-    pressureMin: 150,
-    pressureMax: 600,
-    pretreatmentRequired: ['Ultra Filtration', 'Cartridge Filter', 'Pre-treatment specific to industry']
+    lsiMax: 2.5,
+    caSo4Max: 400,
+    srSo4Max: 1200,
+    baSo4Max: 10000,
+    ca3po42Max: 2.4,
+    sio2Max: 140,
+    caF2Max: 50000
   },
   'RO Permeate': {
-    fluxMin: 15,
-    fluxMax: 35,
-    recoveryMin: 50,
+    avgFluxMax: 36,
+    elementFluxMax: 56,
+    fluxDeclineTypical: 3,
+    saltPassageIncreaseTypical: 5,
+    betaStandard: 1.5,
+    betaFullFit: 2.2,
     recoveryMax: 85,
-    pressureMin: 50,
-    pressureMax: 300,
-    pretreatmentRequired: []
+    lsiMax: 2.5,
+    caSo4Max: 400,
+    srSo4Max: 1200,
+    baSo4Max: 10000,
+    ca3po42Max: 2.4,
+    sio2Max: 140,
+    caF2Max: 50000
   },
   'Well Water': {
-    fluxMin: 10,
-    fluxMax: 25,
-    recoveryMin: 45,
+    avgFluxMax: 27,
+    elementFluxMax: 46,
+    fluxDeclineTypical: 5,
+    saltPassageIncreaseTypical: 7,
+    betaStandard: 1.2,
+    betaFullFit: 1.5,
     recoveryMax: 75,
-    pressureMin: 150,
-    pressureMax: 600,
-    pretreatmentRequired: ['Cartridge Filter']
+    lsiMax: 2.5,
+    caSo4Max: 400,
+    srSo4Max: 1200,
+    baSo4Max: 10000,
+    ca3po42Max: 2.4,
+    sio2Max: 140,
+    caF2Max: 50000
   }
 };
 
@@ -177,7 +224,8 @@ export const validateDesignWithWaterType = (inputs, results, waterType) => {
     isValid: true,
     errors: [],
     warnings: [],
-    recommendations: []
+    recommendations: [],
+    fieldErrors: {} // New: track which fields are invalid
   };
 
   if (!waterType) {
@@ -185,99 +233,112 @@ export const validateDesignWithWaterType = (inputs, results, waterType) => {
     return validation;
   }
 
-  const waterInfo = getWaterTypeInfo(waterType);
-  if (!waterInfo) {
-    validation.warnings.push(`⚠️ Unknown water type: ${waterType}`);
-    return validation;
-  }
-
   const {
-    membraneModel = 'cpa3',
-    tds = 2100,
-    temp = 25,
+    recovery = 0,
     feedPh = 7.0,
-    recovery = 50,
-    flowUnit = 'gpm'
   } = inputs;
 
-  const avgFlux = parseFloat(results?.avgFlux) || 0;
-  const feedPressure = parseFloat(results?.feedPressure) || 0;
-  const displayPressure = isGpmInput(flowUnit) ? feedPressure : feedPressure * 14.5038;
+  const avgFlux = parseFloat(results?.avgFluxLMH || results?.avgFlux) || 0;
+  const highestFlux = parseFloat(results?.highestFlux) || 0;
+  const highestBeta = parseFloat(results?.highestBeta) || 0;
 
-  const activeMembrane = getMembrane(membraneModel);
-  const membraneId = (activeMembrane?.id || membraneModel || '').toLowerCase();
-  const membraneConstraints = MEMBRANE_SPECIFIC_CONSTRAINTS[membraneId];
-  const waterTypeConstraints = DESIGN_CONSTRAINTS_BY_WATER_TYPE[waterType];
+  const constraints = DESIGN_CONSTRAINTS_BY_WATER_TYPE[waterType];
   
-  const constraints = {
-    ...(waterTypeConstraints || {}),
-    ...(membraneConstraints || {}),
-    ...(activeMembrane?.maxFlux ? { fluxMax: activeMembrane.maxFlux } : {})
-  };
-
-  if (tds > waterInfo.tdsRange.max) {
-    validation.errors.push(`TDS (${tds} mg/L) exceeds water type maximum (${waterInfo.tdsRange.max} mg/L)`);
-    validation.isValid = false;
-  }
-
-  if (tds < waterInfo.tdsRange.min) {
-    validation.warnings.push(`TDS (${tds} mg/L) is below typical range for ${waterType} (${waterInfo.tdsRange.min} mg/L)`);
-  }
-
   if (constraints) {
-    if (avgFlux > constraints.fluxMax) {
-      validation.errors.push(`Flux (${avgFlux.toFixed(1)} LMH) exceeds recommended max (${constraints.fluxMax}) for ${activeMembrane?.name || waterType}`);
+    // 1. System Average Flux
+    if (avgFlux > constraints.avgFluxMax) {
+      validation.errors.push(`Average Flux (${avgFlux.toFixed(1)} LMH) exceeds recommended max (${constraints.avgFluxMax} LMH) for ${waterType}`);
       validation.isValid = false;
+      validation.fieldErrors.averageFlux = {
+        value: avgFlux,
+        limit: constraints.avgFluxMax,
+        parameter: 'System Average flux'
+      };
     }
 
-    if (avgFlux < constraints.fluxMin) {
-      validation.warnings.push(`Flux (${avgFlux.toFixed(1)} LMH) below recommended min (${constraints.fluxMin}) for ${activeMembrane?.name || waterType}`);
+    // 2. Max Element Flux
+    if (highestFlux > constraints.elementFluxMax) {
+      validation.errors.push(`Max Element Flux (${highestFlux.toFixed(1)} LMH) exceeds recommended max (${constraints.elementFluxMax} LMH) for ${waterType}`);
+      validation.isValid = false;
+      validation.fieldErrors.highestFlux = {
+        value: highestFlux,
+        limit: constraints.elementFluxMax,
+        parameter: 'Max Element flux'
+      };
     }
 
+    // 3. Recovery
     if (recovery > constraints.recoveryMax) {
       validation.errors.push(`Recovery (${recovery}%) exceeds recommended max (${constraints.recoveryMax}%) for ${waterType}`);
       validation.isValid = false;
+      validation.fieldErrors.recovery = {
+        value: recovery,
+        limit: constraints.recoveryMax,
+        parameter: 'Recovery'
+      };
     }
 
-    if (recovery < constraints.recoveryMin) {
-      validation.warnings.push(`Recovery (${recovery}%) below recommended min (${constraints.recoveryMin}%) for ${waterType}`);
-    }
-
-    if (displayPressure > constraints.pressureMax) {
-      validation.errors.push(`Pressure (${displayPressure.toFixed(0)} psi) exceeds recommended max (${constraints.pressureMax}) for ${waterType}`);
+    // 4. Beta (Concentration Polarization)
+    const betaLimit = constraints.betaFullFit || constraints.betaStandard || 1.2;
+    if (highestBeta > betaLimit) {
+      validation.errors.push(`Concentration Polarization Beta (${highestBeta.toFixed(2)}) exceeds recommended max (${betaLimit}) for ${waterType}`);
       validation.isValid = false;
+      validation.fieldErrors.highestBeta = {
+        value: highestBeta,
+        limit: betaLimit,
+        parameter: 'Beta'
+      };
     }
 
-    if (displayPressure < constraints.pressureMin) {
-      validation.warnings.push(`Pressure (${displayPressure.toFixed(0)} psi) below recommended min (${constraints.pressureMin}) for ${waterType}`);
+    // 5. Saturation Limits
+    if (results?.concentrateSaturation) {
+      const sats = results.concentrateSaturation;
+      
+      if (parseFloat(sats.caSo4) > constraints.caSo4Max) {
+        validation.errors.push(`CaSO4 Saturation (${sats.caSo4}%) exceeds limit (${constraints.caSo4Max}%)`);
+        validation.isValid = false;
+        validation.fieldErrors.caSo4 = { value: sats.caSo4, limit: constraints.caSo4Max, parameter: 'CaSO4 (%)' };
+      }
+      if (parseFloat(sats.srSo4) > constraints.srSo4Max) {
+        validation.errors.push(`SrSO4 Saturation (${sats.srSo4}%) exceeds limit (${constraints.srSo4Max}%)`);
+        validation.isValid = false;
+        validation.fieldErrors.srSo4 = { value: sats.srSo4, limit: constraints.srSo4Max, parameter: 'SrSO4 (%)' };
+      }
+      if (parseFloat(sats.baSo4) > constraints.baSo4Max) {
+        validation.errors.push(`BaSO4 Saturation (${sats.baSo4}%) exceeds limit (${constraints.baSo4Max}%)`);
+        validation.isValid = false;
+        validation.fieldErrors.baSo4 = { value: sats.baSo4, limit: constraints.baSo4Max, parameter: 'BaSO4 (%)' };
+      }
+      if (parseFloat(sats.sio2) > constraints.sio2Max) {
+        validation.errors.push(`SiO2 Saturation (${sats.sio2}%) exceeds limit (${constraints.sio2Max}%)`);
+        validation.isValid = false;
+        validation.fieldErrors.sio2 = { value: sats.sio2, limit: constraints.sio2Max, parameter: 'SiO2 (%)' };
+      }
+      if (parseFloat(sats.ca3po42) > constraints.ca3po42Max) {
+        validation.errors.push(`Ca3(PO4)2 SI (${sats.ca3po42}) exceeds limit (${constraints.ca3po42Max})`);
+        validation.isValid = false;
+        validation.fieldErrors.ca3po42 = { value: sats.ca3po42, limit: constraints.ca3po42Max, parameter: 'Ca3(PO4)2 SI' };
+      }
+      if (parseFloat(sats.caF2) > constraints.caF2Max) {
+        validation.errors.push(`CaF2 Saturation (${sats.caF2}%) exceeds limit (${constraints.caF2Max}%)`);
+        validation.isValid = false;
+        validation.fieldErrors.caF2 = { value: sats.caF2, limit: constraints.caF2Max, parameter: 'CaF2 (%)' };
+      }
+    }
+    
+    // 6. LSI
+    if (results?.concentrateParameters?.langelier > constraints.lsiMax) {
+      const lsi = results.concentrateParameters.langelier;
+      validation.errors.push(`LSI (${lsi}) exceeds limit (${constraints.lsiMax})`);
+      validation.isValid = false;
+      validation.fieldErrors.lsi = { value: lsi, limit: constraints.lsiMax, parameter: 'LSI (< 10000 ppm TDS)' };
     }
   }
 
-  if (activeMembrane) {
-    if (activeMembrane.maxTds && tds > activeMembrane.maxTds) {
-      validation.errors.push(`TDS exceeds membrane maximum operating TDS (${tds} > ${activeMembrane.maxTds} mg/L)`);
-      validation.isValid = false;
-    }
-
-    if (activeMembrane.maxTemp && temp > activeMembrane.maxTemp) {
-      validation.errors.push(`Temperature (${temp}°C) exceeds membrane maximum (${activeMembrane.maxTemp}°C)`);
-      validation.isValid = false;
-    }
-
-    if (activeMembrane.maxPressure && displayPressure > activeMembrane.maxPressure) {
-      validation.errors.push(`Pressure (${displayPressure.toFixed(0)} psi) exceeds membrane maximum (${activeMembrane.maxPressure} psi)`);
-      validation.isValid = false;
-    }
-
-    const isCompatible = isMembraneCompatible(membraneModel, waterType);
-    if (!isCompatible) {
-      validation.recommendations.push(`${activeMembrane.name} is not recommended for ${waterType}. Consider: ${getRecommendedMembraneName(waterType)}`);
-    }
-  }
-
-  if (feedPh < 2 || feedPh > 10.8) {
-    validation.errors.push(`pH (${feedPh}) is outside operating range (2.0 - 10.8)`);
+  if (feedPh < 2 || feedPh > 11) {
+    validation.errors.push(`pH (${feedPh}) is outside operating range (2.0 - 11.0)`);
     validation.isValid = false;
+    validation.fieldErrors.feedPh = { value: feedPh, limit: '2.0-11.0', parameter: 'pH' };
   }
 
   return validation;

@@ -17,9 +17,9 @@ const SystemDesign = ({
   waterData,
   applyTdsProfile,
   setWaterData,
-  onRun
+  onRun,
+  openGuideline
 }) => {
-
   const [showMembraneModal, setShowMembraneModal] = useState(false);
   const [showFlowDiagram, setShowFlowDiagram] = useState(false);
   const flowDiagramRef = useRef(null);
@@ -545,8 +545,18 @@ const SystemDesign = ({
         <td style="border: 1px solid #ccc; padding: 6px;">${row.highestFlux}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.highestBeta}</td>
         <td style="border: 1px solid #ccc; padding: 6px;">${row.rejection}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">${row.membrane}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">${Number(row.vessels) * Number(row.elements)}</td>
+        <td style="border: 1px solid #ccc; padding: 6px;">${row.vessels} x ${row.elements}</td>
       </tr>
     `).join('');
+
+    // Calculate Membrane Details for meta
+    const systemStages = projection.stageResults || [];
+    const mainMembrane = systemStages[0]?.membrane || 'N/A';
+    const mainElementsPerVessel = systemStages[0]?.elements || 'N/A';
+    const totalElements = systemStages.reduce((sum, s) => sum + (Number(s.vessels) * Number(s.elements)), 0);
+    const vesselConfig = systemStages.filter(s => Number(s.vessels) > 0).map(s => `${s.vessels} x ${s.elements}`).join(' + ');
 
     const printWindow = window.open('', '_blank', 'width=1200,height=900');
     if (!printWindow) return;
@@ -572,6 +582,10 @@ const SystemDesign = ({
                 <div class="header">Flow Diagram</div>
                 <div class="meta">
                   <div>Project name: ${waterData?.projectName || 'Project'}</div>
+                  <div>Membrane Type: ${mainMembrane}</div>
+                  <div>Membranes/Vessel: ${mainElementsPerVessel}</div>
+                  <div>Element Quantity: ${totalElements}</div>
+                  <div>Vessel Configuration: ${vesselConfig}</div>
                   <div>Temperature: ${((Number(waterData?.temp || 25) * 9) / 5 + 32).toFixed(2)} °F</div>
                   <div>Membrane age: ${systemConfig.membraneAge || 0} years</div>
                   <div>Fouling factor: ${Number(systemConfig.foulingFactor || 1).toFixed(3)}</div>
@@ -609,6 +623,9 @@ const SystemDesign = ({
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest flux (${fluxUnit})</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Highest beta</th>
                       <th style="border: 1px solid #ccc; padding: 6px;">Final rejection (%)</th>
+                      <th style="border: 1px solid #ccc; padding: 6px;">Element Type</th>
+                      <th style="border: 1px solid #ccc; padding: 6px;">Element Quantity</th>
+                      <th style="border: 1px solid #ccc; padding: 6px;">PV# x Elem #</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -720,7 +737,11 @@ const SystemDesign = ({
           <div style={rowStyle}>
             <span>Permeate recovery %</span>
             <input 
-              style={inputStyle} 
+              style={{
+                ...inputStyle, 
+                backgroundColor: projection?.designValidation?.fieldErrors?.recovery ? '#ffcccc' : 'white',
+                border: projection?.designValidation?.fieldErrors?.recovery ? '1px solid red' : inputStyle.border
+              }} 
               value={systemConfig.recovery ?? ''} 
               onChange={e => handleInputChange('recovery', e.target.value)}
             />
@@ -730,7 +751,11 @@ const SystemDesign = ({
             <span title={`Flux Calculation Logic (Selected Membrane Area: ${(Number(fluxConst) * 1000).toFixed(2)} m²):\n\n🔹 CASE 1: PERMEATE FLOW IN GPM → FLUX IN GFD\nFormula: Average Flux (GFD) = Permeate Flow (gpm) / (No. of Vessels × Nm × ${(Number(fluxConst) * 1.6976 * 4.403).toFixed(4)})\n\n🔹 CASE 2: PERMEATE FLOW IN m³/h → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/h) / (No. of Vessels × Nm × ${fluxConst})\n\n🔹 CASE 3: PERMEATE FLOW IN m³/d → FLUX IN LMH\nFormula: Average Flux (LMH) = Permeate Flow (m³/d) / (No. of Vessels × Nm × ${(Number(fluxConst) / 24).toFixed(5)})\n\n⚠️ Note: Constants are automatically updated based on selected membrane area.`}>Average flux</span>
             <div style={{display:'flex', gap:'4px', alignItems:'center'}}>
               <input 
-                style={{...inputStyle, background: '#eee'}} 
+                style={{
+                  ...inputStyle, 
+                  backgroundColor: projection?.designValidation?.fieldErrors?.averageFlux ? '#ffcccc' : '#eee',
+                  border: projection?.designValidation?.fieldErrors?.averageFlux ? '1px solid red' : inputStyle.border
+                }} 
                 value={localAverageFlux !== null ? localAverageFlux : (systemConfig.averageFlux ?? '')} 
                 readOnly
               />
@@ -1366,6 +1391,9 @@ const SystemDesign = ({
               </thead>
               <tbody>
                 {(projection.stageResults && projection.stageResults.length > 0 ? projection.stageResults : []).map((row, idx) => {
+                  const hasHighestFluxError = projection?.designValidation?.fieldErrors?.highestFlux;
+                  const hasHighestBetaError = projection?.designValidation?.fieldErrors?.highestBeta;
+                  
                   return (
                     <tr key={`stage-${row.stage}`}>
                       <td style={{ border: '1px solid #ccc' }}>{row.array}</td>
@@ -1383,10 +1411,20 @@ const SystemDesign = ({
                         {row.concFlowVessel}
                       </td>
                       <td style={{ border: '1px solid #ccc' }}>{row.flux}</td>
-                      <td style={{ border: '1px solid #ccc' }}>
+                      <td style={{ 
+                        border: '1px solid #ccc',
+                        backgroundColor: hasHighestFluxError ? '#ffcccc' : 'inherit',
+                        color: hasHighestFluxError ? 'red' : 'inherit',
+                        fontWeight: hasHighestFluxError ? 'bold' : 'normal'
+                      }}>
                         {row.highestFlux}
                       </td>
-                      <td style={{ border: '1px solid #ccc' }}>
+                      <td style={{ 
+                        border: '1px solid #ccc',
+                        backgroundColor: hasHighestBetaError ? '#ffcccc' : 'inherit',
+                        color: hasHighestBetaError ? 'red' : 'inherit',
+                        fontWeight: hasHighestBetaError ? 'bold' : 'normal'
+                      }}>
                         {row.highestBeta}
                       </td>
                     </tr>
@@ -1425,12 +1463,42 @@ const SystemDesign = ({
             <div style={{ fontWeight: 'bold', marginBottom: '6px', fontSize: '0.75rem' }}>Concentrate Saturations and Parameters</div>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px', fontSize: '0.7rem' }}>
-              <div>CaSO4: {projection.concentrateSaturation?.caSo4 ?? '0.00'}%</div>
-              <div>BaSO4: {projection.concentrateSaturation?.baSo4 ?? '0.00'}%</div>
-              <div>SrSO4: {projection.concentrateSaturation?.srSo4 ?? '0.00'}%</div>
-              <div>SiO2: {projection.concentrateSaturation?.sio2 ?? '0.00'}%</div>
-              <div>Ca3(PO4)2: {projection.concentrateSaturation?.ca3po42 ?? '0.00'}%</div>
-              <div>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.00'}%</div>
+              <div style={{ 
+                backgroundColor: projection?.designValidation?.fieldErrors?.caSo4 ? '#ffcccc' : 'transparent',
+                color: projection?.designValidation?.fieldErrors?.caSo4 ? 'red' : 'inherit',
+                fontWeight: projection?.designValidation?.fieldErrors?.caSo4 ? 'bold' : 'normal',
+                padding: '2px'
+              }}>CaSO4: {projection.concentrateSaturation?.caSo4 ?? '0.00'}%</div>
+              <div style={{ 
+                backgroundColor: projection?.designValidation?.fieldErrors?.baSo4 ? '#ffcccc' : 'transparent',
+                color: projection?.designValidation?.fieldErrors?.baSo4 ? 'red' : 'inherit',
+                fontWeight: projection?.designValidation?.fieldErrors?.baSo4 ? 'bold' : 'normal',
+                padding: '2px'
+              }}>BaSO4: {projection.concentrateSaturation?.baSo4 ?? '0.00'}%</div>
+              <div style={{ 
+                backgroundColor: projection?.designValidation?.fieldErrors?.srSo4 ? '#ffcccc' : 'transparent',
+                color: projection?.designValidation?.fieldErrors?.srSo4 ? 'red' : 'inherit',
+                fontWeight: projection?.designValidation?.fieldErrors?.srSo4 ? 'bold' : 'normal',
+                padding: '2px'
+              }}>SrSO4: {projection.concentrateSaturation?.srSo4 ?? '0.00'}%</div>
+              <div style={{ 
+                backgroundColor: projection?.designValidation?.fieldErrors?.sio2 ? '#ffcccc' : 'transparent',
+                color: projection?.designValidation?.fieldErrors?.sio2 ? 'red' : 'inherit',
+                fontWeight: projection?.designValidation?.fieldErrors?.sio2 ? 'bold' : 'normal',
+                padding: '2px'
+              }}>SiO2: {projection.concentrateSaturation?.sio2 ?? '0.00'}%</div>
+              <div style={{ 
+                backgroundColor: projection?.designValidation?.fieldErrors?.ca3po42 ? '#ffcccc' : 'transparent',
+                color: projection?.designValidation?.fieldErrors?.ca3po42 ? 'red' : 'inherit',
+                fontWeight: projection?.designValidation?.fieldErrors?.ca3po42 ? 'bold' : 'normal',
+                padding: '2px'
+              }}>Ca3(PO4)2: {projection.concentrateSaturation?.ca3po42 ?? '0.00'}%</div>
+              <div style={{ 
+                backgroundColor: projection?.designValidation?.fieldErrors?.caF2 ? '#ffcccc' : 'transparent',
+                color: projection?.designValidation?.fieldErrors?.caF2 ? 'red' : 'inherit',
+                fontWeight: projection?.designValidation?.fieldErrors?.caF2 ? 'bold' : 'normal',
+                padding: '2px'
+              }}>CaF2: {projection.concentrateSaturation?.caF2 ?? '0.00'}%</div>
               {(() => {
                 const osmP = Number(projection.concentrateParameters?.osmoticPressure || 0);
                 return (
@@ -1440,13 +1508,26 @@ const SystemDesign = ({
                 );
               })()}
               <div>CCPP: {projection.concentrateParameters?.saturation?.ccpp ?? '0.00'} mg/L</div>
-              <div>Langelier: {projection.concentrateParameters?.saturation?.lsi ?? '0.00'}</div>
+              <div style={{ 
+                backgroundColor: projection?.designValidation?.fieldErrors?.lsi ? '#ffcccc' : 'transparent',
+                color: projection?.designValidation?.fieldErrors?.lsi ? 'red' : 'inherit',
+                fontWeight: projection?.designValidation?.fieldErrors?.lsi ? 'bold' : 'normal',
+                padding: '2px'
+              }}>{projection.concentrateParameters?.saturation?.sdsi != null ? `SDSI: ${projection.concentrateParameters.saturation.sdsi}` : `LSI: ${projection.concentrateParameters?.saturation?.lsi ?? '0.00'}`}</div>
               <div>pH: {projection.concentrateParameters?.ph ?? '0.00'}</div>
               <div>TDS: {Number(projection.concentrateParameters?.tds || 0).toFixed(1)} mg/L</div>
             </div>
           </div>
         </div>
       )}
+      <style>
+        {`
+          @keyframes slideIn {
+            from { transform: translateX(120%); }
+            to { transform: translateX(0); }
+          }
+        `}
+      </style>
     </div>
   );
 };

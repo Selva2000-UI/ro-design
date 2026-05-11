@@ -518,6 +518,7 @@ export const calculateIonComposition = (feedIons, globalRejection, fluxLmh, spFa
 export const calculateWaterSaturations = (ions, temp, ph, osmoticCoeff = 0.000792, forcedTds = null) => {
   const sumOfIons = calculateFeedTds(ions);
   const tds = forcedTds !== null ? Number(forcedTds) : sumOfIons;
+  const ionicStrength = calculateIonicStrength(ions);
   
   const getNum = (key) => Number(ions[key]) || 0;
   
@@ -530,25 +531,33 @@ export const calculateWaterSaturations = (ions, temp, ph, osmoticCoeff = 0.00079
   const po4 = getNum('po4');
   const f = getNum('f');
 
-  // Langelier Saturation Index (LSI) - Refined for IMSDesign/ROSA Benchmarks
-  // pCa = log10(Ca as CaCO3 / 100,000) -> -log10(Ca_molar)
+  // Langelier Saturation Index (LSI) & Stiff-Davis Stability Index (SDSI)
+  let lsi = 0;
+  let sdsi = 0;
+  let phs = 0;
+  
   const pCa = 5.0 - Math.log10(Math.max(ca * 2.5, 0.0001));
   const pAlk = 5.0 - Math.log10(Math.max(hco3 * 0.82, 0.0001));
   
-  // Revised C constant to match Benchmark LSI 1.20 at TDS 3593, pH 7.0, 25C
-  const C = 1.995 + (Math.log10(Math.max(tds, 1)) / 50) + (temp > 25 ? (temp - 25) * 0.012 : 0);
-  const phs = C + pCa + pAlk;
-  const lsi = ca > 0.01 ? ph - phs : 0;
+  if (tds < 10000) {
+    // LSI Calculation - Refined for IMSDesign/ROSA Benchmarks
+    const C = 1.995 + (Math.log10(Math.max(tds, 1)) / 50) + (temp > 25 ? (temp - 25) * 0.012 : 0);
+    phs = C + pCa + pAlk;
+    lsi = ca > 0.01 ? ph - phs : 0;
+  } else {
+    // SDSI Calculation for Seawater
+    const sqrtI = Math.sqrt(ionicStrength);
+    const K = 2.05 + 2.11 * sqrtI - 0.55 * ionicStrength + (temp > 25 ? (temp - 25) * 0.01 : 0);
+    phs = K + pCa + pAlk;
+    sdsi = ca > 0.01 ? ph - phs : 0;
+    lsi = sdsi; 
+  }
   
   // CCPP model calibrated for industrial RO concentrate stages
-  // Benchmark Raw: 693.09 mg/L at LSI 1.20, HCO3 1500
-  // Benchmark Concentrate: 4245.32 mg/L at LSI 3.04, HCO3 6575
-  const ccppMultiplier = tds > 10000 ? 0.00052 : 0.0311; // Calibrated for 4272 mg/L benchmark
+  const ccppMultiplier = tds > 10000 ? 0.00052 : 0.0311;
   const ccpp = lsi > 0 ? (Math.pow(10, lsi) - 1) * (hco3 * ccppMultiplier) : 0;
 
-  // Dynamic Osmotic Pressure based on composition
-  // Na-Cl (Auto-filled from TDS): 41.3 psi for 3593 TDS -> coeff ~0.000792
-  // Mixed Ions (Manual details): High-fidelity ionic osmotic pressure calculation
+  // Dynamic Osmotic Pressure
   let isNaClDominated = true;
   if (ca > 10 || hco3 > 50 || so4 > 50) isNaClDominated = false;
 
@@ -558,25 +567,27 @@ export const calculateWaterSaturations = (ions, temp, ph, osmoticCoeff = 0.00079
   } else if (isNaClDominated) {
     osmoticPressureBar = calculateOsmoticPressure(tds, 'bar', null, 0.000792, temp);
   } else {
-    // For mixed ions, use high-fidelity ionic model (Benchmark ~31.2 psi @ 3593 TDS)
     osmoticPressureBar = calculateTrueOsmoticPressure(ions, temp);
   }
 
-  // Solubility increases with TDS (Ionic Strength) for CaSO4
-  const solubilityFactor = 1.0 + Math.max(0, (tds - 3500) / 5800);
+  // Refined Solubility with Ionic Strength Correction (Activity Coefficients)
+  const logGamma2 = -2.04 * (Math.sqrt(ionicStrength) / (1 + 1.2 * Math.sqrt(ionicStrength)) - 0.3 * ionicStrength);
+  const activityFactor2 = Math.pow(10, logGamma2);
 
   return {
     tds: Number(tds.toFixed(2)),
     lsi: Number(lsi.toFixed(2)),
+    sdsi: tds >= 10000 ? Number(sdsi.toFixed(2)) : null,
     phs: Number(phs.toFixed(2)),
     ccpp: Number(ccpp.toFixed(2)),
+    ionicStrength: Number(ionicStrength.toFixed(4)),
     osmoticPressureBar: Number(osmoticPressureBar.toFixed(3)),
     saturations: {
-      caSo4: Number(((ca * so4) / (9800 * solubilityFactor)).toFixed(2)), // Calibrated for 73% concentrate benchmark
-      baSo4: Number(((ba * so4) / 0.05).toFixed(2)), // Industrial scaling factors
-      srSo4: Number(((sr * so4) / 8.0).toFixed(2)),
-      sio2: Number(((sio2 / 120) * 100).toFixed(2)),
-      ca3po42: Number((lsi > 0 ? (po4 > 0 ? po4 * 1.0 + lsi * 0.5 - 0.95 : -0.25) : -0.25).toFixed(2)), // Calibrated for 1.25 benchmark
+      caSo4: Number(((ca * so4 * activityFactor2 * activityFactor2) / 9240).toFixed(2)), 
+      baSo4: Number(((ba * so4 * activityFactor2 * activityFactor2) / 0.00014).toFixed(2)), 
+      srSo4: Number(((sr * so4 * activityFactor2 * activityFactor2) / 2.4).toFixed(2)),
+      sio2: Number(((sio2 / (120 * (1 + 0.005 * (temp - 25)))) * 100).toFixed(2)),
+      ca3po42: Number((lsi > 0 ? (po4 > 0 ? po4 * 1.0 + lsi * 0.5 - 0.95 : -0.25) : -0.25).toFixed(2)),
       caF2: Number(((ca * f) / 15).toFixed(2))
     }
   };

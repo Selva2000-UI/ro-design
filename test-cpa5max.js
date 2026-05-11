@@ -39,6 +39,8 @@ console.log('RESULTS COMPARISON:');
 console.log('===================');
 console.log('Parameter                  | Expected   | Calculated');
 console.log('---------------------------|------------|----------');
+console.log('Total Area (m2):', result.results.totalAreaM2);
+console.log('Total Permeate (m3/h):', result.results.totalPermeateFlow);
 console.log('Flux (lmh)                 | 382.0      | ' + result.results.avgFluxLMH);
 console.log('Highest Flux (lmh)         | 420.3      | ' + result.results.highestFlux);
 console.log('Highest Beta               | 1.27       | ' + result.results.highestBeta);
